@@ -21,7 +21,7 @@ function loadPeople() {
   const jsonPath = process.env.RADAR_AUTHZ_JSON;
   if (jsonPath) {
     try {
-      const raw = JSON.parse(readFileSync(jsonPath, "utf8"));
+      const raw = JSON.parse(/^\s*[{[]/.test(jsonPath) ? jsonPath : readFileSync(jsonPath, "utf8"));
       const people = {};
       for (const [email, v] of Object.entries(raw || {})) {
         const e = String(email || "").trim().toLowerCase();
