@@ -71,7 +71,7 @@ function toItem(ev, origin) {
   const lab = (ev.kind === "created" && CREATED_BY_ENTREE[ev.entree]) || LABEL[ev.kind] || { e: "•", t: ev.kind };
   const projet = ev.projet || "(sans titre)";
   const link = `${origin}/tache.html?code=${encodeURIComponent(ev.ndeg || "")}`;
-  const who = (ev.resp_new || ev.resp_old || "").replace(/Dérick/g, "Derick").trim();
+  const who = (ev.resp_new || ev.resp_old || "").trim();
   const detail = [ev.client, ev.summary, who && "→ " + who].filter(Boolean).join(" · ");
   return {
     id: String(ev.id),
