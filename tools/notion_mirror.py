@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-Backup Notion du radar Matanga — miroir Supabase → Notion.
+Backup Notion du RADAR — miroir PostgREST (Supabase ou compatible) → Notion.
 
 Crée (ou réutilise) deux bases Notion propres, clé = ndeg / nom :
   • « BRIEFS — Radar (miroir) »   ← table public.briefs
   • « WIKI CLIENTS — Radar (miroir) » ← table public.clients
 
-Notion = SAUVEGARDE (la source de vérité reste le radar/Supabase). Idempotent :
+Notion = SAUVEGARDE (la source de vérité reste le RADAR). Idempotent :
 relancer met à jour les pages existantes (upsert par code) au lieu de dupliquer.
 
 ⚠️ Pourquoi ce script et pas l'agent ? L'export en masse de données vers un service
@@ -14,7 +14,9 @@ externe (Notion) est bloqué par le garde-fou anti-exfiltration de l'environneme
 d'exécution de l'agent. On le lance donc depuis un poste de confiance.
 
 Usage :
-    export NOTION_TOKEN=ntn_xxx                # jeton d'intégration Notion (Hermes)
+    export SUPA_URL=https://xxx.supabase.co       # ou l'URL PostgREST de l'instance
+    export SUPA_KEY=xxx                            # clé publishable/anon correspondante
+    export NOTION_TOKEN=ntn_xxx                    # jeton d'intégration Notion
     # (optionnel) export NOTION_PARENT_PAGE_ID=<id d'une page parente>
     python3 tools/notion_mirror.py            # miroir briefs + clients
     python3 tools/notion_mirror.py briefs     # seulement les briefs
@@ -25,14 +27,16 @@ Le jeton n'est JAMAIS écrit dans le repo : il vient de l'environnement.
 import json, os, re, sys, time, urllib.request, urllib.error
 
 NV = "2022-06-28"
-SUPA_URL = os.environ.get("SUPA_URL", "https://fftfrfvllpukesgfgkms.supabase.co")
-SUPA_KEY = os.environ.get("SUPA_KEY", "sb_publishable_gTHTHuy8gnVFzLp7bFZk0Q_oJBqUt8I")  # publishable (public)
+SUPA_URL = os.environ.get("SUPA_URL", "").strip()
+SUPA_KEY = os.environ.get("SUPA_KEY", "").strip()
 TOKEN = os.environ.get("NOTION_TOKEN", "").strip()
 PARENT = os.environ.get("NOTION_PARENT_PAGE_ID", "").strip()
 ISO = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 if not TOKEN:
     sys.exit("NOTION_TOKEN manquant (export NOTION_TOKEN=ntn_...).")
+if not SUPA_URL or not SUPA_KEY:
+    sys.exit("SUPA_URL / SUPA_KEY manquants (export SUPA_URL=... SUPA_KEY=...).")
 
 
 def napi(method, url, body=None):
@@ -63,9 +67,10 @@ def supa(path):
 def parent_page():
     if PARENT:
         return PARENT
+    name = os.environ.get("RADAR_NAME", "Radar")
     p = napi("POST", "https://api.notion.com/v1/pages", {
         "parent": {"type": "workspace", "workspace": True},
-        "properties": {"title": [{"text": {"content": "📡 Radar Matanga — Miroir (backup)"}}]}})
+        "properties": {"title": [{"text": {"content": f"📡 {name} — Miroir (backup)"}}]}})
     print("page parente:", p["id"])
     return p["id"]
 

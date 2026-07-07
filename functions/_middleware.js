@@ -1,37 +1,35 @@
-// Mur d'authentification edge — Matanga RADAR (Cloudflare Pages Functions)
-// Connexion : email d'équipe (INSCRIT DANS SLACK, voir l'allowlist ci-dessous)
-// + le mot de passe partagé (secret DASH_PASSWORD). HTTP Basic Auth : le navigateur
-// demande « nom d'utilisateur » (= ton email) et « mot de passe ».
+// Mur d'authentification — RADAR
+// Connexion : email d'équipe (voir l'allowlist ci-dessous, source functions/_authz.js)
+// + le mot de passe partagé (variable d'env DASH_PASSWORD). HTTP Basic Auth : le
+// navigateur demande « nom d'utilisateur » (= ton email) et « mot de passe ».
 //
 // SESSION PERSISTANTE (anti « retaper le mot de passe à chaque fois ») :
 //   Après une première connexion réussie (Basic Auth), on pose un cookie signé
-//   (HMAC-SHA256) « mtg_sess » valable 30 jours, renouvelé automatiquement tant
+//   (HMAC-SHA256) « radar_sess » valable 30 jours, renouvelé automatiquement tant
 //   que tu reviens (fenêtre glissante). Tant que ce cookie est valide, le mur te
 //   laisse passer SANS redemander le mot de passe — même après redémarrage du
 //   navigateur (ce que le Basic Auth seul ne garantit pas). Le cookie est
 //   HttpOnly + SameSite=Lax (+ Secure en https) : jamais lisible par le JS de la page.
 //
-// Secrets Pages utilisés :
+// Variables d'environnement utilisées :
 //   DASH_PASSWORD       → mot de passe partagé (obligatoire pour activer le mur)
-//   DASH_ALLOWLIST      → emails autorisés en plus de la liste par défaut (CSV, optionnel)
+//   DASH_ALLOWLIST      → emails autorisés en plus de l'allowlist (CSV, optionnel)
 //   DASH_COOKIE_SECRET  → clé de signature du cookie de session (optionnel : à défaut
 //                         on signe avec DASH_PASSWORD, donc changer le mot de passe
 //                         partagé invalide toutes les sessions existantes).
 //
 // Gérer les accès :
-//   - éditer la table PEOPLE dans functions/_authz.js (allowlist + niveaux d'autorité), OU
-//   - ajouter des emails sans toucher au code :
-//       printf "a@x.com,b@y.com" | npx wrangler pages secret put DASH_ALLOWLIST --project-name matanga-radar
-//   - changer le mot de passe :
-//       echo "nouveau-mdp" | npx wrangler pages secret put DASH_PASSWORD --project-name matanga-radar
+//   - éditer la config d'autorité (RADAR_AUTHZ_JSON / RADAR_ADMIN_EMAIL, voir functions/_authz.js), OU
+//   - ajouter des emails sans toucher à la config : variable d'env DASH_ALLOWLIST="a@x.com,b@y.com"
+//   - changer le mot de passe : variable d'env DASH_PASSWORD
 //   - se déconnecter / repartir de zéro : visiter /logout (efface le cookie de session).
-//   - désactiver le mur : supprime ce fichier, OU retire le secret DASH_PASSWORD.
+//   - désactiver le mur : supprime ce fichier, OU retire la variable DASH_PASSWORD.
 //
 // Allowlist + niveaux d'autorité = source unique dans functions/_authz.js.
-// (Édite la table PEOPLE là-bas pour gérer les accès ; ici on ne fait que l'appliquer.)
+// (Édite RADAR_AUTHZ_JSON / RADAR_ADMIN_EMAIL là-bas pour gérer les accès ; ici on ne fait que l'appliquer.)
 import { ALLOW, identityFor } from "./_authz.js";
 
-const COOKIE = "mtg_sess";
+const COOKIE = "radar_sess";
 
 // Évaluations RH (/rh/*) : réservées au rôle `owner` (Direction Créa / Admin RADAR).
 // Les superviseurs voient les TÂCHES, jamais ces fiches (santé, trésorerie, grief, politique).
@@ -39,7 +37,7 @@ const COOKIE = "mtg_sess";
 function rhDenied(path, email) {
   if (path === "/rh" || path.startsWith("/rh/")) {
     if (identityFor(email).role !== "owner") {
-      return new Response("403 — Réservé à la Direction Créative (administrateur du RADAR).", {
+      return new Response("403 — Réservé à l'administrateur du RADAR (rôle owner).", {
         status: 403,
         headers: { "Content-Type": "text/plain; charset=UTF-8", "Cache-Control": "no-store" },
       });
@@ -50,13 +48,14 @@ function rhDenied(path, email) {
 const MAX_AGE = 60 * 60 * 24 * 30;    // 30 jours
 const REFRESH_BELOW = MAX_AGE / 2;    // on renouvelle le cookie quand il reste moins de la moitié
 
-function unauthorized() {
-  return new Response("Connecte-toi avec ton email d'équipe (celui inscrit dans Slack) et le mot de passe de l'agence.", {
+function unauthorized(env) {
+  const name = (env && env.RADAR_NAME) || "Radar";
+  return new Response("Connecte-toi avec ton email d'équipe et le mot de passe partagé.", {
     status: 401,
     headers: {
       // Note : un tiret cadratin (—) ici ferait échouer new Response() sous Node/undici
       // (WWW-Authenticate doit être un ByteString Latin1) alors que ça passait sous Cloudflare.
-      "WWW-Authenticate": 'Basic realm="Matanga RADAR - email d\'équipe", charset="UTF-8"',
+      "WWW-Authenticate": `Basic realm="${name} - email d'équipe", charset="UTF-8"`,
       "Content-Type": "text/plain; charset=UTF-8",
       "Cache-Control": "no-store",
     },
@@ -201,13 +200,13 @@ export async function onRequest(context) {
 
   // 2) Pas (ou plus) de session : Basic Auth classique.
   const header = request.headers.get("Authorization") || "";
-  if (!header.startsWith("Basic ")) return unauthorized();
+  if (!header.startsWith("Basic ")) return unauthorized(env);
 
   let decoded = "";
   try {
     decoded = atob(header.slice(6));
   } catch {
-    return unauthorized();
+    return unauthorized(env);
   }
   const idx = decoded.indexOf(":");
   const email = (idx >= 0 ? decoded.slice(0, idx) : "").trim().toLowerCase();
@@ -227,5 +226,5 @@ export async function onRequest(context) {
     if (denied) return withSession(denied, await makeToken(email, cookieSecret), secure);
     return withSession(await next(), await makeToken(email, cookieSecret), secure);
   }
-  return unauthorized();
+  return unauthorized(env);
 }

@@ -81,4 +81,5 @@ const server = http.createServer(async (nodeReq, nodeRes) => {
 // Prépare la base (schéma idempotent + seed depuis INDEX.csv si vide) au démarrage.
 initDb().then((ok) => console.log(ok ? "[radar] Postgres prêt (données de l'app)" : "[radar] pas de DATABASE_URL — repli statique/CSV"))
   .catch((e) => console.error("[radar] initDb:", e && e.message));
-server.listen(PORT, () => console.log(`Matanga RADAR — écoute sur :${PORT}`));
+const RADAR_NAME = process.env.RADAR_NAME || "Radar";
+server.listen(PORT, () => console.log(`${RADAR_NAME} — écoute sur :${PORT}`));

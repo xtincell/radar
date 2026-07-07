@@ -1,9 +1,9 @@
 // ============================================================
-//  Matanga RADAR — mini-PostgREST maison (Node + Postgres Coolify)
-//  Remplace le backend Supabase : le front (briefs/*.js) parle déjà PostgREST
-//  brut (fetch sur /rest/v1/<table>?<query>). Ici on sert EXACTEMENT le
-//  sous-ensemble utilisé — select/order/limit, filtres eq/neq/cs/in/gte/lte/is,
-//  INSERT/PATCH/DELETE — traduit en SQL paramétré contre la base `radar`.
+//  RADAR — mini-PostgREST maison (Node + Postgres)
+//  Le front parle PostgREST brut (fetch sur /rest/v1/<table>?<query>). Ici on
+//  sert EXACTEMENT le sous-ensemble utilisé — select/order/limit, filtres
+//  eq/neq/cs/in/gte/lte/is, INSERT/PATCH/DELETE — traduit en SQL paramétré
+//  contre la base `radar`.
 //  Sécurité : tables + colonnes en liste blanche (jamais d'identifiant venant du
 //  client dans le SQL sans validation), valeurs toujours en $n. Isolation
 //  private_to appliquée côté serveur (même pour owner) — la confidentialité ne
@@ -12,12 +12,9 @@
 "use strict";
 import pg from "pg";
 import { readFileSync } from "node:fs";
-import { join, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
 import { identityFor } from "../functions/_authz.js";
 
 const { Pool } = pg;
-const ROOT = dirname(fileURLToPath(import.meta.url));
 const pool = process.env.DATABASE_URL
   ? new Pool({ connectionString: process.env.DATABASE_URL, max: 6, idleTimeoutMillis: 30000 })
   : null;
@@ -108,10 +105,10 @@ const CSV_MAP = {
   "Rattaché à": "parent", "Commentaires": "comm", "Doc-Brief": "doc_brief", "Doc-Propal": "doc_propal",
   "Doc-Livr": "doc_livr", "Entré par": "entre_par",
 };
-async function seedFromCsv(client) {
+async function seedFromCsv(client, csvPath) {
   let text;
-  try { text = readFileSync(join(ROOT, "..", "briefs", "INDEX.csv"), "utf8"); }
-  catch { console.warn("[pgrest] INDEX.csv introuvable — seed sauté"); return 0; }
+  try { text = readFileSync(csvPath, "utf8"); }
+  catch (e) { console.warn(`[pgrest] RADAR_SEED_CSV illisible (${csvPath}) — seed sauté:`, e && e.message); return 0; }
   const rows = parseCSV(text);
   if (rows.length < 2) return 0;
   const header = rows[0].map((x) => x.trim());
@@ -141,15 +138,16 @@ export function initDb() {
     try {
       await client.query(SCHEMA_SQL);
       const { rows } = await client.query("select count(*)::int as n from briefs");
-      // SEED_BRIEFS=false → instance vierge (radar perso). Défaut true : préserve le radar Matanga.
-      const doSeed = process.env.SEED_BRIEFS !== "false";
-      if (rows[0].n === 0 && doSeed) {
+      // RADAR_SEED_CSV = chemin d'un CSV optionnel (colonnes INDEX.csv) pour peupler une
+      // base vide au premier boot. Absent → instance vierge, aucune dépendance à un dossier local.
+      const csvPath = process.env.RADAR_SEED_CSV;
+      if (rows[0].n === 0 && csvPath) {
         await client.query("begin");
-        const seeded = await seedFromCsv(client);
+        const seeded = await seedFromCsv(client, csvPath);
         await client.query("commit");
-        console.log(`[pgrest] schéma prêt · briefs vides → ${seeded} lignes semées depuis INDEX.csv`);
+        console.log(`[pgrest] schéma prêt · briefs vides → ${seeded} lignes semées depuis ${csvPath}`);
       } else {
-        console.log(`[pgrest] schéma prêt · ${rows[0].n} briefs en base${!doSeed ? " (seed désactivé)" : ""}`);
+        console.log(`[pgrest] schéma prêt · ${rows[0].n} briefs en base${!csvPath ? " (RADAR_SEED_CSV non défini)" : ""}`);
       }
       return true;
     } catch (e) {

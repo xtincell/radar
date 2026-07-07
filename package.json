@@ -1,9 +1,9 @@
 {
-  "name": "matanga-radar",
+  "name": "radar",
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Matanga RADAR — tracker créatif. Backend Node maison (mini-PostgREST) sur Postgres Coolify, ex-Supabase.",
+  "description": "RADAR — tracker de tâches générique. Backend Node maison (mini-PostgREST) sur Postgres.",
   "scripts": {
     "start": "node server/index.js"
   },

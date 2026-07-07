@@ -1,5 +1,5 @@
 -- ============================================================
--- Matanga RADAR — extension du modèle pour le deck « Gabarits »
+-- RADAR — extension du modèle pour le deck « Gabarits »
 -- Ajoute la colonne JSONB `suivi` à public.briefs.
 --
 -- Contexte : le deck de présentation (briefs/gabarits.html) est
@@ -36,15 +36,15 @@ comment on column public.briefs.suivi is
    vigilance (text)        — point de vigilance
    contexte_pertinent (text)';
 
--- Exemple de remplissage (facultatif) pour la tâche NSI-002 :
+-- Exemple de remplissage (facultatif) :
 -- update public.briefs set suivi = jsonb_build_object(
---   'pitch','NSIA Tontines · recruter des souscriptrices en héroïsant les présidentes de tontine.',
---   'brief_source','Slack · #nsia-tontines',
+--   'pitch','Accroche du projet en une phrase.',
+--   'brief_source','Slack · #canal',
 --   'duree_etalon','10 jours',
---   'date_etalon','2025-06-04',
+--   'date_etalon','2026-01-01',
 --   'marge','+5 j',
---   'delai_realiste','2025-06-11',
+--   'delai_realiste','2026-01-08',
 --   'langue','Français',
---   'interlocuteur','Direction Marketing NSIA',
+--   'interlocuteur','Nom du décideur',
 --   'interlocuteur_role','décideur validation'
--- ) where ndeg = 'NSI-002';
+-- ) where ndeg = 'XXX-001';
