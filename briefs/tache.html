@@ -2,9 +2,9 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<script>try{if(localStorage.getItem("matanga:theme")==="dark")document.documentElement.dataset.theme="dark";}catch(e){}</script>
+<script>try{if(localStorage.getItem("radar:theme")==="dark")document.documentElement.dataset.theme="dark";}catch(e){}</script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Matanga — Tâche</title>
+<title>Radar — Tâche</title>
 <link rel="stylesheet" href="colors_and_type.css?v=20260622">
 <link rel="stylesheet" href="radar.css?v=20260619">
 <style>
@@ -167,12 +167,12 @@
    ============================================================ */
 const clientCol = window.clientVar;
 const STATUT_COL = window.STATUT_COL;
-const TEAM=["Alexandre","Loïc Papin","William K. Mandengue","Serge","Vanelle","Lydienne","Ariel","Auriol","Derick","Nelson","Stephane Ondoua","Luther"];
+const TEAM=[];
 const STATUT_OPTS=["Reçu","En cours","En attente client","Bloqué","Envoyé dans Slack","Livré","Validé","Bouclé","Frozen","Archivé"];
 const DONE_STATUS=new Set(["Envoyé dans Slack","Livré","Livré (cycle)","Validé","Bouclé","Archivé"]);
 const $=s=>document.querySelector(s);
 const esc=s=>(s==null?"":String(s)).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-const normResp=r=>(r||"").replace(/Dérick/g,"Derick").trim();
+const normResp=r=>(r||"").trim();
 const SOURCES=[{k:"Message",ic:"💬"},{k:"WhatsApp",ic:"🟢"},{k:"PowerPoint",ic:"📊"},{k:"Réunion",ic:"📅"},{k:"Mail",ic:"✉️"},{k:"Slack",ic:"#"},{k:"Drive",ic:"📁"},{k:"Autre",ic:"📎"}];
 
 function srcClass(s){ s=(s||"").toLowerCase();
@@ -353,8 +353,8 @@ function render(){
   CODE=getCode();
   const m=byNdeg[CODE];
   const host=$("#tache");
-  if(!m){ host.innerHTML=`<div class="loadbox">Tâche <b>${esc(CODE||"?")}</b> introuvable.<br><span style="font-size:13px">Vérifie le code, ou reviens à la <a href="entrees.html">liste des entrées</a>.</span></div>`; document.title="Matanga — Tâche introuvable"; return; }
-  document.title="Matanga — "+m.ndeg+" · "+(m.projet||"");
+  if(!m){ host.innerHTML=`<div class="loadbox">Tâche <b>${esc(CODE||"?")}</b> introuvable.<br><span style="font-size:13px">Vérifie le code, ou reviens à la <a href="entrees.html">liste des entrées</a>.</span></div>`; document.title="Radar — Tâche introuvable"; return; }
+  document.title="Radar — "+m.ndeg+" · "+(m.projet||"");
   
   // Injecter les styles spécifiques à l'éditeur tache.html
   (function injectTacheStyles(){
@@ -785,7 +785,7 @@ function render(){
             <input id="e-dc-copy_accroche" type="text" placeholder="Attirer (ex: Elle rassemble, elle organise...)">
           </label>
           <label>Texte explicatif <span class="inherited-lbl" id="h-dc-copy_explication"></span>
-            <input id="e-dc-copy_explication" type="text" placeholder="Expliquer (ex: Chaque mois, NSIA Tontines...)">
+            <input id="e-dc-copy_explication" type="text" placeholder="Expliquer (ex: Chaque mois, la marque...)">
           </label>
           <label>CTA <span class="inherited-lbl" id="h-dc-copy_cta"></span>
             <input id="e-dc-copy_cta" type="text" placeholder="Convertir (ex: Découvrez son histoire)">
@@ -1011,14 +1011,14 @@ function render(){
         <label>Priorité<input id="e-prio" type="text" value="${esc(m.prio)}" placeholder="P0, P1…"></label>
         <label>Échéance<input id="e-deadline" type="date" value="${esc(dlISO)}"></label>
         <label>Date de livraison <span style="text-transform:none;font-weight:400;color:var(--fg3)">→ antidatable (réalité, pas déduction)</span><input id="e-closedat" type="date" value="${esc(clISO)}"></label>
-        <label class="full" style="flex-direction:row;align-items:center;gap:9px;text-transform:none;letter-spacing:0;color:var(--fg1);font-size:13.5px;font-weight:600"><input type="checkbox" id="e-hard" ${m.deadlineHard?'checked':''} style="width:auto;flex:0 0 auto;accent-color:var(--orange-500)"> Hard deadline — date exigée par le client / Derick / Vanelle (engagement ferme)</label>
+        <label class="full" style="flex-direction:row;align-items:center;gap:9px;text-transform:none;letter-spacing:0;color:var(--fg1);font-size:13.5px;font-weight:600"><input type="checkbox" id="e-hard" ${m.deadlineHard?'checked':''} style="width:auto;flex:0 0 auto;accent-color:var(--orange-500)"> Hard deadline — date exigée par le client / la direction (engagement ferme)</label>
         <label>Avancement<input id="e-avancement" type="text" value="${esc(m.avancement)}"></label>
         <label>Responsable<select id="e-resp">${respOptions(resp, ROWS)}</select></label>
         <label>Demandé par<select id="e-entrepar">${demOpts}</select></label>
         <label>Statut<select id="e-statut">${statutOptions(m.statut)}</select></label>
         <label>Niveau hiérarchique<select id="e-entree">${entreeOptions(m.entree||'Maître')}</select></label>
         <label>Rattaché à (projet parent)<input id="e-parent" type="text" list="codes-dl" value="${esc(m.parent)}" placeholder="vide = projet ; sinon code (ex. CAD-014)"></label>
-        ${(m.entree||'Maître')==='Maître'?`<label>Brief client<select id="e-briefetat">${['absent','déduit','validé'].map(s=>`<option value="${s}"${(m.briefEtat||'déduit')===s?' selected':''}>${s==='déduit'?'déduit · à valider (Derick)':s}</option>`).join('')}</select></label>`:''}
+        ${(m.entree||'Maître')==='Maître'?`<label>Brief client<select id="e-briefetat">${['absent','déduit','validé'].map(s=>`<option value="${s}"${(m.briefEtat||'déduit')===s?' selected':''}>${s==='déduit'?'déduit · à valider':s}</option>`).join('')}</select></label>`:''}
         <label class="full">Dépend de — codes séparés par des virgules (cette tâche attend que ces tâches soient finies)<input id="e-depends" type="text" list="codes-dl" value="${esc(m.dependsOn)}" placeholder="ex. FRC-049, NSI-002"></label>
         <label class="full">Livrables<textarea id="e-livrables">${esc(m.livrables)}</textarea></label>
         <label class="full">Commentaire <span style="text-transform:none;font-weight:400;color:var(--fg3)">→ journal timeline d'historique (modifier directement ici rompt le formatage du suivi)</span><textarea id="e-comm">${esc(m.comm)}</textarea></label>
@@ -1037,7 +1037,7 @@ function render(){
         <label class="full">Lecture planning <span style="text-transform:none;font-weight:400;color:var(--fg3)">→ narration (slide Planning)</span><textarea id="e-su-lecture" placeholder="Ex. La durée étalon plus 5 j de marge donne le délai réaliste…"></textarea></label>
         <label class="full">Spécificités / obligations<textarea id="e-su-specificites" placeholder="Ex. mentions légales produit financier obligatoires ; représenter dignement…"></textarea></label>
         <label class="full">Tension marché<textarea id="e-su-tension_marche" placeholder="Ex. Le marché des tontines est très ancré culturellement…"></textarea></label>
-        <label>Interlocuteur (validation)<input id="e-su-interlocuteur" type="text" placeholder="Ex. Direction Marketing NSIA"></label>
+        <label>Interlocuteur (validation)<input id="e-su-interlocuteur" type="text" placeholder="Ex. Direction Marketing"></label>
         <label>Rôle interlocuteur<input id="e-su-interlocuteur_role" type="text" placeholder="Ex. décideur validation"></label>
         <label class="full">Conditions de validation<textarea id="e-su-conditions" placeholder="Ex. Validation en 2 temps : concept puis exécution ; portraits soumis avant production…"></textarea></label>
         <label class="full">Point de vigilance<textarea id="e-su-vigilance" placeholder="Ex. La validation des portraits est le maillon le plus lent…"></textarea></label>
@@ -1168,7 +1168,7 @@ function render(){
             ? `<button class="dr-btn" id="g-reopen"><i data-lucide="rotate-ccw" style="width:15px;height:15px"></i>Rouvrir la tâche</button>`
             : `<button class="dr-btn" id="g-cloturer"><i data-lucide="check" style="width:16px;height:16px"></i>Clôturer la tâche</button>`}
           ${(m.entree||'Maître')==='Maître' && m.briefEtat!=='validé'
-            ? `<button class="dr-btn" id="g-valbrief" title="Le brief client est validé par Derick (sort de la file « Briefs à valider »)"><i data-lucide="badge-check" style="width:15px;height:15px"></i>Valider le brief client</button>`:''}
+            ? `<button class="dr-btn" id="g-valbrief" title="Le brief client est validé (sort de la file « Briefs à valider »)"><i data-lucide="badge-check" style="width:15px;height:15px"></i>Valider le brief client</button>`:''}
           ${m.classifInferee
             ? `<button class="dr-btn" id="g-confclassif" title="Confirmer ce niveau hiérarchique (retire le marqueur « inféré »)"><i data-lucide="check-check" style="width:15px;height:15px"></i>Confirmer le niveau</button>`:''}
           <button class="dr-btn danger" id="g-del"><i data-lucide="trash-2" style="width:15px;height:15px"></i>Supprimer…</button>

@@ -1,13 +1,13 @@
 "use strict";
 /* ============================================================
-   Matanga — accès Supabase (source de vérité du tracker)
-   Clé "publishable" = publique par design (RLS gère l'accès).
-   Le mot de passe Postgres n'est JAMAIS ici.
+   Accès données — API REST maison, même origine (mini-PostgREST).
+   Aucune clé ni secret côté client : le mur d'authentification
+   (cookie de session) fait foi, pas un header apikey.
    Charge depuis la table public.briefs ; repli sur INDEX.csv.
    ============================================================ */
 window.SUPA = {
-  url: "",   // MÊME ORIGINE : backend maison /rest/v1 (Postgres Coolify, ex-Supabase distant)
-  key: "sb_publishable_gTHTHuy8gnVFzLp7bFZk0Q_oJBqUt8I",   // envoyé en apikey ; ignoré par le backend maison (le mur fait foi)
+  url: "",   // MÊME ORIGINE : backend maison /rest/v1
+  key: "",   // envoyé en apikey ; ignoré par le backend maison (le mur fait foi)
   table: "briefs"
 };
 window.SUPA_SOURCE = ""; // "supabase" | "csv" | "vide"

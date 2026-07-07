@@ -2,9 +2,9 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<script>try{if(localStorage.getItem("matanga:theme")==="dark")document.documentElement.dataset.theme="dark";}catch(e){}</script>
+<script>try{if(localStorage.getItem("radar:theme")==="dark")document.documentElement.dataset.theme="dark";}catch(e){}</script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Matanga — Nouveau ticket</title>
+<title>Radar — Nouveau ticket</title>
 <link rel="stylesheet" href="colors_and_type.css?v=20260622">
 <style>
 *{box-sizing:border-box}
@@ -178,7 +178,7 @@ body[data-mode="rev"] .only-proj,body[data-mode="task"] .only-proj{display:none}
         <div class="f"><label>Responsable</label><select id="f-resp"></select></div>
         <div class="f"><label>Entré par <span style="text-transform:none;font-weight:400;color:var(--fg3)">→ qui a fait entrer la demande</span></label><select id="f-entrepar"></select></div>
         <div class="f full"><label>Livrables attendus</label><input id="f-livr" placeholder="Poster 60×40, TG, wobbler…"></div>
-        <div class="f full"><label>Source (lien Slack / mail)</label><input id="f-src" placeholder="https://agencymatanga.slack.com/… ou threadId"></div>
+        <div class="f full"><label>Source (lien Slack / mail)</label><input id="f-src" placeholder="https://workspace.slack.com/… ou threadId"></div>
         <div class="f full"><label>Commentaire</label><textarea id="f-comm" placeholder="Contexte, point bloquant…"></textarea></div>
       </div>
 
@@ -223,13 +223,13 @@ body[data-mode="rev"] .only-proj,body[data-mode="task"] .only-proj{display:none}
 "use strict";
 const HEAD=["N°","Client","Marque","Cluster","Pays","Projet","Niveau","Type","Statut","Priorité","Avancement","Deadline","Responsable","Livrables","Date réception","threadId","Type entrée","Rattaché à","Commentaires","Doc-Brief","Doc-Propal","Doc-Livr","Entré par"];
 const $=s=>document.querySelector(s);
-const CART_KEY="matanga:tickets";
+const CART_KEY="radar:tickets";
 let ROWS=[];                 // parsed INDEX rows {ndeg,client,marque,prefix,num,projet,...}
 let CLIENT_PREFIX={};        // client -> prefix
 let cart=[];
 // équipe & mapping catégorie → responsable par défaut
-const TEAM=["Alexandre","Loïc Papin","William K. Mandengue","Serge","Vanelle","Lydienne","Ariel","Auriol","Derick","Nelson","Stephane Ondoua","Luther"];
-const CATS=[["Création · Key Visual / DA","Alexandre"],["Création · Édition","Loïc Papin"],["Création · Packaging / Impression","William K. Mandengue"],["Création · Motion / Vidéo","Serge"],["Stratégie / Planning","Vanelle"],["Digital / Social media","Lydienne"],["Facturation / Suivi client","Derick"],["Comptabilité","Ariel"],["IT / Technique","Auriol"],["Coordination / Admin (non créatif)","Derick"]];
+const TEAM=[];
+const CATS=[["Création · Key Visual / DA",""],["Création · Édition",""],["Création · Packaging / Impression",""],["Création · Motion / Vidéo",""],["Stratégie / Planning",""],["Digital / Social media",""],["Facturation / Suivi client",""],["Comptabilité",""],["IT / Technique",""],["Coordination / Admin (non créatif)",""]];
 const CAT_RESP=Object.fromEntries(CATS);
 const escH=s=>String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");
 
@@ -261,7 +261,7 @@ async function boot(){
   if($("#f-resp").options.length===0) $("#f-resp").innerHTML='<option value="">—</option>'+teamFrom(ROWS).map(n=>`<option value="${escH(n)}">${escH(n)}</option>`).join("");
   if(!$("#f-resp").value) $("#f-resp").value=CAT_RESP[$("#f-cat").value]||"";
   if($("#f-entrepar").options.length===0){ $("#f-entrepar").innerHTML='<option value="">—</option>'+teamFrom(ROWS).map(n=>`<option value="${escH(n)}">${escH(n)}</option>`).join("")+'<option value="Client (direct)">Client (direct)</option>';
-    try{ const me=localStorage.getItem("matanga:me"); if(me) $("#f-entrepar").value=me; }catch(e){} }
+    try{ const me=localStorage.getItem("radar:me"); if(me) $("#f-entrepar").value=me; }catch(e){} }
   $("#marques").innerHTML=[...new Set(ROWS.map(r=>r.marque).filter(Boolean))].sort().map(c=>`<option value="${c}">`).join("");
   $("#parents").innerHTML=ROWS.filter(r=>r.entree==="Maître").map(r=>`<option value="${r.ndeg}">${(r.ndeg+" · "+r.projet).replace(/"/g,'')}`).join("");
   cart=load(); renderCart(); update();
@@ -323,7 +323,7 @@ function buildRow(c){
 }
 const SNAKE=["ndeg","client","marque","cluster","pays","projet","niveau","type","statut","prio","avancement","deadline","responsable","livrables","date_reception","thread_id","entree","parent","comm","doc_brief","doc_propal","doc_livr","entre_par"];
 function buildObj(c){ const r=buildRow(c); const o={}; SNAKE.forEach((k,i)=>o[k]=r[i]); o.categorie=$("#f-cat").value||"";
-  // Règle Matanga : tout nouveau projet a un brief client, à valider par Derick (déduit par défaut).
+  // Règle : tout nouveau projet a un brief client, à valider (déduit par défaut).
   if(o.entree==="Maître") o.brief_etat="déduit";
   return o; }
 function update(){
@@ -353,7 +353,7 @@ $("#seg").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)
   $("#seg").querySelectorAll("button").forEach(x=>x.classList.toggle("active",x===b));
   document.body.dataset.mode=b.dataset.mode;update();});
 $("#add").onclick=()=>{const c=compute();if(!c.code||!$("#f-projet").value.trim()||!$("#f-entrepar").value.trim())return;
-  try{ localStorage.setItem("matanga:me",$("#f-entrepar").value); }catch(e){}
+  try{ localStorage.setItem("radar:me",$("#f-entrepar").value); }catch(e){}
   const row=buildRow(c);cart.push({code:c.code,parent:c.parent,row,obj:buildObj(c)});save();renderCart();
   toast(c.code+" ajouté au panier");
   // on vide le contenu mais on garde client/parent + « entré par » pour la saisie rapide
@@ -366,7 +366,7 @@ $("#copy-all").onclick=()=>{if(!cart.length)return;navigator.clipboard.writeText
 $("#export").onclick=()=>{if(!cart.length){toast("Panier vide");return;}
   const csv=cart.map(t=>t.row.map(cell).join(",")).join("\n")+"\n";
   const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});const a=document.createElement("a");
-  a.href=URL.createObjectURL(blob);a.download="tickets-matanga-"+new Date().toISOString().slice(0,10)+".csv";a.click();
+  a.href=URL.createObjectURL(blob);a.download="tickets-"+new Date().toISOString().slice(0,10)+".csv";a.click();
   toast(cart.length+" tickets exportés");};
 $("#clear-cart").onclick=()=>{if(cart.length&&confirm("Vider le panier ("+cart.length+") ?")){cart=[];save();renderCart();}};
 $("#save-supa").onclick=async()=>{

@@ -1,6 +1,6 @@
 "use strict";
 /* ============================================================
-   Matanga RADAR — couche IA optionnelle (ai.js)
+   Radar — couche IA optionnelle (ai.js)
    Lit une SOURCE brute (message, screen WhatsApp retranscrit, texte de
    PPTX, notes de réunion) et en extrait une fiche structurée pour
    pré-remplir un ticket. Branché sur OpenRouter (clé fournie par
@@ -10,25 +10,19 @@
    Expose window.MTG_AI. Chargé après supa.js/ui.js.
    ============================================================ */
 (function(){
-const LS_KEY="matanga:openrouter:key", LS_MODEL="matanga:openrouter:model";
+const LS_KEY="radar:openrouter:key", LS_MODEL="radar:openrouter:model";
 const DEFAULT_MODEL="openai/gpt-4o-mini";
 const get=(k,d)=>{try{return localStorage.getItem(k)||d;}catch(e){return d;}};
 const set=(k,v)=>{try{ v?localStorage.setItem(k,v):localStorage.removeItem(k); }catch(e){}};
 
 /* Contexte agence : permet au modèle d'inférer responsable / type / préfixe / statut comme le ferait l'équipe. */
-const CONTEXT = `Tu structures des demandes entrantes pour l'agence créative Matanga (Cameroun/Afrique). Tu connais :
-ÉQUIPE & RÔLE D'EXÉCUTANT (responsable) — déduis dans CET ORDRE (spécialité > client > type) :
- 1) 3D/modélisation, ou "Luther" cité → Luther
- 2) Vidéo/spot/animatique/motion/film/tournage → Serge
- 3) Branding IDENTITÉ (charte, brand book, plateforme de marque) → Stephane Ondoua
- 4) Branding de SUPPORTS (camion, véhicule, mur, mural, marché, TG, PDV, habillage, flotte, tricycle, podium, banderole, visibilité) → William K. Mandengue
- 5) Marque/client "Mama Makala" → Serge
- 6) Client FrieslandCampina (Bonnet Rouge, Belle Hollandaise, Peak, Pearl, EVAP, IMP, Délice, ombrelle) → William K. Mandengue
- 7) Client Ecobank ou NSIA → Loïc Papin
- 8) Opérations terrain/activation/événementiel/stand/animation PDV → Adeline Kedy
- 9) sinon par TYPE : Création KV & DA Campaign → Alexandre ; Packaging → William K. Mandengue ; Stratégie & Pitch → Vanelle ; Modification → Loïc Papin ; Digital/Social → Lydienne ; Facturation/coordination/Autre → Derick.
-DEMANDEUR (entre_par) = qui relaie la demande (souvent l'auteur du message : Vanelle, Derick, Alexandre…). responsable ≠ entre_par.
-CLIENTS → préfixe : Cadyst/Panzani=CAD · FrieslandCampina=FRC · Ecobank=ECO · Bel Group=BEL · NSIA=NSI · Sofavin/Cap Esterias=SOF · Danone=DAN · Delifood=DLF · TRADEX SA=TRX · Florida=FLO · Fokou Gabon=FOK · Interne Matanga=INT.
+const CONTEXT = `Tu structures des demandes entrantes pour l'agence. Tu connais :
+ÉQUIPE & RÔLE D'EXÉCUTANT (responsable) — déduis dans CET ORDRE (spécialité > client > type), selon la configuration de routage de l'équipe (le membre en charge de chaque spécialité, client ou type par défaut) :
+ 1) Spécialité technique déclarée (3D/modélisation, vidéo/spot/animatique/motion/film/tournage, branding identité, branding de supports, opérations terrain/activation/événementiel/stand/animation PDV) → le membre en charge de cette spécialité.
+ 2) Client ou marque dédié à un membre spécifique → ce membre.
+ 3) sinon par TYPE (Création KV & DA Campaign, Packaging, Stratégie & Pitch, Modification, Digital/Social, Facturation/coordination/Autre) → le membre assigné par défaut à ce type.
+DEMANDEUR (entre_par) = qui relaie la demande (souvent l'auteur du message). responsable ≠ entre_par.
+CLIENTS → préfixe : selon la table de préfixes clients configurée pour l'agence.
 STATUTS autorisés : "Reçu","En cours","En attente client","Bloqué","Livré". TYPES : "Création KV","Packaging","DA Campaign","Production vidéo","Stratégie","Modification","Pitch","Autre". NIVEAU : "Production","Concept","Récurrent". PRIO : P0 (urgent) à P3, défaut P1.
 CHAMPS à produire (JSON strict, valeurs vides "" si absent) : client, marque, projet, type, niveau, prio, deadline (YYYY-MM-DD ou ""), pays, cluster, responsable, entre_par, livrables, statut, comm (résumé court 1 phrase). "projet" = intitulé clair et concis du livrable/projet.`;
 
@@ -63,7 +57,7 @@ const AI = {
   async _chat(messages,{temperature=0}={}){
     if(!AI.hasKey()) throw new Error("Pas de clé OpenRouter — clique ⚙︎ pour la configurer.");
     const r=await fetch("https://openrouter.ai/api/v1/chat/completions",{method:"POST",
-      headers:{"Authorization":"Bearer "+AI.getKey(),"Content-Type":"application/json","HTTP-Referer":location.origin,"X-Title":"Matanga RADAR"},
+      headers:{"Authorization":"Bearer "+AI.getKey(),"Content-Type":"application/json","HTTP-Referer":location.origin,"X-Title":"Radar"},
       body:JSON.stringify({model:AI.getModel(),temperature,response_format:{type:"json_object"},messages})});
     if(!r.ok){ const t=await r.text(); throw new Error("OpenRouter "+r.status+" : "+t.slice(0,180)); }
     const d=await r.json();

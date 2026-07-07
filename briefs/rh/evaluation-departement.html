@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>Dossier d'évaluation — Département Créa Matanga · T2 2026</title>
+<title>Dossier d'évaluation — Département · gabarit</title>
 <style>
 /* ───────────────────────── FONTS (self-hosted, depuis le RADAR) ───────────────────────── */
 @font-face{font-family:'Familjen Grotesk';src:url('../fonts/FamiljenGrotesk-VariableFont_wght.ttf') format('truetype-variations');font-weight:100 900;font-style:normal;font-display:swap}
@@ -215,14 +215,13 @@ body.sharing .share-hidden-note{display:inline-flex!important}
 <!-- ════════════════ TOPBAR ════════════════ -->
 <div class="topbar no-print">
   <span class="brand">
-    <svg class="mtg-logo-svg" viewBox="0 0 120 40" width="120" height="40" aria-label="LE RADAR D'Alexandre MATANGA" style="display: block; height: 32px; width: 96px;">
-      <text x="0" y="11" font-size="12" font-weight="900" textLength="120" lengthAdjust="spacing" class="l1-2">LE RADAR</text>
-      <text x="0" y="24" font-size="12" font-weight="900" textLength="120" lengthAdjust="spacing" class="l1-2">D'Alexandre</text>
-      <text x="0" y="38" font-size="14" font-weight="900" textLength="120" lengthAdjust="spacing" class="l3">MATANGA</text>
+    <svg class="mtg-logo-svg" viewBox="0 0 120 40" width="120" height="40" aria-label="RADAR" style="display: block; height: 32px; width: 96px;">
+      <text x="0" y="18" font-size="14" font-weight="900" textLength="120" lengthAdjust="spacing" class="l1-2">LE</text>
+      <text x="0" y="36" font-size="16" font-weight="900" textLength="120" lengthAdjust="spacing" class="l3">RADAR</text>
     </svg>
     <span style="font-family: var(--font-mono); font-size: 11px; color: var(--fg3); text-transform: uppercase; letter-spacing: .08em; border-left: 1px solid var(--border); padding-left: 10px; margin-left: 2px;">Dossier RH</span>
   </span>
-  <span class="muted" style="font-size:12.5px">Évaluation T2 2026 — confidentiel</span>
+  <span class="muted" style="font-size:12.5px">Gabarit d'évaluation — confidentiel</span>
   <span class="spacer"></span>
   <a class="btn" href="../radar.html" style="text-decoration:none">← RADAR</a>
   <button class="btn" id="shareToggle" title="Masque tous les blocs « Pour toi seul » pour pouvoir partager une page avec la personne concernée">👁 Mode partage</button>
@@ -235,15 +234,8 @@ body.sharing .share-hidden-note{display:inline-flex!important}
     <div class="lbl">Collectif</div>
     <a href="#cover"><span class="dot"></span><span class="who">Couverture</span></a>
     <a href="#sante"><span class="dot"></span><span class="who">Santé du département</span></a>
-    <div class="lbl">Toi</div>
-    <a href="#alex"><span class="dot"></span><span class="who">Alexandre</span><span class="tag">DC</span></a>
-    <div class="lbl">N-1 · Directeurs Artistiques</div>
-    <a href="#serge"><span class="dot"></span><span class="who">Serge</span><span class="tag">DA</span></a>
-    <a href="#stef"><span class="dot"></span><span class="who">Stef</span><span class="tag">DA</span></a>
-    <a href="#luther"><span class="dot"></span><span class="who">Luther</span><span class="tag">vid/3D</span></a>
-    <div class="lbl">N-2 · Production</div>
-    <a href="#papin"><span class="dot"></span><span class="who">Papin</span><span class="tag">design</span></a>
-    <a href="#william"><span class="dot"></span><span class="who">William</span><span class="tag">PLV</span></a>
+    <div class="lbl">Modèle</div>
+    <a href="#exemple"><span class="dot"></span><span class="who">Membre de l'équipe</span><span class="tag">exemple</span></a>
     <div class="lbl">Annexe</div>
     <a href="#methodo"><span class="dot"></span><span class="who">Méthode & limites</span></a>
   </nav>
@@ -252,518 +244,182 @@ body.sharing .share-hidden-note{display:inline-flex!important}
 
   <!-- ════════════════════════ COUVERTURE ════════════════════════ -->
   <section class="page cover" id="cover">
-    <div class="kicker">Matanga Agency · Douala — Pôle Créatif</div>
-    <h1 class="title">Dossier d'évaluation du département créatif</h1>
-    <p class="lead">Lecture individuelle &amp; collective — données arrêtées au 23/06/2026, en préparation du bilan trimestriel T2.</p>
-    <div class="confbar">🔒 Produit exclusivement pour Alexandre Djengue, Directeur Créatif — diffusion contrôlée</div>
+    <div class="kicker">Gabarit d'évaluation — département</div>
+    <h1 class="title">Dossier d'évaluation du département</h1>
+    <p class="lead">Lecture individuelle &amp; collective — gabarit réutilisable, à dupliquer et compléter avec les données réelles de l'équipe pour un bilan périodique.</p>
+    <div class="confbar">🔒 Aucune donnée réelle pré-remplie — diffusion contrôlée une fois complété</div>
 
     <div class="toc-grid">
-      <a href="#sante"><span><span class="nn">Santé du département</span><br><span class="rr">Vue collective · 4 patterns · l'instrument unique</span></span><span class="rr">00</span></a>
-      <a href="#alex"><span><span class="nn">Alexandre</span><br><span class="rr">Directeur Créatif — toi</span></span><span class="rr">01</span></a>
-      <a href="#serge"><span><span class="nn">Serge</span><br><span class="rr">DA motion — N-1</span></span><span class="rr">02</span></a>
-      <a href="#stef"><span><span class="nn">Stef (Ondoua Stéphane)</span><br><span class="rr">DA créa — N-1</span></span><span class="rr">03</span></a>
-      <a href="#luther"><span><span class="nn">Luther</span><br><span class="rr">Vidéaste / 3D, remote — N-1</span></span><span class="rr">04</span></a>
-      <a href="#papin"><span><span class="nn">Papin (Loïc)</span><br><span class="rr">Designer — N-2</span></span><span class="rr">05</span></a>
-      <a href="#william"><span><span class="nn">William (Kwin Mandengue)</span><br><span class="rr">Production / PLV / print — N-2</span></span><span class="rr">06</span></a>
+      <a href="#sante"><span><span class="nn">Santé du département</span><br><span class="rr">Vue collective · patterns · instrument de suivi</span></span><span class="rr">00</span></a>
+      <a href="#exemple"><span><span class="nn">Membre de l'équipe</span><br><span class="rr">Fiche individuelle — exemple</span></span><span class="rr">01</span></a>
     </div>
 
     <div class="legend">
-      <span><b>Source</b> : 7 canaux (≈12 850 msgs) + registres présence + RADAR delivery (320 lignes) + Charte ADVE + bilan/grief fin-2025</span>
+      <span><b>Source</b> : canaux d'échange internes + registre de présence + export Radar (delivery) + charte de rôles de l'équipe + bilans précédents</span>
       <span><b>Code couleur</b> : <span style="color:#7CE0A6">vert</span> = solide · <span style="color:#FFAA6E">ambre</span> = à surveiller · <span style="color:#F2A">rouge</span> = à traiter</span>
     </div>
-    <p class="muted" style="margin-top:18px;font-size:12.5px">⚠️ Chaque fiche contient un bandeau rayé <b style="color:#FFCFA6">« 🔒 Pour toi seul »</b> (santé, trésorerie, politique interne, lecture-risque). Le bouton <b>Mode partage</b> les masque tous : tu peux alors imprimer/partager la fiche d'une personne sans exposer ce qui ne la regarde pas. Le reste (data clés, points forts, axes) est rédigé pour être montrable.</p>
+    <p class="muted" style="margin-top:18px;font-size:12.5px">⚠️ Chaque fiche contient un bandeau rayé <b style="color:#FFCFA6">« 🔒 Pour toi seul »</b> (santé, situation personnelle, politique interne, lecture-risque). Le bouton <b>Mode partage</b> les masque tous : tu peux alors imprimer/partager la fiche d'une personne sans exposer ce qui ne la regarde pas. Le reste (data clés, points forts, axes) est rédigé pour être montrable.</p>
   </section>
 
   <!-- ════════════════════════ SANTÉ DU DÉPARTEMENT ════════════════════════ -->
   <section class="page" id="sante">
     <div class="kicker">00 · Vue collective</div>
     <h1 class="title">Santé du département</h1>
-    <p class="lead">Le talent et l'effort ne sont pas le problème. La <strong>visibilité</strong> et la <strong>coordination</strong> le sont — et c'est exactement le registre sur lequel on te juge en haut.</p>
+    <p class="lead">Le talent et l'effort ne sont souvent pas le problème. La <strong>visibilité</strong> et la <strong>coordination</strong> le sont — c'est ce que cette vue collective doit faire apparaître.</p>
 
     <div class="stats">
-      <div class="stat dark"><div class="n">5</div><div class="k">subordonnés directs</div></div>
-      <div class="stat"><div class="n">68<small>%</small></div><div class="k">taux de bouclage RADAR</div></div>
-      <div class="stat good"><div class="n">217</div><div class="k">livrables bouclés</div></div>
-      <div class="stat hot"><div class="n">64</div><div class="k">tâches actives</div></div>
-      <div class="stat bad"><div class="n">12</div><div class="k">actives en retard</div></div>
-      <div class="stat"><div class="n">18</div><div class="k">dossiers gelés</div></div>
+      <div class="stat dark"><div class="n">—</div><div class="k">subordonnés directs</div></div>
+      <div class="stat"><div class="n">—<small>%</small></div><div class="k">taux de bouclage RADAR</div></div>
+      <div class="stat good"><div class="n">—</div><div class="k">livrables bouclés</div></div>
+      <div class="stat hot"><div class="n">—</div><div class="k">tâches actives</div></div>
+      <div class="stat bad"><div class="n">—</div><div class="k">actives en retard</div></div>
+      <div class="stat"><div class="n">—</div><div class="k">dossiers gelés</div></div>
     </div>
-    <p class="muted" style="font-size:12.5px;margin-top:4px">RADAR au 23/06 (hors doublons). Le bouclage 68 % est une <b>preuve à charge positive</b> : une équipe de 5 qui sort 217 livrables n'est pas une équipe qui ne travaille pas. Le récit « le département est lent » ne tient pas dans tes propres chiffres.</p>
+    <p class="muted" style="font-size:12.5px;margin-top:4px">Chiffres à alimenter depuis l'export Radar (statut/deadline/responsable) sur la période du bilan. Un taux de bouclage élevé est une <b>preuve à charge positive</b> : une équipe qui sort des livrables n'est pas une équipe qui ne travaille pas.</p>
 
     <h2 class="sec"><span class="ic">🗺️</span> Carte du département</h2>
-    <div class="org"><b>ALEXANDRE</b> — Directeur Créatif
+    <div class="org"><b>RESPONSABLE</b> — Direction du département
    │
-   ├── <b>Serge</b> (DA · motion)      ┐
-   ├── <b>Stef</b> / Ondoua (DA · créa) ├─ N-1, couche senior
-   └── <b>Luther</b> (vidéo + 3D, remote)┘
+   ├── <b>Membre N-1</b> (rôle)  ┐
+   ├── <b>Membre N-1</b> (rôle)  ├─ couche senior
+   └── <b>Membre N-1</b> (rôle)  ┘
             │
        ┌────┴────┐
-    <b>Papin</b> Loïc   <b>William</b> Kwin     ← N-2, production
-    (design)     (PLV / print)
+    <b>Membre N-2</b>   <b>Membre N-2</b>     ← production
+    (rôle)       (rôle)
 
-  Interfaces (hors département, dans ton orbite) :
-  Nelson (CEO) · Derick (Account Dir.) · Vanelle (PM) · Lydienne (account/PM)</div>
+  Interfaces (hors département) : à documenter (direction, comptes clients, coordination projet…)</div>
 
     <h2 class="sec"><span class="ic">📊</span> Tableau comparé — comportement &amp; livraison</h2>
     <table class="cmp">
-      <thead><tr><th>Métrique</th><th>Serge</th><th>Stef</th><th>Luther</th><th>Papin</th><th>William</th></tr></thead>
+      <thead><tr><th>Métrique</th><th>Membre 1</th><th>Membre 2</th><th>Membre 3</th><th>Membre 4</th><th>Membre 5</th></tr></thead>
       <tbody>
-        <tr><th>Rôle</th><td>DA motion</td><td>DA créa</td><td>Remote vid/3D</td><td>N-2 design</td><td>N-2 prod/PLV</td></tr>
-        <tr><th>Volume 1:1</th><td>893</td><td>1 420</td><td class="hi">1 855</td><td>1 545</td><td>1 187</td></tr>
-        <tr><th>Il initie</th><td class="dg">23 %</td><td>39 %</td><td class="hi">55 %</td><td>44 %</td><td>47 %</td></tr>
-        <tr><th>Latence (lui)</th><td>3,0 min</td><td>0,9 min</td><td class="ok">0,7 min</td><td>1,2 min</td><td class="dg">7,7 min*</td></tr>
-        <tr><th>Tu dois le relancer</th><td class="ok">5</td><td class="ok">4</td><td>13</td><td class="dg">16</td><td>3*</td></tr>
-        <tr><th>Orientation groupe</th><td>Nelson</td><td>Nelson</td><td>Nelson</td><td class="dg">Lydienne</td><td>Toi (faible)</td></tr>
-        <tr><th>RADAR · bouclés</th><td>13</td><td>1</td><td>2</td><td>32</td><td class="ok">55</td></tr>
-        <tr><th>RADAR · actifs</th><td class="hi">19</td><td>4</td><td>3</td><td>6</td><td>13</td></tr>
-        <tr><th>RADAR · alerte</th><td class="dg">9 en retard</td><td>6 tracés</td><td class="dg">3 gelés / 8 tracés</td><td class="dg">12 gelés</td><td class="ok">0 retard</td></tr>
-        <tr><th>État actuel</th><td>Retour fort</td><td>Creux situ.</td><td>Moteur bloqué</td><td>Stable à cadrer</td><td>Productif à discipliner</td></tr>
+        <tr><th>Rôle</th><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+        <tr><th>Volume 1:1</th><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+        <tr><th>Il/elle initie</th><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+        <tr><th>Latence</th><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+        <tr><th>Relances nécessaires</th><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+        <tr><th>RADAR · bouclés</th><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+        <tr><th>RADAR · actifs</th><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+        <tr><th>RADAR · alerte</th><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+        <tr><th>État actuel</th><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
       </tbody>
     </table>
-    <p class="muted" style="font-size:12px">* William : latence écrite trompeuse — il coordonne par <b>voix</b> (138 appels), pas par chat ; ses « 3 relances » sous-représentent massivement la réalité.</p>
+    <p class="muted" style="font-size:12px">Certaines personnes coordonnent surtout par la voix (appels) plutôt que par écrit : leur latence « écrite » peut sous-représenter fortement leur réactivité réelle — à vérifier avant d'en tirer une conclusion.</p>
 
-    <h2 class="sec"><span class="ic">🧬</span> Les 4 patterns départementaux</h2>
+    <h2 class="sec"><span class="ic">🧬</span> Patterns départementaux à surveiller</h2>
     <div class="cols">
       <div class="block warn">
-        <h3>① La maladie systémique = la VISIBILITÉ</h3>
-        <p>Trois mécanismes, une seule conséquence : ton équipe produit dans des registres que <b>Nelson et Derick ne lisent pas</b>.</p>
+        <h3>① La maladie systémique la plus fréquente = la VISIBILITÉ</h3>
+        <p>Un mécanisme récurrent : une partie de l'équipe produit dans des registres que la direction ne lit pas (fichiers déposés hors du tracker, coordination orale, planning informel).</p>
         <ul class="tight">
-          <li><b>Luther invisible</b> — livre sur Drive, remote. Preuve dans tes propres données : ton collaborateur n°1 en volume (1 855 msgs) n'a que <span class="data">8</span> tâches tracées au RADAR.</li>
-          <li><b>William illisible</b> — coordonne par 138 appels ; 38 % de ses messages groupe restent sans réponse (le plus ignoré).</li>
-          <li><b>Papin piloté par Lydienne</b> — son planning ne passe pas par toi.</li>
+          <li><b>Travail invisible</b> — livré hors du canal suivi (drive, remote) : à croiser avec le volume d'échanges réel de la personne.</li>
+          <li><b>Coordination illisible</b> — se fait par appel plutôt que par écrit ; les messages groupe restent souvent sans réponse.</li>
+          <li><b>Planning piloté ailleurs</b> — certains membres reçoivent leurs priorités d'une autre personne que leur responsable direct.</li>
         </ul>
-        <p>Aucun n'est un problème d'éthique de travail. Ce sont des <b>trous de traçabilité</b> — et tu es évalué sur le registre écrit qui les rate.</p>
+        <p>Rarement un problème d'éthique de travail : ce sont des <b>trous de traçabilité</b> à combler avec le tracker.</p>
       </div>
       <div class="block warn">
-        <h3>② Le nœud de commandement est vacant</h3>
-        <p>En public, tes subordonnés s'orientent vers <b>tout-le-monde-sauf-toi</b> : Serge/Stef/Luther → Nelson ; Papin → Lydienne ; seul William (faiblement) → toi.</p>
-        <p><b>Lydienne</b> (PM, pas ta subordonnée) est devenue de facto le hub de planification de tes juniors. Tu n'occupes pas l'espace d'autorité dans le canal que Nelson regarde — d'autres le remplissent par simple gravité opérationnelle.</p>
+        <h3>② Le nœud de commandement peut être vacant</h3>
+        <p>Vérifier vers qui l'équipe s'oriente réellement au quotidien : si ce n'est pas son responsable direct, un tiers occupe de facto l'espace d'autorité par simple gravité opérationnelle.</p>
       </div>
       <div class="block plus">
-        <h3>③ Une pyramide saine, managée à plat</h3>
-        <p>Tes <b>DA (Serge, Stef) sont quasi-zéro-relance</b> (5 et 4 en 18 mois) : couche senior fiable et autonome — <b>argument positif pour ton bilan</b>. Tes <b>N-2 demandent du management</b> (Papin 16 relances + ne s'auto-planifie pas ; William voix-only). Luther = haut débit mais bloqué par toi.</p>
-        <p>La structure est normale. L'erreur est d'appliquer <b>une cadence uniforme à 5 profils qui en exigent 5</b>.</p>
+        <h3>③ Une pyramide saine peut être managée à plat</h3>
+        <p>Les profils seniors nécessitant peu de relance sont un signal positif ; les profils juniors demandant plus de cadrage sont normaux. L'erreur fréquente est d'appliquer une cadence uniforme à des profils qui en exigent des différentes.</p>
       </div>
       <div class="block axe">
-        <h3>④ Plusieurs humains en creux MAINTENANT</h3>
-        <p>Juin 2026 : Stef (santé + trou de trésorerie), Papin (santé, aujourd'hui même), Serge &amp; Stef évoquant le « ndem » du mois → <b>tension cash/moral à l'échelle de l'agence</b>.</p>
-        <p>Une partie de la mollesse de juin est <b>contextuelle</b>, pas un échec de ton management. Mais ce n'est <b>pas une excuse opposable</b> au bilan : tu dois montrer que tu pilotes <em>à travers</em> le creux, pas que le creux t'excuse.</p>
+        <h3>④ Facteurs humains ponctuels</h3>
+        <p>Santé, situation personnelle, contexte financier de l'équipe : une partie d'un creux d'activité peut être contextuelle plutôt qu'un échec de management — sans que ce soit une excuse à ne jamais objectiver.</p>
       </div>
     </div>
 
-    <div class="callout"><b>Contexte 2025 — à charge du système, pas de l'équipe.</b> Une partie de la dysfonction de 2025 est <b>structurelle et top-down</b>, documentée : <b>0 évaluation</b> menée en 12 mois, aucune structure de réunions régulières (le ratage Cadyst « chacun a juste travaillé de son côté »), équipement/licences/process non fournis, briefs nocturnes non validés. L'équipe a tourné <em>sans</em> instrument de coordination ni rituel de feedback. Ce dossier + le tracker sont exactement la réponse structurante qui manquait — et l'occasion d'instaurer l'évaluation régulière qui n'a jamais existé.</div>
+    <div class="callout"><b>Contexte structurel — à charge du système, pas seulement de l'équipe.</b> Une dysfonction observée peut être structurelle et top-down : absence d'évaluations régulières, pas de structure de réunions, équipement/licences/process non fournis. Un instrument de coordination et un rituel de feedback réguliers (dont ce dossier) répondent directement à ce manque.</div>
 
-    <h2 class="sec"><span class="ic">🎛️</span> L'instrument unique — 5 cadences, 1 tracker</h2>
+    <h2 class="sec"><span class="ic">🎛️</span> Cadences par profil</h2>
     <table class="cmp">
       <thead><tr><th>Profil</th><th>Cadence à adopter</th><th>Levier</th><th>Qui s'adapte</th></tr></thead>
       <tbody>
-        <tr><th>Serge</th><td>1 point hebdo le soir (mer. 20h) + statut écrit async</td><td>Co-design du process</td><td class="hi">Toi (rythme)</td></tr>
-        <tr><th>Stef</th><td>Light-touch + check humain <em>maintenant</em></td><td>Partenariat Nelson-facing</td><td class="hi">Toi (proactivité)</td></tr>
-        <tr><th>Luther</th><td>Sync (heures business) + déblocage rapide</td><td>Vitrine IA/3D</td><td class="hi">Toi (tes handoffs)</td></tr>
-        <tr><th>Papin</th><td>Assignation explicite quotidienne</td><td>Clarté de tâche + reprise du planning</td><td class="hi">Toi (tu planifies)</td></tr>
-        <tr><th>William</th><td>Voice-to-log après chaque appel décisif</td><td>Ancrage downward</td><td class="hi">Toi (tu captures)</td></tr>
+        <tr><th>Membre 1</th><td>—</td><td>—</td><td>—</td></tr>
+        <tr><th>Membre 2</th><td>—</td><td>—</td><td>—</td></tr>
+        <tr><th>Membre 3</th><td>—</td><td>—</td><td>—</td></tr>
       </tbody>
     </table>
-    <p>L'instrument qui résout les cinq <em>et</em> le bilan : un <b>tracker de livraison partagé</b> (ce RADAR) qui capture les trois modes d'invisibilité — dépôt-de-lien (Luther/William), voice-to-log (William), assignation-de-tâche (Papin). Il (a) tue les désalignements de scope, (b) rend Luther + William visibles, (c) suit la reprise de Stef, (d) te rend le planning de Papin, et surtout <b>(e) redirige le reporting de ton équipe à travers toi</b>.</p>
-
-    <div class="callout flip"><b>Le récit à retourner au bilan.</b> Ne dis pas « mon département est lent ». Dis : <em>« Mon département produit — 217 livrables, des DA qu'on ne materne pas — mais son output n'était pas visible dans le registre écrit que vous lisez. Voici l'instrument qui referme ce trou, et qui fait passer tout le reporting créa par moi. »</em> Tu convertis un procès en livraison de système.</div>
+    <p>Un <b>tracker de livraison partagé</b> (ce Radar) aide à capturer les modes d'invisibilité courants : dépôt de fichiers hors registre, coordination par appel, absence d'assignation explicite. Il permet d'aligner le reporting de l'équipe sur un instrument unique plutôt que sur des canaux dispersés.</p>
 
     <div class="owner-only">
       <span class="seal">🔒 Pour toi seul</span>
-      <h3>Lecture politique — ce que la donnée dit de ta position</h3>
-      <p>Ton radar a détecté une <b>vraie menace</b> sur ta position — ton instinct n'hallucine pas. Il l'a <b>mal géolocalisée</b> : il pointe latéralement (Derick/Vanelle) ce que la donnée attribue à la verticale (<b>Nelson</b>) et à ta propre empreinte (présence + initiative + delivery). La thèse « Derick monte pour me remplacer » n'est pas dans les chiffres : aucune tendance d'effacement de toi, aucune montée monotone de lui ; le seul footprint qui monte nettement sur l'année, c'est <b>Lydienne</b>. Derick défère l'autorité finale à Nelson ; Vanelle te <em>coache</em> à diriger et te confronte en face — l'inverse d'un usurpateur qui flatte et sape en silence.</p>
-      <p>La pression est <b>top-down et porte sur les retards / la présence / la passivité dans le canal visible</b> — trois leviers <b>sous ton contrôle</b>. Un complot serait ingérable ; ce que montre la donnée est entièrement actionnable. C'est commode : un complot, c'est l'autre ; un déficit de delivery, c'est toi. Le tracker n'est pas un bouclier défensif — c'est le point de bascule où ton département se met à tourner <b>autour de toi</b> au lieu d'autour de Nelson.</p>
+      <h3>Lecture politique — notes internes</h3>
+      <p>Section réservée à une lecture sensible/politique de la situation (perception en interne, tensions, positionnement). À rédiger au cas par cas ; masquée automatiquement en Mode partage.</p>
     </div>
 
-    <div class="footline"><span>Matanga RADAR — Dossier RH confidentiel</span><span>Santé du département · 00</span></div>
+    <div class="footline"><span>Radar — Dossier RH confidentiel</span><span>Santé du département · 00</span></div>
   </section>
 
-  <!-- ════════════════════════ ALEXANDRE ════════════════════════ -->
-  <section class="page" id="alex">
-    <div class="kicker">01 · Toi</div>
+  <!-- ════════════════════════ EXEMPLE — MEMBRE DE L'ÉQUIPE ════════════════════════ -->
+  <section class="page" id="exemple">
+    <div class="kicker">01 · Exemple de fiche individuelle</div>
     <div class="phead">
-      <div class="avatar" style="background:linear-gradient(150deg,#FF8A3D,#C2440A)">A</div>
+      <div class="avatar" style="background:linear-gradient(150deg,#FF8A3D,#C2440A)">M</div>
       <div class="meta">
-        <h1 class="title" style="margin:0 0 2px">Alexandre</h1>
-        <div class="role"><span class="chip lv">Directeur Créatif (DA/DC)</span><span class="chip">Comité de Direction</span><span class="chip craft">Big idea · KV génératifs · BAT · faisabilité</span></div>
+        <h1 class="title" style="margin:0 0 2px">Membre de l'équipe</h1>
+        <div class="role"><span class="chip lv">Rôle (ex. Designer, DA, chef de projet…)</span><span class="chip">N-1 / N-2</span><span class="chip craft">Spécialité</span></div>
       </div>
-      <span class="statepill s-amber">Commandement à réoccuper</span>
+      <span class="statepill s-amber">Statut à définir</span>
     </div>
-    <div class="verdict">Ta livraison personnelle est propre et tes griefs structurels sont fondés — mais ton déficit n'est ni le talent ni l'effort : c'est un <strong>commandement visible</strong> que l'admin cannibalise, un <strong>first-time-right</strong> (ton KPI de charte) qui décroche, et une lecture de fin 2025 que <strong>ton propre ressenti a biaisée</strong>. La donnée 2026 te le confirme : la menace n'était pas où ton instinct la plaçait.</div>
+    <div class="verdict">Une phrase de synthèse : le point le plus important à retenir sur cette personne ce trimestre — ce qui va bien, ce qui coince, et pourquoi.</div>
+    <p class="muted" style="font-size:12.5px;margin:8px 0 0">📋 <b>Charte</b> — rôle et périmètre tels que définis par la charte de l'équipe. <b>KPI</b> : indicateurs propres au rôle (ex. délai, taux de reprise, volume livré).</p>
 
     <div class="stats">
-      <div class="stat dark"><div class="n">#2</div><div class="k">voix dans le groupe</div></div>
-      <div class="stat bad"><div class="n">4,9<small>%</small></div><div class="k">de tes msgs initient · le + bas des cadres</div></div>
-      <div class="stat good"><div class="n">1,9<small>min</small></div><div class="k">latence · top tier</div></div>
-      <div class="stat good"><div class="n">61</div><div class="k">livrables bouclés · 0 en retard</div></div>
-      <div class="stat bad"><div class="n">0</div><div class="k">évaluation reçue en 12 mois (Art. VII)</div></div>
-      <div class="stat dark"><div class="n">80/78</div><div class="k">dyade Alex↔Nelson · n°1 du groupe</div></div>
+      <div class="stat dark"><div class="n">—</div><div class="k">volume d'échanges 1:1</div></div>
+      <div class="stat"><div class="n">—<small>%</small></div><div class="k">part de messages qu'il/elle initie</div></div>
+      <div class="stat good"><div class="n">—</div><div class="k">latence moyenne</div></div>
+      <div class="stat good"><div class="n">—</div><div class="k">livrables bouclés</div></div>
+      <div class="stat bad"><div class="n">—</div><div class="k">évaluations reçues sur la période</div></div>
+      <div class="stat dark"><div class="n">—</div><div class="k">indicateur relationnel clé</div></div>
     </div>
 
     <div class="block" style="margin:18px 0 6px">
-      <h3 style="margin-top:0">📋 Ton rôle réel (charte ADVE) &amp; ton métier au quotidien</h3>
-      <p style="margin:6px 0"><b>Charte DA/DC</b> — tu portes : la big idea, la qualité, le BAT créa/diffusion, la faisabilité. Owner des artefacts <span class="data">Concept Book / KV</span>, <span class="data">Brief de Production</span>, <span class="data">Asset List &amp; Specs</span>, <span class="data">BAT Pack</span>. <b>KPI : first-time-right + nombre de cycles de retours.</b> Tu ne portes <em>ni</em> la relation client directe (Derick) <em>ni</em> le copy (Vanelle/Derick) — par <b>design</b>, pas par exclusion.</p>
-      <p style="margin:6px 0"><b>Au quotidien</b> tu recadres le besoin client en besoin créa, tu rédiges (même sommairement) les briefs de prod, et tu produis les images via plateformes génératives (KV, recos, habillage des visuels de tes collègues). <b>Tu sièges au Comité de Direction (sanctions N3, primes R1/R4/R6)</b> — factuellement, tu n'es pas « l'exe en chef ».</p>
+      <h3 style="margin-top:0">📋 Rôle réel &amp; métier au quotidien</h3>
+      <p style="margin:6px 0"><b>Charte</b> — ce que la personne porte réellement (artefacts, décisions, périmètre). Ce qu'elle ne porte <em>pas</em>, par design plutôt que par exclusion.</p>
+      <p style="margin:6px 0"><b>Au quotidien</b> — description factuelle des tâches récurrentes et du mode de collaboration observé.</p>
     </div>
 
     <div class="cols">
       <div class="block plus">
         <h3>✅ Points forts</h3>
         <ul class="tight">
-          <li><b>Ta livraison perso est nette</b> : <span class="data">61</span> bouclés, <span class="data">0</span> en retard. Et tu livres tes <b>12+ projets clients</b> (FrieslandCampina, Cadyst, Ecobank, Prudential, Bel) avec validations positives. Le craft n'est pas le problème.</li>
-          <li><b>Tes griefs structurels sont FONDÉS</b>, pas du ressenti : <span class="data">0</span> évaluation en 12 mois (Art. VII), équipement/licences/salaire non conformes au contrat. Le manque de reconnaissance que tu ressens a une base <em>documentée</em>.</li>
-          <li><b>Quand tu parles, on écoute</b> : 10,6 % de tes messages sans réaction — le plus bas du groupe (Derick 24 %, Vanelle 23 %). Nelson t'engage plus que quiconque (dyade 80/78, te nomme 38×).</li>
-          <li><b>Autorité réelle</b> : tu es au Comité de Direction et réactif d'élite (1,9 min). La latence et le mandat existent — c'est leur <em>occupation</em> qui manque.</li>
-          <li><b>Couche senior fiable</b> : tes DA tournent à 4-5 relances en 18 mois. Ton recrutement tient.</li>
+          <li><b>[Point fort à documenter]</b> — s'appuyer sur une donnée concrète (délai, volume, retour client…).</li>
+          <li><b>[Point fort à documenter]</b> — distinguer le ressenti de ce qui est mesurable.</li>
+          <li><b>[Point fort à documenter]</b> — reconnaître explicitement la fiabilité ou l'autonomie constatée.</li>
         </ul>
       </div>
       <div class="block warn">
         <h3>⚠️ Critiques &amp; risques</h3>
         <ul class="tight">
-          <li><b>First-time-right en berne — TON KPI de charte.</b> Tu le dis : tes propositions ne passent qu'après plusieurs passes. L'itération est normale en FMCG ; mais si <em>chaque</em> 1re passe saute, le verrou est en amont (brief créa pas assez serré), pas dans une persécution.</li>
-          <li><b>L'admin cannibalise ton craft de DA</b> : « l'admin me déconcentre », dixit toi. Résultat assumé fin 2025 : « rien produit de structurant ». Le temps DA part en coordination.</li>
-          <li><b>Le réflexe blame-deflection</b> que tu nommes toi-même (« je renvoie les fautes sur les autres parce qu'on ne m'encourage jamais »). C'est précisément ce qui valide le « pas sérieux/responsable » au bilan. À tuer en premier.</li>
-          <li><b>Passivité dans le canal visible</b> : 4,9 % d'initiation (le + bas des cadres). Nuance : tu interviens en lane étroite (recadrage de brief) — mais vu d'en haut, ça <em>lit</em> comme un vide d'autorité.</li>
-        </ul>
-      </div>
-    </div>
-
-    <div class="callout house"><b>Diagnostic (symptôme → causes pondérées).</b> Symptôme ressenti : « mon autorité s'érode, mon département est sous surveillance. » &nbsp;•&nbsp; <b>~70 %</b> déficit de delivery / présence + first-time-right (réel, sous ton contrôle) &nbsp;•&nbsp; <b>~25 %</b> passivité dans le canal visible (structurel, sous ton contrôle) &nbsp;•&nbsp; <b>~5 %</b> friction Derick authentique — <em>pas</em> un complot. La pression est <b>verticale (Nelson) et porte sur le delivery</b>, pas latérale.</div>
-
-    <div class="callout"><b>🔄 Correction de biais — ton état de fin 2025.</b> Tu me l'as dit : ta lecture d'alors était <b>biaisée par ton ressenti</b>, et tu as raison. Tes griefs contractuels étaient réels (0 éval, équipement, salaire) — mais le ressenti les a transformés en <b>récit de victime</b> qui (a) externalisait ta part (« le problème est structurel, pas individuel »), (b) t'a fait <b>te replier sur La Fusée</b>, ce qui a creusé ton déficit de production DA → nourri la critique « insupportable » → bouclé le cercle, et (c) a armé la mauvaise cible (le « complot » Derick/Vanelle que la donnée réfute). <b>Le grief est légitime ; le cadrage victimaire ne l'est pas.</b></div>
-
-    <h2 class="sec"><span class="ic">↗</span> Axes d'amélioration — du grief au système</h2>
-    <div class="cols">
-      <div class="block axe">
-        <ul class="tight">
-          <li><b>Sépare le grief légitime du ressenti.</b> Poursuis les manques contractuels (évals, équipement, salaire) <em>factuellement et calmement</em> — ton dossier le fait déjà bien. Mais arrête d'en faire un procès identitaire : c'est une régularisation, pas une trahison.</li>
-          <li><b>Réoccupe ton rôle de charte.</b> Tu sièges au Comité de Direction, tu infliges les N1 créa, tu attribues les primes. Cesse de te vivre en « exe en chef » : agis en membre de la direction — initie, tranche, valide en public.</li>
-          <li><b>Verrouille le first-time-right.</b> Durcis ton brief créa / Concept Book en amont pour que la 1re passe tienne. Réduire les cycles de retours est <em>littéralement</em> ton KPI.</li>
-        </ul>
-      </div>
-      <div class="block axe">
-        <ul class="tight">
-          <li><b>Récupère ton focus créa.</b> Délègue/automatise l'admin : le tracker te <em>rend</em> du temps, il n'en prend pas (le reporting devient un sous-produit). Protège des blocs de deep-work génératif.</li>
-          <li><b>Sois la source de vérité.</b> Récupère la demande de tracker de Vanelle (22/06) : livre le suivi de ton département toi-même, à Nelson. Pré-empte le narratif retard, données à l'appui — jamais avec une théorie du complot.</li>
-          <li><b>Donne vers le bas la reconnaissance que tu n'as pas reçue.</b> 0 éval en 12 mois t'a blessé — ne le reproduis pas sur ton équipe. <b>Ce dossier EST ce rituel.</b> Sois le manager que tu aurais voulu avoir.</li>
-        </ul>
-      </div>
-    </div>
-
-    <div class="owner-only">
-      <span class="seal">🔒 Pour toi seul</span>
-      <h3>L'insight (niveau 201+) — la boucle du ressenti, et comment en sortir</h3>
-      <p><b>La mécanique.</b> Déficits structurels réels (0 éval, équipement, salaire non ajusté, briefs à 23h10) → blessure légitime (« on ne m'encourage jamais ») → <b>repli sur La Fusée</b> comme refuge → chute de ta production de direction → critique « insupportable » de Derick/Nelson → la blessure se confirme → <b>blame-deflection</b> + misattribution d'un complot. Chaque tour resserre le nœud. Le ressenti n'a pas <em>inventé</em> le grief — il a <b>sur-cadré</b> une vérité partielle en récit total, et t'a fait fuir la seule chose qui le dénoue : <b>occuper ton poste</b>.</p>
-      <p><b>La correction.</b> La donnée 2026 disculpe ton équipe (DA zéro-relance, William #1 livreur, Luther bridé par <em>toi</em>) : la dureté de ta lecture fin 2025 était en partie le ressenti qui projetait ton propre retrait sur les autres. Et elle disculpe Derick/Vanelle : par charte, Derick <b>doit</b> te presser (il ne peut pas dater sans ton BP) et Vanelle <b>doit</b> tenir les dashboards — ce que tu lisais comme manœuvre est conforme au rôle.</p>
-      <p><b>Le geste juste.</b> C'est le saut <b>« complétude architecturale → runtime vivant »</b> que tu rates aussi sur La Fusée (Niveau 8) : ici, le runtime, c'est <b>toi qui t'adaptes à la donnée au lieu d'imposer ton modèle ou ton récit</b>. Poursuis le grief contractuel froidement (c'est ton dû), tue le cadrage victimaire, réoccupe le comité, durcis le first-time-right — et instaure vers le bas le rituel d'évaluation qu'on ne t'a pas donné. <b>Construis et présente ce dossier au bilan. Cette semaine.</b></p>
-    </div>
-
-    <div class="footline"><span>Matanga RADAR — Dossier RH confidentiel</span><span>Alexandre · 01</span></div>
-  </section>
-
-  <!-- ════════════════════════ SERGE ════════════════════════ -->
-  <section class="page" id="serge">
-    <div class="kicker">02 · N-1 · Directeur Artistique</div>
-    <div class="phead">
-      <div class="avatar" style="background:linear-gradient(150deg,#6E8BFF,#2D3B8F);color:#fff">S</div>
-      <div class="meta">
-        <h1 class="title" style="margin:0 0 2px">Serge</h1>
-        <div class="role"><span class="chip lv">N-1 · DA</span><span class="chip craft">Motion design</span><span class="chip">Nocturne / async</span><span class="chip">Revenu avril 2026</span></div>
-      </div>
-      <span class="statepill s-amber">Retour fort · scope à verrouiller</span>
-    </div>
-    <div class="verdict">Le craftsman nocturne, fiable et systémique. <strong>Pas un problème de livraison</strong> — il livre sans qu'on le pousse. Mais il est chargé et en glissement d'échéances <em>maintenant</em>, et il réclame lui-même un process.</div>
-    <p class="muted" style="font-size:12.5px;margin:8px 0 0">📋 <b>Charte</b> — Motion Designer &amp; Designer 3 (animation/montage, templates, QC). <b>KPI</b> : files rendus, VTR, retours techniques · règle « ne promet pas de rendus sans planning ». Le « 8 vs 12 jeudis », c'est exactement cette règle enfreinte — des deux côtés.</p>
-
-    <div class="stats">
-      <div class="stat"><div class="n">893</div><div class="k">volume 1:1</div></div>
-      <div class="stat bad"><div class="n">23<small>%</small></div><div class="k">il initie · relation que tu tractes</div></div>
-      <div class="stat good"><div class="n">5</div><div class="k">relances en 18 mois</div></div>
-      <div class="stat"><div class="n">13</div><div class="k">bouclés RADAR</div></div>
-      <div class="stat hot"><div class="n">19</div><div class="k">actifs · charge la + lourde</div></div>
-      <div class="stat bad"><div class="n">9</div><div class="k">en retard RADAR ⚠</div></div>
-    </div>
-
-    <div class="cols">
-      <div class="block plus">
-        <h3>✅ Points forts</h3>
-        <ul class="tight">
-          <li><b>Fiabilité senior</b> : 5 relances en 18 mois. Il livre sans qu'on le pousse — une preuve à charge positive pour ton bilan.</li>
-          <li><b>Esprit système / handoff</b> : il <em>réclame</em> de la délégation — « qu'on s'organise pour ne pas faire deux fois le même travail », « que les gars puissent prendre la main dans le workflow ».</li>
-          <li><b>Retour sans figuration</b> : sa plus forte activité soutenue est <em>post-retour</em> (avril 75 / mai 60 / juin 95 msgs). Il n'est pas rentré pour faire de la décoration.</li>
-          <li><b>Retour cordial, zéro acrimonie</b> après ~6 mois dehors.</li>
-        </ul>
-      </div>
-      <div class="block warn">
-        <h3>⚠️ Critiques &amp; risques</h3>
-        <ul class="tight">
-          <li><b>Glissement d'échéances actuel</b> : <span class="data">9</span> livrables actifs au-delà de la deadline au RADAR, sur <span class="data">19</span> actifs et 17 échéances en juin. À vérifier (hygiène des dates) mais cohérent avec un désalignement de charge.</li>
-          <li><b>Désalignement de scope déjà constaté</b> : toi « 12 jeudis », lui « 8 vidéos ». Ça ne doit plus jamais arriver.</li>
-          <li><b>Réactif, pas moteur</b> en 1:1 (il initie 23 %, tu portes 60,5 %).</li>
-          <li><b>Friction post-retour</b> : un souci d'animatique relancé par Lydienne, escaladé jusqu'à Nelson (13/04).</li>
+          <li><b>[Risque à documenter]</b> — distinguer un problème structurel (process, cadrage) d'un problème individuel.</li>
+          <li><b>[Risque à documenter]</b> — vérifier avec la personne avant d'en faire un reproche.</li>
+          <li><b>[Risque à documenter]</b> — nommer clairement, sans mélanger avec le registre confidentiel ci-dessous.</li>
         </ul>
       </div>
     </div>
 
     <h2 class="sec"><span class="ic">🎛️</span> Cadence de pilotage</h2>
     <div class="cadence">
-      <div class="kk">Rythme</div><div class="vv"><b>Épouse son rythme nocturne.</b> Tue le réflexe « point quotidien diurne de 13h ». Il l'a refusé en clair (« Pas tous les jours ») → 1 checkpoint hebdo le soir (mercredi 20h) + statut écrit async qui survit à sa nuit.</div>
-      <div class="kk">Levier</div><div class="vv"><b>Co-design du process de handoff qu'il quémande.</b> Donne-lui le système de délégation qu'il réclame — c'est aussi ta pièce « source de vérité » pour le bilan.</div>
-      <div class="kk">Verrou</div><div class="vv"><b>Scope par écrit, systématiquement</b> (un tracker de livrables partagé). Délègue end-to-end, contrôle aux jalons — pas tous les jours. C'est un DA, il porte l'autonomie.</div>
-      <div class="kk">Qui s'adapte</div><div class="vv"><b>Toi</b> — sur le rythme. Lui s'adapte sur la traçabilité du scope.</div>
+      <div class="kk">Rythme</div><div class="vv">Cadence de suivi adaptée au profil (quotidienne, hebdomadaire, à la demande…) — pas une cadence uniforme imposée à toute l'équipe.</div>
+      <div class="kk">Levier</div><div class="vv">Ce qui débloque concrètement cette personne (délégation, clarté de tâche, reconnaissance, autonomie…).</div>
+      <div class="kk">Verrou</div><div class="vv">Le garde-fou à mettre en place pour éviter que le problème identifié se reproduise.</div>
+      <div class="kk">Qui s'adapte</div><div class="vv">Nommer explicitement qui doit ajuster son comportement — le/la responsable, la personne, ou les deux.</div>
     </div>
 
     <div class="owner-only">
       <span class="seal">🔒 Pour toi seul</span>
-      <h3>Note de gestion</h3>
-      <p>Le trou 1:1 du 27/12/2025 → 08/04/2026 (102 j) est la fenêtre de sa <b>démission</b>, visible dans la donnée. Il est revenu et il sur-livre — capitalise dessus, ne le re-fragilise pas en lui imposant ta cadence diurne. Juin est dur pour lui aussi (« c'est le ndem chez lui aussi », dixit Stef) sur fond de tension cash agence : les 9 « en retard » sont à lire à cette lumière avant d'en faire un reproche. <b>Vérifie les deadlines avec lui au prochain mercredi 20h plutôt que de présumer un slip.</b></p>
+      <h3>Notes confidentielles</h3>
+      <p>Espace réservé aux éléments sensibles (santé, situation personnelle, tensions internes, lecture politique). Jamais partagé tel quel : masqué automatiquement en <b>Mode partage</b>, et à retirer avant toute transmission à la personne concernée.</p>
     </div>
 
-    <div class="footline"><span>Matanga RADAR — Dossier RH confidentiel</span><span>Serge · 02</span></div>
+    <div class="footline"><span>Radar — Dossier RH confidentiel</span><span>Exemple · 01</span></div>
   </section>
 
-  <!-- ════════════════════════ STEF ════════════════════════ -->
-  <section class="page" id="stef">
-    <div class="kicker">03 · N-1 · Directeur Artistique</div>
-    <div class="phead">
-      <div class="avatar" style="background:linear-gradient(150deg,#39C6A0,#0E7A63);color:#fff">S</div>
-      <div class="meta">
-        <h1 class="title" style="margin:0 0 2px">Stef <span class="muted" style="font-size:18px;font-weight:500">— Ondoua Stéphane</span></h1>
-        <div class="role"><span class="chip lv">N-1 · DA</span><span class="chip craft">DA / créa</span><span class="chip">Diurne régulier</span><span class="chip">Le + Nelson-visible</span></div>
-      </div>
-      <span class="statepill s-blue">Creux situationnel</span>
-    </div>
-    <div class="verdict">Ton DA le plus réactif et le plus visible auprès de Nelson. Historiquement <strong>fluide, pas un goulot</strong>. En creux <em>situationnel</em> (santé + trésorerie), pas par désengagement. Ici on traite l'humain d'abord.</div>
-    <p class="muted" style="font-size:12.5px;margin:8px 0 0">📋 <b>Charte</b> — DA <b>suppléant</b> (continuité créa, QA, relève en pic/absence). <b>KPI</b> : stabilité qualité, délai de QA. Son profil fiable/régulier <em>est</em> le rôle ; mais son creux de juin frappe précisément sa valeur de charte — la continuité.</p>
-
-    <div class="stats">
-      <div class="stat"><div class="n">1 420</div><div class="k">volume 1:1</div></div>
-      <div class="stat good"><div class="n">0,9<small>min</small></div><div class="k">latence · très réactif</div></div>
-      <div class="stat good"><div class="n">4</div><div class="k">relances en 18 mois</div></div>
-      <div class="stat hot"><div class="n">7,9<small>%</small></div><div class="k">empreinte groupe · la + forte</div></div>
-      <div class="stat bad"><div class="n">19</div><div class="k">msgs en juin · plancher</div></div>
-      <div class="stat"><div class="n">6</div><div class="k">tâches tracées RADAR</div></div>
-    </div>
-
-    <div class="cols">
-      <div class="block plus">
-        <h3>✅ Points forts</h3>
-        <ul class="tight">
-          <li><b>Le plus réactif</b> (0,9 min) et le plus régulier des trois DA en présence mensuelle.</li>
-          <li><b>Quasi-zéro relance</b> (4 en 18 mois) : fluide, pas un goulot — preuve à charge positive.</li>
-          <li><b>Ton amplificateur vers Nelson</b> : empreinte groupe la plus forte (7,9 %), massivement Nelson-facing (56 réponses vs 11 à toi). Son bon travail remonte au CEO.</li>
-          <li><b>Relation chaleureuse</b>, franche : pas un profil qui manœuvre.</li>
-        </ul>
-      </div>
-      <div class="block warn">
-        <h3>⚠️ Critiques &amp; risques</h3>
-        <ul class="tight">
-          <li><b>Slip de livraison en mai</b> : 28/05 tu dois reprendre la main (« le visuel de la journée mondiale du lait… c'est lundi, nous sommes jeudi… je prends la main »). Concorde avec Vanelle (18/05 : « Stéphane est en retard sur les travaux du boss »).</li>
-          <li><b>Creux de juin marqué</b> : 19 msgs, plancher ; empreinte RADAR mince (6 tâches).</li>
-          <li><b>À double tranchant</b> : le plus Nelson-visible — ses ratés remontent au CEO aussi vite que ses réussites.</li>
-        </ul>
-      </div>
-    </div>
-
-    <h2 class="sec"><span class="ic">🎛️</span> Cadence de pilotage</h2>
-    <div class="cadence">
-      <div class="kk">Rythme</div><div class="vv"><b>Cadence inversée vs Serge.</b> Là, maintenant, un peu <em>plus</em> de check-in proactif (le temps que ça passe) ; en régime normal il est light-touch et doit le rester.</div>
-      <div class="kk">Posture</div><div class="vv"><b>Traite le creux comme situationnel.</b> Un DA habituellement à 4/4 de relance qui slip d'un coup → on check l'humain d'abord, pas la discipline.</div>
-      <div class="kk">Levier</div><div class="vv"><b>Partenariat Nelson-facing.</b> Aligne-toi explicitement avec lui sur ce qui remonte dans le groupe : partenaire, il porte ton département vers le haut ; négligé, il expose ta faiblesse en public. Sa remontée en forme = ta crédibilité départementale.</div>
-      <div class="kk">Qui s'adapte</div><div class="vv"><b>Toi</b> — proactivité temporaire.</div>
-    </div>
-
-    <div class="owner-only">
-      <span class="seal">🔒 Pour toi seul</span>
-      <h3>Confidentiel — humain</h3>
-      <p>Cause du creux = <b>situationnelle, pas caractérielle</b> : épisode de santé (digestif, fin mai) <b>+ trou de trésorerie</b> assumé en privé — « J'ai un bindi pb ce mois, je cafouille 100k… d'ici 2 semaines » (12/06). Juin difficile, partagé avec Serge, sur fond de tension cash agence. Tu partages tes propres galères de prêts avec lui : ce capital de confiance est ton meilleur levier ici. <b>Ne le discipline pas ce mois — couvre-le, et note que ça doit redevenir light-touch en juillet.</b> Ne laisse pas non plus ce creux remonter brut à Nelson : c'est ton DA-vitrine, protège la vitrine le temps que ça passe.</p>
-    </div>
-
-    <div class="footline"><span>Matanga RADAR — Dossier RH confidentiel</span><span>Stef · 03</span></div>
-  </section>
-
-  <!-- ════════════════════════ LUTHER ════════════════════════ -->
-  <section class="page" id="luther">
-    <div class="kicker">04 · N-1 · Vidéaste / 3D (remote)</div>
-    <div class="phead">
-      <div class="avatar" style="background:linear-gradient(150deg,#B06BFF,#6A24B8);color:#fff">L</div>
-      <div class="meta">
-        <h1 class="title" style="margin:0 0 2px">Luther</h1>
-        <div class="role"><span class="chip lv">N-1</span><span class="chip craft">Vidéo + 3D + IA</span><span class="chip">Seul en remote</span><span class="chip">Synchronisable 9h–17h</span></div>
-      </div>
-      <span class="statepill s-amber">Moteur · sous-visible · bloqué par toi</span>
-    </div>
-    <div class="verdict">Ton moteur remote : le plus gros volume, le plus rapide, le plus proactif. Et le plus <strong>invisible</strong>. Le goulot sur sa chaîne, <em>c'est toi</em>. Débloque-le et tu récupères du débit gratuit.</div>
-    <p class="muted" style="font-size:12.5px;margin:8px 0 0">📋 <b>Charte</b> — <b>absent de l'organigramme</b> (la charte v3 ne chartre que Serge en motion). Son rôle vidéo/3D remote n'est même pas formalisé : angle mort de gouvernance qui <em>aggrave</em> son invisibilité. À chartrer (rôle, KPI rendus/VTR, SLA déblocage).</p>
-
-    <div class="stats">
-      <div class="stat hot"><div class="n">1 855</div><div class="k">volume 1:1 · le + élevé</div></div>
-      <div class="stat hot"><div class="n">55<small>%</small></div><div class="k">il initie · le + proactif</div></div>
-      <div class="stat good"><div class="n">0,7<small>min</small></div><div class="k">latence · le + rapide</div></div>
-      <div class="stat"><div class="n">109</div><div class="k">docs envoyés en 1:1</div></div>
-      <div class="stat bad"><div class="n">8</div><div class="k">tâches tracées RADAR seulement</div></div>
-      <div class="stat bad"><div class="n">14</div><div class="k">fois où il te presse (« je t'attends »)</div></div>
-    </div>
-
-    <div class="cols">
-      <div class="block plus">
-        <h3>✅ Points forts</h3>
-        <ul class="tight">
-          <li><b>Le collaborateur le plus actif</b>, point : 1 855 msgs, 0,7 min de latence, initie 55 %. Pic à 374 msgs en janvier 2026.</li>
-          <li><b>Synchronisable</b> malgré le remote (cœur 9h–17h) : pas besoin de le gérer en pur async.</li>
-          <li><b>Innovateur sur son craft</b> : « je développe ce style où je mélange IA 3D 2D à travers transitions et mouvements de caméra », « 3D + IA, shots de 10s ». Asset différenciant à exploiter.</li>
-          <li><b>Sur-livre dès qu'on lui donne une scène.</b></li>
-        </ul>
-      </div>
-      <div class="block warn">
-        <h3>⚠️ Critiques &amp; risques</h3>
-        <ul class="tight">
-          <li><b>Invisible — prouvé par tes données</b> : ton n°1 en volume n'a que <span class="data">8</span> tâches tracées au RADAR (3 actives, 3 gelées). Son output réel vit sur Drive, hors du registre que Nelson/Derick lisent.</li>
-          <li><b>Bloqué en attente de TOI</b> : ses 14 relances = « je t'attends pour avancer » (« tu peux me faire un update ? », « l'étiquette de Florida est dispo ? », « mieux que j'envoie après l'update de la 3D »).</li>
-          <li><b>Le coût par ricochet</b> : « Quand tu ne m'updates pas, Derick conclut que je ne travaille pas » (22/06, dit par toi). Son invisibilité te coûte à toi.</li>
-        </ul>
-      </div>
-    </div>
-
-    <h2 class="sec"><span class="ic">🎛️</span> Cadence de pilotage</h2>
-    <div class="cadence">
-      <div class="kk">Rythme</div><div class="vv"><b>Sync, heures business.</b> Coordonne-le en synchrone (ses horaires le permettent) — pas comme un pur async.</div>
-      <div class="kk">Débloque</div><div class="vv"><b>Bat­che tes handoffs d'assets / 3D / briefs.</b> La moitié de ses relances, c'est ton retard. Réduire ton temps de réponse = débit gratuit récupéré.</div>
-      <div class="kk">Visibilité</div><div class="vv"><b>Répare la visibilité, pas le travail.</b> Rituel async léger : une ligne + lien à chaque livraison, dans un canal que <em>tu</em> contrôles (ou tu logues son output au tracker). C'est exactement le problème du 22/06 — et ça te protège au bilan.</div>
-      <div class="kk">Vitrine</div><div class="vv"><b>Donne-lui une exécution vitrine IA/3D</b> (La Pasta First ? le concept « Doré des grands jours » du 20/06). Le remote proactif explose quand on lui donne une scène.</div>
-      <div class="kk">Qui s'adapte</div><div class="vv"><b>Toi</b> — tes handoffs sont son goulot.</div>
-    </div>
-
-    <div class="owner-only">
-      <span class="seal">🔒 Pour toi seul</span>
-      <h3>Note de gestion</h3>
-      <p>Luther est ton meilleur cas de ROI managérial immédiat : aucun problème d'attitude, aucun problème de débit — <b>uniquement ton temps de réponse et un trou de traçabilité</b>. Tu peux transformer sa perception interne (« il ne bosse pas ») en l'inverse en une semaine, juste en logant ses livraisons. C'est aussi ta meilleure démonstration concrète au bilan : « voici un homme à 1 855 échanges et 8 tâches tracées — voilà pourquoi mon registre vous trompait, et voici corrigé. »</p>
-    </div>
-
-    <div class="footline"><span>Matanga RADAR — Dossier RH confidentiel</span><span>Luther · 04</span></div>
-  </section>
-
-  <!-- ════════════════════════ PAPIN ════════════════════════ -->
-  <section class="page" id="papin">
-    <div class="kicker">05 · N-2 · Designer</div>
-    <div class="phead">
-      <div class="avatar" style="background:linear-gradient(150deg,#FFB13D,#B5710A);color:#2A1505">P</div>
-      <div class="meta">
-        <h1 class="title" style="margin:0 0 2px">Papin <span class="muted" style="font-size:18px;font-weight:500">— Loïc</span></h1>
-        <div class="role"><span class="chip lv">N-2</span><span class="chip craft">Design junior</span><span class="chip">1:1 depuis 2023</span><span class="chip">Planning ← Lydienne</span></div>
-      </div>
-      <span class="statepill s-blue">Stable · à cadrer</span>
-    </div>
-    <div class="verdict">L'exécutant fidèle qui ne s'auto-organise pas — il te l'a dit en clair : <em>« Est-ce que c'est moi qui planifie boss ? »</em>. Le levier n'est pas la pression, c'est la <strong>clarté de tâche</strong> — et reprendre son planning à Lydienne.</div>
-    <p class="muted" style="font-size:12.5px;margin:8px 0 0">📋 <b>Charte</b> — Designer 1 (déclinaisons, prépresse). <b>KPI</b> : refus imprimeur = 0, productivité · règle « ne modifie pas la DA sans Alex ». « Ne s'auto-planifie pas » est <em>conforme</em> à la charte : l'exécutant exécute — le plan, c'est TON artefact, pas son manque.</p>
-
-    <div class="stats">
-      <div class="stat"><div class="n">1 545</div><div class="k">volume 1:1</div></div>
-      <div class="stat bad"><div class="n">16</div><div class="k">relances · le + relancé de l'équipe</div></div>
-      <div class="stat good"><div class="n">1,2<small>min</small></div><div class="k">latence</div></div>
-      <div class="stat good"><div class="n">32</div><div class="k">bouclés RADAR · 0 en retard</div></div>
-      <div class="stat bad"><div class="n">12</div><div class="k">gelés RADAR · travail en limbe</div></div>
-      <div class="stat"><div class="n">61<small>%</small></div><div class="k">de ses préavis non conformes</div></div>
-    </div>
-
-    <div class="cols">
-      <div class="block plus">
-        <h3>✅ Points forts</h3>
-        <ul class="tight">
-          <li><b>Fidèle et ancien</b> : 1:1 depuis 2023, pré-Matanga. Relation longue, chaleureuse, capital de confiance réel.</li>
-          <li><b>Réactif</b> (1,2 min) et <b>bon débit tracé</b> : 32 bouclés, 0 en retard.</li>
-          <li><b>Absences majoritairement défendables</b> : sur 25 événements (2023→2026), la cause dominante est la <b>santé</b> (12/25), à impact opérationnel le plus souvent faible.</li>
-          <li><b>Légère amélioration</b> sur la durée : ~1,5 événement/mois en 2025 → ~1,2 en 2026.</li>
-        </ul>
-      </div>
-      <div class="block warn">
-        <h3>⚠️ Critiques &amp; risques</h3>
-        <ul class="tight">
-          <li><b>Ne s'auto-planifie pas</b> (23/06 : « Est-ce que c'est moi qui planifie boss ? »). Il attend le plan — réalité d'un N-2 exécutant.</li>
-          <li><b>Son planning vient de Lydienne</b>, pas de toi (il lui répond 27× / Nelson 26× / toi 13×). Le 16/06 tu <em>relayais</em> même sa relance. Tu es courroie, pas planificateur.</li>
-          <li><b>12 dossiers gelés</b> au RADAR — beaucoup de son travail finit en limbe faute de cadrage/suivi.</li>
-          <li><b>Discipline de préavis</b> : <span class="data">61 %</span> de préavis non conformes (tardif/absent) ; 5 absences sans motif donné.</li>
-        </ul>
-      </div>
-    </div>
-
-    <h2 class="sec"><span class="ic">🎛️</span> Cadence de pilotage</h2>
-    <div class="cadence">
-      <div class="kk">Rythme</div><div class="vv"><b>Assignation explicite, quotidienne.</b> Il ne démarrera pas seul — il te l'a dit. Plan écrit, sans ambiguïté, jour par jour ou semaine par semaine.</div>
-      <div class="kk">Autorité</div><div class="vv"><b>Reprends son planning à Lydienne.</b> Aujourd'hui elle pilote la charge de ton junior : c'est une fuite d'autorité. Le tracker te le rend.</div>
-      <div class="kk">Levier</div><div class="vv"><b>Clarté de tâche, pas pression.</b> Relation longue et chaleureuse → la pression abîme, la clarté débloque. Fixe une règle de préavis simple (signaler avant 8h30) et tiens-la.</div>
-      <div class="kk">Qui s'adapte</div><div class="vv"><b>Toi</b> — tu planifies pour lui.</div>
-    </div>
-
-    <div class="owner-only">
-      <span class="seal">🔒 Pour toi seul</span>
-      <h3>Confidentiel — humain &amp; lecture</h3>
-      <p>Le registre d'absences est <b>WhatsApp-only</b> = borne basse (les absences signalées par appel/oral n'y sont pas). Lis-le comme une tendance, pas comme un verdict. Le pattern réel : <b>fragilité de santé authentique</b> (récidives de rein, troubles digestifs, tension) + <b>précarité</b> ponctuelle (« hyper fauché », 24/02/2025) — pas un profil qui se moque de toi. Aujourd'hui (23/06) il est absent en remote (« je ne vais pas très bien », préavis correct à 06:53). Le vrai sujet de management n'est <b>pas</b> la discipline dure, c'est que <b>tu ne lui donnes pas le plan</b> : ses 12 gelés et ses 16 relances sont d'abord le miroir de ton propre déficit de cadrage. Corrige-toi avant de le corriger.</p>
-    </div>
-
-    <div class="footline"><span>Matanga RADAR — Dossier RH confidentiel</span><span>Papin · 05</span></div>
-  </section>
-
-  <!-- ════════════════════════ WILLIAM ════════════════════════ -->
-  <section class="page" id="william">
-    <div class="kicker">06 · N-2 · Production / PLV / print</div>
-    <div class="phead">
-      <div class="avatar" style="background:linear-gradient(150deg,#E2533D,#8F2410);color:#fff">W</div>
-      <div class="meta">
-        <h1 class="title" style="margin:0 0 2px">William <span class="muted" style="font-size:18px;font-weight:500">— Kwin Mandengue</span></h1>
-        <div class="role"><span class="chip lv">N-2</span><span class="chip craft">Production · PLV · print · goodies</span><span class="chip">Vit au téléphone</span></div>
-      </div>
-      <span class="statepill s-amber">Productif · à discipliner &amp; capturer</span>
-    </div>
-    <div class="verdict">Surprise des données : <strong>ton plus gros livreur</strong> (55 bouclés, n°1 de l'équipe). Son problème n'est ni le talent ni l'output — c'est qu'il est <strong>illisible</strong> (voix) et porteur de <strong>risques de discipline</strong> réels mais concentrés.</div>
-    <p class="muted" style="font-size:12.5px;margin:8px 0 0">📋 <b>Charte</b> — Designer 2 (déclinaisons, templates, prépresse). <b>KPI</b> : refus imprimeur = 0, productivité. Ses 55 bouclés = KPI productivité <em>tenu</em> ; l'angle mort est la discipline et la trace écrite, pas le rendement.</p>
-
-    <div class="stats">
-      <div class="stat good"><div class="n">55</div><div class="k">bouclés RADAR · n°1 équipe</div></div>
-      <div class="stat good"><div class="n">0</div><div class="k">en retard RADAR</div></div>
-      <div class="stat hot"><div class="n">138</div><div class="k">appels · coordonne par la voix</div></div>
-      <div class="stat bad"><div class="n">1 624</div><div class="k">mots écrits · densité la + faible</div></div>
-      <div class="stat bad"><div class="n">38<small>%</small></div><div class="k">de ses msgs groupe ignorés · le + ignoré</div></div>
-      <div class="stat"><div class="n">8</div><div class="k">incidents présence (écrits, 14 mois)</div></div>
-    </div>
-
-    <div class="cols">
-      <div class="block plus">
-        <h3>✅ Points forts</h3>
-        <ul class="tight">
-          <li><b>Le plus gros débit livré de l'équipe</b> : 55 bouclés, 0 en retard au RADAR. La lecture « N-2 à problème » est à nuancer fort — ses livrables, eux, sortent.</li>
-          <li><b>Spécialiste production réel</b> : mockup cadre-clic, stickers, dépliant 3 volets, rayon-stop, t-shirt, casquette, marquage Delys, mini-présentoir… matériel point-de-vente complet.</li>
-          <li><b>Coordinateur haute-densité</b> par la voix (138 appels + 37 audios) : du suivi terrain qui ne passe pas par l'écrit mais qui existe.</li>
-          <li><b>Le seul de ton équipe qui s'oriente vers TOI</b> dans le groupe : ton point d'ancrage downward le plus naturel.</li>
-        </ul>
-      </div>
-      <div class="block warn">
-        <h3>⚠️ Critiques &amp; risques</h3>
-        <ul class="tight">
-          <li><b>Illisible</b> : densité écrite la plus faible, latence écrite 7,7 min, 38 % de ses messages groupe sans réponse. Ses <em>livrables</em> sont tracés, mais sa <em>coordination</em> (décisions prises au téléphone) ne l'est pas → Nelson/Derick le sous-évaluent.</li>
-          <li><b>Défendabilité de présence à 50/50</b> : sur 8 incidents écrits, 4 forts (santé soi/famille) mais <b>4 faibles</b> — réveil tardif (« Moi je dors encore chef »), disparition pour cours de conduite sur temps de travail, retard le jour même de l'évaluation (02/01/2026).</li>
-          <li><b>Drapeau rouge structurel</b> : activité parallèle déjà recadrée (« on a viré des prédécesseurs à cause de ça… c'est pour ça que les contenus sortent en retard »).</li>
-          <li><b>Dépendance bureau</b> : pas d'outil à domicile → zéro production possible hors site.</li>
-        </ul>
-      </div>
-    </div>
-
-    <h2 class="sec"><span class="ic">🎛️</span> Cadence de pilotage</h2>
-    <div class="cadence">
-      <div class="kk">Capture</div><div class="vv"><b>Voice-to-log.</b> Après chaque appel décisif, une ligne au tracker (toi ou lui). Sinon son output de coordination n'existe nulle part par écrit — donc « n'existe pas » pour Nelson/Derick.</div>
-      <div class="kk">Trace</div><div class="vv"><b>Trace écrite minimale par livrable PLV</b> (lien Drive + statut), exactement comme pour Luther.</div>
-      <div class="kk">Ancrage</div><div class="vv"><b>Il s'oriente déjà vers toi</b> — capitalise : fais-en ton relais downward dans le groupe.</div>
-      <div class="kk">Qui s'adapte</div><div class="vv"><b>Toi</b> (tu captures la voix) — <b>et lui</b> sur la discipline : c'est le seul profil où l'axe disciplinaire est aussi de son côté.</div>
-    </div>
-
-    <div class="owner-only">
-      <span class="seal">🔒 Pour toi seul</span>
-      <h3>Lecture-risque — le seul dossier à double tranchant</h3>
-      <p>Ne flatte pas la donnée pour toi-même : <b>William est ton N-2 à plus haut risque de management</b>, pas Papin. Là où Papin manque surtout de <em>ton</em> cadrage (santé + précarité, défendable), William cumule des signaux <b>de son côté</b> : discipline (réveil tardif, disparition pour cours de conduite), et surtout <b>l'activité parallèle</b> que tu as toi-même reliée explicitement aux retards de livrables et à un précédent de licenciement. Garde-le — son débit (55) et son ancrage vers toi sont précieux — mais <b>nomme la discipline clairement</b> et capture sa voix : sa productivité réelle est aujourd'hui ta meilleure défense pour lui, et son invisibilité écrite, son plus grand danger. Si tu dois protéger quelqu'un par la donnée au bilan, c'est lui : « 55 livrables, 0 retard » répond d'avance à un « il ne travaille pas ».</p>
-    </div>
-
-    <div class="footline"><span>Matanga RADAR — Dossier RH confidentiel</span><span>William · 06</span></div>
-  </section>
 
   <!-- ════════════════════════ MÉTHODE & LIMITES ════════════════════════ -->
   <section class="page" id="methodo">
@@ -773,36 +429,36 @@ body.sharing .share-hidden-note{display:inline-flex!important}
 
     <h2 class="sec"><span class="ic">📥</span> Sources</h2>
     <ul class="tight">
-      <li><b>7 canaux d'échange</b> (1:1 Derick ×2, groupe MATANGA CREATIVE, 1:1 Vanelle, 1:1 Serge/Stef/Luther/Papin/William) — ≈ 12 850 messages utiles hors système.</li>
-      <li><b>2 registres de présence</b> (William 14/04/2025→18/06/2026 ; Papin 08/2023→23/06/2026) — traces écrites WhatsApp uniquement.</li>
-      <li><b>RADAR delivery</b> — <span class="data">INDEX.csv</span>, 320 lignes hors doublons : statut, deadline, responsable, au 23/06/2026.</li>
-      <li><b>Charte ADVE (Processus intégral v3)</b> — rôles, RACI, KPI, gates &amp; sanctions : sert de référentiel pour grader chacun contre son <em>rôle défini</em>, pas seulement son comportement.</li>
-      <li><b>Documents fin-2025</b> (Bilan 2025, Dossier de mise au point) — <b>rédigés dans un état de ressenti assumé</b> par Alexandre : lus comme <em>symptôme + grief partiellement légitime</em>, jamais comme verdict objectif sur l'équipe.</li>
+      <li><b>Canaux d'échange</b> (1:1 + groupes internes) — volume de messages utile pour lire les dynamiques de communication.</li>
+      <li><b>Registres de présence</b> — traces écrites disponibles (déclaratif, pas exhaustif).</li>
+      <li><b>Export Radar (delivery)</b> — statut, deadline, responsable, sur la période du bilan.</li>
+      <li><b>Charte de rôles de l'équipe</b> — rôles, RACI, KPI : sert de référentiel pour évaluer chacun contre son <em>rôle défini</em>, pas seulement son comportement.</li>
+      <li><b>Bilans précédents</b> — à lire comme <em>contexte</em>, jamais comme verdict objectif sur l'équipe.</li>
     </ul>
 
     <h2 class="sec"><span class="ic">⚠️</span> Limites structurelles (décisives)</h2>
     <div class="cols">
       <div class="block">
         <ul class="tight">
-          <li><b>Corpus Alexandre-centré</b> : lecture fiable des dyades toi↔X et de l'empreinte groupe ; <b>aucun accès aux canaux X↔Y directs</b>. On mesure ta relation à chacun, pas leur vie hors de toi.</li>
-          <li><b>Registres de présence = borne basse</b> : WhatsApp seulement. Les absences signalées par appel, Slack ou à l'oral n'y figurent pas. Un % d'incidents n'est pas un % d'absentéisme réel.</li>
+          <li><b>Corpus centré sur le point de vue du responsable</b> : lecture fiable des dyades responsable↔membre et de l'empreinte groupe ; pas d'accès aux canaux entre membres. On mesure la relation à chacun, pas sa vie hors de ce périmètre.</li>
+          <li><b>Registres de présence = borne basse</b> : les absences signalées par appel ou à l'oral n'y figurent pas forcément. Un % d'incidents n'est pas un % d'absentéisme réel.</li>
         </ul>
       </div>
       <div class="block">
         <ul class="tight">
-          <li><b>Le RADAR sous-capture par construction</b> exactement ce que ces fiches dénoncent : l'output Drive de Luther et la coordination-voix de William. « 8 tâches » ou « 6 tâches » ne veut pas dire « peu de travail » — ça veut dire « peu tracé ».</li>
+          <li><b>Le tracker sous-capture par construction</b> certains modes de travail : output déposé hors registre (drive), coordination orale. Un faible nombre de tâches tracées ne veut pas dire « peu de travail » — ça veut dire « peu tracé ».</li>
           <li><b>« En retard / gelé »</b> dépend de l'hygiène des deadlines dans le tracker. À <b>vérifier avec la personne</b> avant d'en faire un reproche, jamais l'inverse.</li>
         </ul>
       </div>
     </div>
 
     <h2 class="sec"><span class="ic">🧭</span> Ce que ce dossier N'EST PAS</h2>
-    <p>Ce n'est pas une évaluation de la <b>qualité créative</b> (aucun scoring d'output artistique, aucune satisfaction client mesurée ici) ni un dossier disciplinaire. C'est une <b>lecture comportementale et de livraison à partir de traces</b> : comment chacun communique, initie, livre et se rend visible — et comment <em>toi</em> tu dois plier ta cadence en conséquence. La donnée éclaire la décision ; elle ne la prend pas à ta place.</p>
-    <p><b>Biais assumé &amp; corrigé.</b> Tu as toi-même signalé que ta lecture de fin 2025 était colorée par ton ressenti. Ce dossier en tient compte de deux façons : (1) les griefs structurels y sont validés <em>quand ils sont documentés</em> (0 éval, équipement, salaire) ; (2) la lecture de l'équipe s'appuie sur la <b>donnée 2026</b> (comportement + delivery RADAR), pas sur le récit de fin 2025 — précisément pour neutraliser le biais. Quand les deux divergent, c'est la donnée qui tranche.</p>
+    <p>Ce n'est pas une évaluation de la <b>qualité créative</b> (aucun scoring d'output artistique, aucune satisfaction client mesurée ici) ni un dossier disciplinaire. C'est une <b>lecture comportementale et de livraison à partir de traces</b> : comment chacun communique, initie, livre et se rend visible — et comment le/la responsable doit adapter sa cadence en conséquence. La donnée éclaire la décision ; elle ne la prend pas à la place du management.</p>
+    <p><b>Biais à surveiller.</b> Une lecture rédigée « à chaud » est souvent colorée par le ressenti. Ce gabarit encourage à distinguer (1) les griefs structurels documentés (process, outillage, contractuel) de (2) l'interprétation relationnelle — et à trancher, en cas de divergence, en faveur de la donnée.</p>
 
-    <div class="callout"><b>Règle d'usage.</b> Les blocs <b>« 🔒 Pour toi seul »</b> (santé, trésorerie, politique interne, lecture-risque) ne quittent jamais ce fichier. Pour un 1:1, active <b>Mode partage</b> (en haut), imprime la fiche concernée : il ne reste que data clés + points forts + axes — montrable sans dommage.</div>
+    <div class="callout"><b>Règle d'usage.</b> Les blocs <b>« 🔒 Pour toi seul »</b> (santé, situation personnelle, politique interne, lecture-risque) ne doivent jamais quitter ce fichier. Pour un 1:1, active <b>Mode partage</b> (en haut), imprime la fiche concernée : il ne reste que data clés + points forts + axes — montrable sans dommage.</div>
 
-    <div class="footline"><span>Matanga RADAR — Dossier RH confidentiel · arrêté au 23/06/2026</span><span>Méthode &amp; limites</span></div>
+    <div class="footline"><span>Radar — Dossier RH confidentiel · gabarit</span><span>Méthode &amp; limites</span></div>
   </section>
 
   </main>

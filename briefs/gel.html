@@ -2,9 +2,9 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<script>try{if(localStorage.getItem("matanga:theme")==="dark")document.documentElement.dataset.theme="dark";}catch(e){}</script>
+<script>try{if(localStorage.getItem("radar:theme")==="dark")document.documentElement.dataset.theme="dark";}catch(e){}</script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Matanga — Tâches gelées (Frozen)</title>
+<title>Radar — Tâches gelées (Frozen)</title>
 <link rel="stylesheet" href="colors_and_type.css?v=20260622">
 <style>
   :root{
@@ -91,7 +91,7 @@
 const $ = s => document.querySelector(s);
 const esc = s => (s==null?"":String(s)).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const clientCol = window.clientVar;
-const normResp = r => (r||"").replace(/Dérick/g,"Derick").trim();
+const normResp = r => (r||"").trim();
 const isFrozen = m => m.statut==="Frozen" || m.statut==="Gelé";
 
 let ROWS = [], BYNDEG = {};

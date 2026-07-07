@@ -2,9 +2,9 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<script>try{if(localStorage.getItem("matanga:theme")==="dark")document.documentElement.dataset.theme="dark";}catch(e){}</script>
+<script>try{if(localStorage.getItem("radar:theme")==="dark")document.documentElement.dataset.theme="dark";}catch(e){}</script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Matanga — Faits</title>
+<title>Radar — Faits</title>
 <link rel="stylesheet" href="colors_and_type.css?v=20260630">
 <style>
   :root{--c-cad:#FF6A14;--c-frc:#2D6BD4;--c-eco:#1F9D63;--c-bel:#E23D2E;--c-nsi:#9A3F57;--c-sof:#8F3208;--c-other:#9A8F80;}
@@ -111,7 +111,7 @@ function render(){
     const arr=byDay[d].sort((x,y)=>(x.ndeg||"").localeCompare(y.ndeg||"",undefined,{numeric:true}));
     html+=`<div class="day"><h2>${esc(d===dStr(TODAY)?"Aujourd'hui":lbl)}</h2><span class="gl"></span><span class="n">${arr.length}</span></div><div class="rows">`;
     html+=arr.map(m=>{ const sub=[m.marque,m.client].filter(Boolean).join(" · ");
-      const who=(!state.resp&&m.responsable)?`<span class="who-t">${esc((m.responsable||"").replace(/Dérick/g,"Derick").split(/[\/&]/)[0].trim())}</span>`:"";
+      const who=(!state.resp&&m.responsable)?`<span class="who-t">${esc((m.responsable||"").split(/[\/&]/)[0].trim())}</span>`:"";
       const ot=m.deadline?`<span class="ontime ${onTime(m)?"ok":"late"}">${onTime(m)?"à temps":"en retard"}</span>`:"";
       return `<div class="row" data-nd="${esc(m.ndeg)}">
         <button class="check" data-uncheck="${esc(m.ndeg)}" title="Rouvrir (décocher)"><i data-lucide="check" style="width:14px;height:14px"></i></button>

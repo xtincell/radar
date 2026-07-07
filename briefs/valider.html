@@ -2,9 +2,9 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<script>try{if(localStorage.getItem("matanga:theme")==="dark")document.documentElement.dataset.theme="dark";}catch(e){}</script>
+<script>try{if(localStorage.getItem("radar:theme")==="dark")document.documentElement.dataset.theme="dark";}catch(e){}</script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Matanga — Briefs à valider (Derick)</title>
+<title>Radar — Briefs à valider</title>
 <link rel="stylesheet" href="colors_and_type.css?v=20260622">
 <style>
   :root{
@@ -58,7 +58,7 @@
 
   <div class="head">
     <h1>Briefs <em>à valider</em></h1>
-    <div class="sub">Règle Matanga : aucun projet ne démarre sans un brief client. Quand il manque, il est <b>déduit</b> des livrables / propositions créatives — à toi, Derick, de le <b>valider</b> (il devient alors le brief créa de référence).</div>
+    <div class="sub">Règle : aucun projet ne démarre sans un brief client. Quand il manque, il est <b>déduit</b> des livrables / propositions créatives — à toi de le <b>valider</b> (il devient alors le brief créa de référence).</div>
   </div>
 
   <div class="note" id="note"></div>
@@ -84,7 +84,7 @@
 const $ = s => document.querySelector(s);
 const esc = s => (s==null?"":String(s)).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const clientCol = window.clientVar;
-const normResp = r => (r||"").replace(/Dérick/g,"Derick").trim();
+const normResp = r => (r||"").trim();
 
 let ROWS=[], BYNDEG={};
 const state = { q:"", client:"" };

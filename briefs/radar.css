@@ -1,5 +1,5 @@
 /* ============================================================
-   Matanga RADAR v2 — styles (Dashboard R26)
+   Radar v2 — styles (Dashboard R26)
    Bento command center. Orange / ink / warm paper.
    ============================================================ */
 *{box-sizing:border-box}
@@ -25,19 +25,21 @@ button,input,select{font-family:inherit;color:inherit}
 
 .shell{max-width:1480px;margin:0 auto;padding:22px 28px 80px}
 
-/* client + status color tokens (warm, brand-leaning, harmonious) */
+/* client + status color tokens (warm, brand-leaning, harmonious) — a fixed
+   palette of slots assigned to clients at runtime via window.CLIENT_VAR
+   (populated from app_config in the DB, see supa.js loadConfig). */
 :root{
-  --c-cad:#FF6A14;   /* Cadyst/Panzani — orange (primary) */
-  --c-frc:#2D6BD4;   /* FrieslandCampina — blue */
-  --c-eco:#1F9D63;   /* Ecobank — green */
-  --c-bel:#E23D2E;   /* Bel Group — red */
-  --c-nsi:#9A3F57;   /* NSIA — plum */
-  --c-sof:#8F3208;   /* Sofavin — brown */
-  --c-dan:#3E8FA8;   /* Danone — teal */
-  --c-dlf:#C2440A;   /* Delifood — rust */
-  --c-trx:#5E6B30;   /* TRADEX — olive */
-  --c-flo:#B07A1E;   /* Florida — amber */
-  --c-fok:#7C5026;   /* Fokou — taupe-brown */
+  --c-cad:#FF6A14;   /* slot 1 — orange (primary) */
+  --c-frc:#2D6BD4;   /* slot 2 — blue */
+  --c-eco:#1F9D63;   /* slot 3 — green */
+  --c-bel:#E23D2E;   /* slot 4 — red */
+  --c-nsi:#9A3F57;   /* slot 5 — plum */
+  --c-sof:#8F3208;   /* slot 6 — brown */
+  --c-dan:#3E8FA8;   /* slot 7 — teal */
+  --c-dlf:#C2440A;   /* slot 8 — rust */
+  --c-trx:#5E6B30;   /* slot 9 — olive */
+  --c-flo:#B07A1E;   /* slot 10 — amber */
+  --c-fok:#7C5026;   /* slot 11 — taupe-brown */
   --c-other:#9A8F80; /* others — warm gray */
   --st-cours:#2D6BD4;
   --st-attente:#FF8A3D;

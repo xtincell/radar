@@ -7,4 +7,4 @@ alter table public.briefs
   add column if not exists entre_par text;
 
 comment on column public.briefs.entre_par is
-  'Qui a fait entrer la demande dans le pipe (compte/strat : Vanelle, Derick, Alexandre…), distinct de responsable (exécutant). Alimente le « par qui » du journal des entrées.';
+  'Qui a fait entrer la demande dans le pipe (compte/coordination), distinct de responsable (exécutant). Alimente le « par qui » du journal des entrées.';

@@ -1,6 +1,6 @@
 "use strict";
 /* ============================================================
-   Matanga RADAR — chrome partagé (chrome.js)
+   Radar — chrome partagé (chrome.js)
    UNE seule barre de navigation pour tout le système : marque,
    liens (ordre + état actif identiques partout), chip identité,
    toggle de thème clair/sombre. Tue la racine du problème des
@@ -14,7 +14,7 @@
 (function(){
 
 /* ---- thème : clair par défaut, sombre opt-in, persistant ---- */
-const THEME_KEY = "matanga:theme";
+const THEME_KEY = "radar:theme";
 function getTheme(){ try{ return localStorage.getItem(THEME_KEY)==="dark" ? "dark" : "light"; }catch(e){ return "light"; } }
 function applyTheme(t){
   if(t==="dark") document.documentElement.setAttribute("data-theme","dark");
@@ -273,10 +273,9 @@ function mountBar(host){
       <span class="ic"><i data-lucide="${n.icon||'circle'}" style="width:15px;height:15px"></i></span>${esc(n.label)}</button>`).join("");
   host.innerHTML = `<header class="mtg-bar">
     <a class="mtg-brand" href="radar.html">
-      <svg class="mtg-logo-svg" viewBox="0 0 120 40" width="120" height="40" aria-label="LE RADAR D'Alexandre MATANGA">
-        <text x="0" y="11" font-size="12" font-weight="900" textLength="120" lengthAdjust="spacing" class="l1-2">LE RADAR</text>
-        <text x="0" y="24" font-size="12" font-weight="900" textLength="120" lengthAdjust="spacing" class="l1-2">D'Alexandre</text>
-        <text x="0" y="38" font-size="14" font-weight="900" textLength="120" lengthAdjust="spacing" class="l3">MATANGA</text>
+      <svg class="mtg-logo-svg" viewBox="0 0 120 40" width="120" height="40" aria-label="RADAR">
+        <text x="0" y="18" font-size="14" font-weight="900" textLength="120" lengthAdjust="spacing" class="l1-2">LE</text>
+        <text x="0" y="36" font-size="16" font-weight="900" textLength="120" lengthAdjust="spacing" class="l3">RADAR</text>
       </svg>
       ${sub ? `<span class="mtg-sub">${esc(sub)}</span>` : ""}
     </a>
@@ -310,7 +309,7 @@ function mountFab(){
    opt-in (API Notifications) pour les nouveautés tant qu'un onglet est ouvert.
    Membre : ne voit/notifie que les événements le concernant (scope d'autorité).
    ============================================================ */
-const N_SEEN="matanga:notif:seen", N_PUSH="matanga:notif:push";
+const N_SEEN="radar:notif:seen", N_PUSH="radar:notif:push";
 const N_LAB={created:["🆕","Nouvelle entrée"],status:["🔁","Statut modifié"],reassigned:["👤","Réattribution"],
   deadline:["📅","Échéance modifiée"],frozen:["❄️","Gelé"],unfrozen:["♻️","Réactivé"],
   closed:["📦","Clôturé / livrable"],reopened:["🔓","Rouvert"],deleted:["🗑️","Supprimé"]};
@@ -351,7 +350,7 @@ function nPush(list){
   if(!on||!("Notification"in window)||Notification.permission!=="granted") return;
   const head=list.length===1 ? (nLabel(list[0])[1]+" — "+(list[0].client||list[0].projet||"")) : (list.length+" mouvements sur le pipe");
   const body=list.slice(0,4).map(e=>nLabel(e)[0]+" "+(e.summary||e.projet||"")).join("\n");
-  try{ new Notification("Matanga RADAR — activité", {body:head+"\n"+body, tag:"matanga-activity", renotify:true}); }catch(e){}
+  try{ new Notification("Radar — activité", {body:head+"\n"+body, tag:"radar-activity", renotify:true}); }catch(e){}
 }
 async function notifPoll(initial){
   const prevTop=NOTIFS[0] && NOTIFS[0].at;
@@ -365,7 +364,7 @@ async function enablePush(){
   let perm=Notification.permission;
   if(perm!=="granted") perm=await Notification.requestPermission();
   try{ localStorage.setItem(N_PUSH, perm==="granted"?"1":"0"); }catch(e){}
-  if(perm==="granted"){ try{ new Notification("Matanga RADAR", {body:"Notifications activées ✓"}); }catch(e){} }
+  if(perm==="granted"){ try{ new Notification("Radar", {body:"Notifications activées ✓"}); }catch(e){} }
 }
 function openNotifMenu(anchor){
   closeMenus();
@@ -405,10 +404,9 @@ function mountFooter(){
   if(document.getElementById("mtg-foot")) return;
   const f=document.createElement("footer"); f.className="mtg-foot"; f.id="mtg-foot";
   f.innerHTML=`<div class="brand">
-      <svg class="mtg-logo-svg" viewBox="0 0 120 40" width="120" height="40" aria-label="LE RADAR D'Alexandre MATANGA">
-        <text x="0" y="11" font-size="12" font-weight="900" textLength="120" lengthAdjust="spacing" class="l1-2">LE RADAR</text>
-        <text x="0" y="24" font-size="12" font-weight="900" textLength="120" lengthAdjust="spacing" class="l1-2">D'Alexandre</text>
-        <text x="0" y="38" font-size="14" font-weight="900" textLength="120" lengthAdjust="spacing" class="l3">MATANGA</text>
+      <svg class="mtg-logo-svg" viewBox="0 0 120 40" width="120" height="40" aria-label="RADAR">
+        <text x="0" y="18" font-size="14" font-weight="900" textLength="120" lengthAdjust="spacing" class="l1-2">LE</text>
+        <text x="0" y="36" font-size="16" font-weight="900" textLength="120" lengthAdjust="spacing" class="l3">RADAR</text>
       </svg>
     </div>
     <nav class="feeds" aria-label="Flux d'activité">

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
-<title>Matanga — Todo du jour</title>
+<title>Radar — Todo du jour</title>
 <!--
   Page PUBLIQUE (affichage sans connexion) : todo du jour du département créatif.
   100% autonome — n'importe quel asset derrière le mur Basic Auth (supa.js, chrome.js,
@@ -55,9 +55,9 @@
 <body>
 <div class="wrap">
   <div class="top">
-    <div class="mark">M</div>
+    <div class="mark">R</div>
     <h1>Todo du jour — Département créa</h1>
-    <div class="d"><b id="today">…</b><span>Matanga · tableau public</span></div>
+    <div class="d"><b id="today">…</b><span>Radar · tableau public</span></div>
   </div>
 
   <div id="content"><div class="empty">Chargement…</div></div>
@@ -83,7 +83,7 @@ function rowHTML(r,late){
     '</div><div class="m">'+esc(meta)+'</div></div><span class="tag'+(late?" late":"")+'">'+esc(late?("⚠ "+isoOf(r.deadline)):(r.statut||"—"))+'</span></div>';
 }
 function groupByOwner(list){
-  var g={};list.forEach(function(r){var o=(r.responsable||"—").replace(/Dérick/g,"Derick").trim()||"—";(g[o]=g[o]||[]).push(r);});
+  var g={};list.forEach(function(r){var o=(r.responsable||"—").trim()||"—";(g[o]=g[o]||[]).push(r);});
   return Object.keys(g).sort(function(a,b){return a.localeCompare(b,"fr");}).map(function(o){
     return '<div class="who"><span class="av">'+esc(initial(o))+'</span>'+esc(o)+'</div>'+g[o].map(function(r){return rowHTML(r,false);}).join("");
   }).join("");

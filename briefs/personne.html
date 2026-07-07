@@ -2,9 +2,9 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<script>try{if(localStorage.getItem("matanga:theme")==="dark")document.documentElement.dataset.theme="dark";}catch(e){}</script>
+<script>try{if(localStorage.getItem("radar:theme")==="dark")document.documentElement.dataset.theme="dark";}catch(e){}</script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Matanga — Fiche</title>
+<title>Radar — Fiche</title>
 <link rel="stylesheet" href="colors_and_type.css?v=20260622">
 <style>
   :root{
@@ -119,7 +119,7 @@ const TODAY=new Date(new Date().toDateString());
 const DAY=864e5;
 const DONE_STATUS=new Set(["Envoyé dans Slack","Livré","Livré (cycle)","Validé","Bouclé","Archivé"]);
 const DEAD_STATUS=new Set(["Bouclé","Archivé"]);
-const normResp=r=>(r||"").replace(/Dérick/g,"Derick").trim();
+const normResp=r=>(r||"").trim();
 
 const hasDL=m=>/^\d{4}-\d{2}-\d{2}$/.test(m.deadline||"");
 const effDone=m=>DONE_STATUS.has(m.statut);
@@ -217,7 +217,7 @@ async function renderFiche(nom){
           :`<div class="empty">Aucun commentaire ne mentionne ${esc(nom)} pour l'instant.</div>`);
 
   $("#fiche").innerHTML=head+tasksSect+cmtSect;
-  document.title="Matanga — "+nom;
+  document.title="Radar — "+nom;
   lucideGo();
 }
 

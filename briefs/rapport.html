@@ -2,9 +2,9 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<script>try{if(localStorage.getItem("matanga:theme")==="dark")document.documentElement.dataset.theme="dark";}catch(e){}</script>
+<script>try{if(localStorage.getItem("radar:theme")==="dark")document.documentElement.dataset.theme="dark";}catch(e){}</script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Matanga — Rapport du département</title>
+<title>Radar — Rapport du département</title>
 <link rel="stylesheet" href="colors_and_type.css?v=20260622">
 <style>
   :root{
@@ -265,7 +265,7 @@ const TODAY=new Date(new Date().toDateString());
 const DAY=864e5;
 const ISO=/^\d{4}-\d{2}-\d{2}$/;
 const DEAD=new Set(["Bouclé","Archivé","Frozen","Envoyé dans Slack"]);
-const normResp=r=>(r||"").replace(/Dérick/g,"Derick").trim();
+const normResp=r=>(r||"").trim();
 const STALE_DAYS=14;
 
 // ---- dates ----
@@ -506,7 +506,7 @@ function exportExcel(){
   const k=computeKPIs(scope);
   const wb=XLSX.utils.book_new();
   // Synthèse
-  const syn=[["Rapport département Matanga"],["Généré le",iso(TODAY)],["Périmètre",state.resp||"tout le département"],["Client",state.client||"tous"],["Période",PERIOD_LBL[state.period]],[],
+  const syn=[["Rapport département"],["Généré le",iso(TODAY)],["Périmètre",state.resp||"tout le département"],["Client",state.client||"tous"],["Période",PERIOD_LBL[state.period]],[],
     ["Indicateur","Valeur"],["Projets",k.masters],["Tâches actives",k.active],["En retard",k.late],
     ["Fait sur la période",k.doneInPeriod],["Taux de traitement (%)",k.taux],["Ponctualité (%)",k.ponct==null?"—":k.ponct],
     ["Délai moyen (j)",k.avgLead==null?"—":k.avgLead],["Bloquées par dépendance",k.blocked]];
@@ -525,7 +525,7 @@ function exportExcel(){
     .sort((a,b)=>(a.ndeg||"").localeCompare(b.ndeg||"",undefined,{numeric:true}))
     .forEach(m=>det.push([m.ndeg,m.entree,m.parent,m.projet,m.client,m.marque,m.statut,m.prio,normResp(m.responsable),m.entrePar,recISO(m),m.deadline,closedISO(m),leadDays(m)==null?"":leadDays(m),isLate(m)?"oui":"non",m.dependsOn||""]));
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(det),"Détail");
-  XLSX.writeFile(wb,`rapport-matanga-${iso(TODAY)}.xlsx`);
+  XLSX.writeFile(wb,`rapport-${iso(TODAY)}.xlsx`);
   flash("Rapport Excel généré","ok");
 }
 

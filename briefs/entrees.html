@@ -2,9 +2,9 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<script>try{if(localStorage.getItem("matanga:theme")==="dark")document.documentElement.dataset.theme="dark";}catch(e){}</script>
+<script>try{if(localStorage.getItem("radar:theme")==="dark")document.documentElement.dataset.theme="dark";}catch(e){}</script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Matanga — Entrées dans le pipe</title>
+<title>Radar — Entrées dans le pipe</title>
 <link rel="stylesheet" href="colors_and_type.css?v=20260622">
 <style>
   /* ---- jetons couleur client / statut (alignés sur radar) ---- */
@@ -222,8 +222,8 @@ const yesterdayISO = iso(new Date(TODAY-DAY));
 const weekStartISO = iso(new Date(TODAY-6*DAY));        // 7 derniers jours glissants
 const monthStart = todayISO.slice(0,7);                  // mois calendaire en cours
 
-// normalise le responsable (typo Dérick → Derick)
-function normResp(r){ return (r||"").replace(/Dérick/g,"Derick").trim(); }
+// normalise le responsable
+function normResp(r){ return (r||"").trim(); }
 
 // ---- date d'entrée : YYYY-MM-DD (exacte) | YYYY-MM | YYYY → clé triable + drapeau approx ----
 function dateInfo(m){
@@ -260,7 +260,7 @@ function channel(m){
 const PLACEHOLDER = /r[ée]union|stand\s*by|[àa]\s*programmer|day\s*to\s*day|^ad$/i;
 function cleanPerson(r){ const x=normResp(r); return PLACEHOLDER.test(x)?"":x; }   // neutralise les placeholders
 function demandeur(m){ return (m.entrePar||m.entree_par||"").trim(); }              // qui a fait entrer la demande
-const TEAM=["Alexandre","Loïc Papin","William K. Mandengue","Serge","Vanelle","Lydienne","Ariel","Auriol","Derick","Nelson","Stephane Ondoua","Luther"];
+const TEAM=[];
 function persHTML(cls,label,name){
   const has=!!name;
   return `<span class="pers ${cls}" title="${esc(label)} : ${esc(name||'non renseigné')}">`

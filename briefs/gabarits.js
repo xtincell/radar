@@ -1,7 +1,7 @@
 "use strict";
 /* ============================================================
-   Matanga RADAR — gabarits.js  (MODE 100% LIVE)
-   Le deck « Gabarits Matanga » (gabarits.html) est intégralement
+   Radar — gabarits.js  (MODE 100% LIVE)
+   Le deck « Gabarits » (gabarits.html) est intégralement
    piloté par les données réelles d'une tâche. AUCUNE valeur d'exemple
    n'est conservée : chaque champ affiche la donnée live, et un champ
    vide affiche un placeholder neutre (—), jamais le texte d'exemple.
@@ -227,7 +227,7 @@
     var box = document.createElement("div");
     box.style.cssText = "max-width:640px;margin:12vh auto;padding:36px 40px;background:#FFFFFF;border:1px solid #E6DCCB;"
       + "border-radius:24px;box-shadow:0 24px 60px rgba(40,30,18,.10);text-align:center;font-family:var(--font-sans),'Hanken Grotesk',sans-serif;";
-    box.innerHTML = '<div style="font-family:var(--font-mono),monospace;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#FF6A14;font-weight:700;">Gabarits Matanga · mode live</div>'
+    box.innerHTML = '<div style="font-family:var(--font-mono),monospace;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#FF6A14;font-weight:700;">Gabarits · mode live</div>'
       + '<h1 style="font-family:var(--font-display),\'Familjen Grotesk\',sans-serif;font-weight:600;font-size:30px;letter-spacing:-.02em;margin:12px 0 10px;color:#161310;">'+msg+'</h1>'
       + '<p style="font-size:15px;line-height:1.5;color:#564D42;margin:0 0 20px;">Ce deck se remplit à partir d\'une tâche réelle. Ouvrez-le avec un code de tâche, par exemple :</p>'
       + '<code style="display:inline-block;font-family:var(--font-mono),monospace;font-size:13.5px;color:#C2440A;background:#FFF3EA;border:1px solid #FFD3AE;border-radius:10px;padding:9px 14px;">gabarits.html?code=NSI-002</code>'
@@ -349,7 +349,7 @@
     } catch(e){ console.error("[gabarits] liaison partielle", e); }
     renderCommentsList(norm(m.ndeg));
 
-    document.title = "Matanga — Gabarits · " + norm(m.ndeg) + " · " + norm(m.projet);
+    document.title = "Radar — Gabarits · " + norm(m.ndeg) + " · " + norm(m.projet);
     liveBadge(norm(m.ndeg));
   }
 

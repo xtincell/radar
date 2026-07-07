@@ -2,11 +2,11 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<script>try{if(localStorage.getItem("matanga:theme")==="dark")document.documentElement.dataset.theme="dark";}catch(e){}</script>
+<script>try{if(localStorage.getItem("radar:theme")==="dark")document.documentElement.dataset.theme="dark";}catch(e){}</script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Matanga — Projets</title>
+<title>Radar — Projets</title>
 <!--
-  Dashboard de navigation des briefs Matanga.
+  Dashboard de navigation des briefs.
   Se nourrit DIRECTEMENT des fichiers existants du repo (aucun snapshot figé) :
     • briefs/INDEX.csv          → la liste + les champs de chaque brief
     • briefs/{CAD,ECO,FRC,SOF,CLIENTS-DIVERS}.md → le « brief décodé » détaillé
@@ -345,10 +345,9 @@ a:hover{text-decoration:underline;text-underline-offset:3px}
 <div class="app">
   <aside class="side" id="side">
     <div class="brand">
-      <svg class="mtg-logo-svg" viewBox="0 0 120 40" width="120" height="40" aria-label="LE RADAR D'Alexandre MATANGA">
-        <text x="0" y="11" font-size="12" font-weight="900" textLength="120" lengthAdjust="spacing" class="l1-2">LE RADAR</text>
-        <text x="0" y="24" font-size="12" font-weight="900" textLength="120" lengthAdjust="spacing" class="l1-2">D'Alexandre</text>
-        <text x="0" y="38" font-size="14" font-weight="900" textLength="120" lengthAdjust="spacing" class="l3">MATANGA</text>
+      <svg class="mtg-logo-svg" viewBox="0 0 120 40" width="120" height="40" aria-label="RADAR">
+        <text x="0" y="18" font-size="14" font-weight="900" textLength="120" lengthAdjust="spacing" class="l1-2">LE</text>
+        <text x="0" y="36" font-size="16" font-weight="900" textLength="120" lengthAdjust="spacing" class="l3">RADAR</text>
       </svg>
       <small id="brandcount">…</small>
     </div>
@@ -413,7 +412,6 @@ a:hover{text-decoration:underline;text-underline-offset:3px}
     <div id="content"></div>
 
     <footer class="foot">
-      <span>Copyright Alexandre @ Matanga Agency — 2026</span>
       <span id="footsrc">portefeuille des projets · source Supabase (live) + fiches /briefs</span>
     </footer>
   </main>
@@ -441,14 +439,7 @@ a:hover{text-decoration:underline;text-underline-offset:3px}
 const INDEX_FILE = "INDEX.csv";
 const DETAIL_FILES = ["CAD.md","ECO.md","FRC.md","SOF.md","CLIENTS-DIVERS.md"];
 
-const CLIENT_COLOR = {
-  "FrieslandCampina":"blue","Cadyst/Panzani":"orange","Bel Group":"red","Ecobank":"green",
-  "Fokou Gabon":"yellow","Sofavin/Cap Esterias":"purple","NSIA":"pink","Florida":"brown",
-  "Interne Matanga":"gray","Autre":"gray","Danone":"blue","Delifood":"green","TRADEX SA":"orange",
-  "Institut Français":"purple","ITIE RCA":"red",
-  "Care CIV":"green","Olea":"blue","Payboard":"purple","PAK":"orange","Presynats":"pink",
-  "UCB":"brown","Dr Pierre Somsé":"red","Airtel Tchad":"red","Groupe Arno":"gray"
-};
+const CLIENT_COLOR = {};
 const STATUT_COLOR = {"Reçu":"gray","Décodé":"blue","En cours":"yellow","En attente client":"orange",
   "Envoyé dans Slack":"purple","Livré":"green","Livré (cycle)":"green","Validé":"green","Bloqué":"red","Bouclé":"gray","Frozen":"blue","Archivé":"gray","":"gray"};
 const PRIO_COLOR = {"P0":"red","P1":"orange","P2":"blue","P3":"gray","":"gray"};
@@ -464,11 +455,11 @@ const DONE_STATUS=new Set(["Livré","Livré (cycle)","Validé","Bouclé","Archiv
 const el = s=>document.querySelector(s);
 const esc = s=>(s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 // ===== Suivi local (cases à cocher) =====
-const DONE_KEY="matanga:done:";
+const DONE_KEY="radar:done:";
 const isDone=k=>{ try{ return localStorage.getItem(DONE_KEY+k)==="1"; }catch(e){ return false; } };
 const setDone=(k,v)=>{ try{ v?localStorage.setItem(DONE_KEY+k,"1"):localStorage.removeItem(DONE_KEY+k); }catch(e){} };
 // ===== Shippé (état manuel, localStorage, projets + révisions) =====
-const SHIP_KEY="matanga:ship:";
+const SHIP_KEY="radar:ship:";
 const isShip=k=>{ try{ return localStorage.getItem(SHIP_KEY+k)==="1"; }catch(e){ return false; } };
 const setShip=(k,v)=>{ try{ v?localStorage.setItem(SHIP_KEY+k,"1"):localStorage.removeItem(SHIP_KEY+k); }catch(e){} };
 function clearShips(){ try{ Object.keys(localStorage).filter(k=>k.indexOf(SHIP_KEY)===0).forEach(k=>localStorage.removeItem(k)); }catch(e){} }

@@ -2,9 +2,9 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<script>try{if(localStorage.getItem("matanga:theme")==="dark")document.documentElement.dataset.theme="dark";}catch(e){}</script>
+<script>try{if(localStorage.getItem("radar:theme")==="dark")document.documentElement.dataset.theme="dark";}catch(e){}</script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Matanga — Wiki marques</title>
+<title>Radar — Wiki marques</title>
 <link rel="stylesheet" href="colors_and_type.css?v=20260622">
 <style>
   :root{
@@ -102,18 +102,18 @@ const esc = s => (s==null?"":String(s)).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&
 const $ = id => document.getElementById(id);
 const arr = a => Array.isArray(a)?a:[];
 
-const CLIENT_COLOR={"FrieslandCampina":"--c-frc","Cadyst/Panzani":"--c-cad","Ecobank":"--c-eco","NSIA":"--c-nsi","Sofavin/Cap Esterias":"--c-sof","Bel Group":"--c-bel"};
-const CLIENT_MD={"FrieslandCampina":"FRC.md","Cadyst/Panzani":"CAD.md","Ecobank":"ECO.md","Sofavin/Cap Esterias":"SOF.md","Bel Group":"CLIENTS-DIVERS.md"};
+const CLIENT_COLOR={};
+const CLIENT_MD={};
 const DOCS=[
   {grp:"Références", file:"NOMMAGE.md",       label:"Canon de nommage",  color:"--c-ref"},
   {grp:"Références", file:"REGISTRE.md",      label:"Registre",          color:"--c-ref"},
   {grp:"Références", file:"RECO-LIBRARY.md",  label:"Bibliothèque reco", color:"--c-ref"},
   {grp:"Références", file:"CONSOLIDATION.md", label:"Consolidation",     color:"--c-ref"},
   {grp:"Références", file:"DRIVE-SYNC.md",    label:"Drive — sync",      color:"--c-ref"},
-  {grp:"Marques (fiches .md)", file:"FRC.md", label:"FRC (détaillé)",    color:"--c-frc"},
-  {grp:"Marques (fiches .md)", file:"CAD.md", label:"Cadyst (détaillé)", color:"--c-cad"},
-  {grp:"Marques (fiches .md)", file:"ECO.md", label:"Ecobank (détaillé)",color:"--c-eco"},
-  {grp:"Marques (fiches .md)", file:"SOF.md", label:"Sofavin (détaillé)",color:"--c-sof"},
+  {grp:"Marques (fiches .md)", file:"FRC.md", label:"Marque A (détaillé)",    color:"--c-frc"},
+  {grp:"Marques (fiches .md)", file:"CAD.md", label:"Marque B (détaillé)", color:"--c-cad"},
+  {grp:"Marques (fiches .md)", file:"ECO.md", label:"Marque C (détaillé)",color:"--c-eco"},
+  {grp:"Marques (fiches .md)", file:"SOF.md", label:"Marque D (détaillé)",color:"--c-sof"},
   {grp:"Marques (fiches .md)", file:"CLIENTS-DIVERS.md", label:"Autres clients", color:"--c-other"},
 ];
 let MARKETS=[], CONTACTS=[], CLIENTS=[], CUR="";
@@ -177,7 +177,7 @@ async function renderDoc(file){
   if(window.lucide) window.lucide.createIcons();
 }
 function select(key){
-  CUR=key; try{ localStorage.setItem("matanga:wiki", key); }catch(e){}
+  CUR=key; try{ localStorage.setItem("radar:wiki", key); }catch(e){}
   if(location.hash.slice(1)!==key) history.replaceState(null,"","#"+key);
   document.querySelectorAll(".docnav button").forEach(b=>b.classList.toggle("sel", b.getAttribute("data-key")===key));
   if(key.startsWith("c:")) renderClient(key.slice(2)); else renderDoc(key);
@@ -188,7 +188,7 @@ function select(key){
   try{ MARKETS=await loadMarkets(); CONTACTS=await loadContacts(); }catch(e){ MARKETS=[]; CONTACTS=[]; }
   CLIENTS=[...new Set(MARKETS.map(m=>m.client).filter(Boolean))].sort();
   const validKey=k=>{ if(!k) return false; if(k.startsWith("c:")) return CLIENTS.includes(k.slice(2)); return DOCS.some(d=>d.file===k); };
-  let start=location.hash.slice(1); if(!validKey(start)){ try{ start=localStorage.getItem("matanga:wiki")||""; }catch(e){} }
+  let start=location.hash.slice(1); if(!validKey(start)){ try{ start=localStorage.getItem("radar:wiki")||""; }catch(e){} }
   if(!validKey(start)) start = CLIENTS.length?("c:"+CLIENTS[0]):(DOCS[0].file);
   buildNav(start); select(start);
   window.addEventListener("hashchange",()=>{ const k=location.hash.slice(1); if(validKey(k)){ buildNav(k); select(k); } });
