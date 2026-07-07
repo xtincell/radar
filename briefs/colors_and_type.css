@@ -1,0 +1,269 @@
+/* ============================================================================
+   DASHBOARD R26 — Design System Foundations
+   Color + Type tokens. Orange / Black / White, warm neutral balance.
+   Aesthetic: soft bento dashboard — large rounded cards, cream surfaces,
+   dark pill chrome, vivid orange accent, friendly geometric grotesk.
+   ----------------------------------------------------------------------------
+   Fonts self-hosted from user-uploaded variable TTFs in fonts/ (Familjen
+   Grotesk, Hanken Grotesk, JetBrains Mono). No CDN dependency.
+   ========================================================================== */
+
+/* All three families are self-hosted from user-uploaded variable fonts. No CDN. */
+@font-face {
+  font-family: 'Familjen Grotesk';
+  src: url('fonts/FamiljenGrotesk-VariableFont_wght.ttf') format('truetype-variations');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Familjen Grotesk';
+  src: url('fonts/FamiljenGrotesk-Italic-VariableFont_wght.ttf') format('truetype-variations');
+  font-weight: 100 900;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Hanken Grotesk';
+  src: url('fonts/HankenGrotesk-VariableFont_wght.ttf') format('truetype-variations');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Hanken Grotesk';
+  src: url('fonts/HankenGrotesk-Italic-VariableFont_wght.ttf') format('truetype-variations');
+  font-weight: 100 900;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('fonts/JetBrainsMono-VariableFont_wght.ttf') format('truetype-variations');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('fonts/JetBrainsMono-Italic-VariableFont_wght.ttf') format('truetype-variations');
+  font-weight: 100 900;
+  font-style: italic;
+  font-display: swap;
+}
+
+:root {
+  /* ---------------------------------------------------------------- COLOR */
+
+  /* Brand — Orange ramp (primary accent) */
+  --orange-50:  #FFF3EA;
+  --orange-100: #FFE3CC;
+  --orange-200: #FFC9A0;
+  --orange-300: #FFAA6E;
+  --orange-400: #FF8A3D;
+  --orange-500: #FF6A14;   /* PRIMARY — vivid action orange */
+  --orange-600: #ED560A;
+  --orange-700: #C2440A;
+  --orange-800: #8F3208;
+  --orange-900: #5E2208;
+
+  /* Ink — warm near-black ramp (dark surfaces, text) */
+  --ink-950: #161310;     /* darkest surface (dark cards / pill nav) */
+  --ink-900: #1F1B17;
+  --ink-800: #2B2620;
+  --ink-700: #3D362E;
+  --ink-600: #564D42;
+  --ink-500: #756A5C;     /* muted text on light */
+  --ink-400: #9A8F80;
+  --ink-300: #C2B8A9;
+
+  /* Neutral — warm cream / paper ramp (light surfaces) */
+  --paper-0:   #FFFFFF;   /* pure white — top cards, balance */
+  --paper-50:  #FCFAF6;   /* app background top */
+  --paper-100: #F7F2EA;   /* default card / cream */
+  --paper-200: #F0E9DD;   /* sunken / track */
+  --paper-300: #E6DCCB;   /* hairline borders on cream */
+  --paper-400: #D8CBB5;
+
+  /* Semantic surfaces */
+  --bg-app:       var(--paper-50);
+  --bg-app-warm:  #FBF4E9;            /* warm corner of the gradient wash */
+  --surface:      var(--paper-0);     /* primary card */
+  --surface-cream:var(--paper-100);   /* secondary card */
+  --surface-sunk: var(--paper-200);   /* inset / track */
+  --surface-dark: var(--ink-950);     /* inverted card */
+
+  /* Text */
+  --fg1: var(--ink-950);   /* primary text */
+  --fg2: var(--ink-600);   /* secondary text */
+  --fg3: var(--ink-500);   /* tertiary / labels */
+  --fg4: var(--ink-400);   /* faint / disabled */
+  --fg-on-orange: #2A1505; /* text on orange fills */
+  --fg-on-dark:   #F7F2EA; /* text on dark surfaces */
+  --fg-on-dark-2: #B7AEA0; /* secondary text on dark */
+
+  /* Accent aliases */
+  --accent:       var(--orange-500);
+  --accent-hover: var(--orange-600);
+  --accent-press: var(--orange-700);
+  --accent-soft:  var(--orange-50);
+  --accent-soft-2:var(--orange-100);
+
+  /* Status (warm-leaning, tuned to palette) */
+  --success:   #1F9D63;
+  --success-bg:#E2F4EA;
+  --warning:   var(--orange-500);
+  --warning-bg:var(--orange-50);
+  --danger:    #E23D2E;
+  --danger-bg: #FCEAE7;
+  --info:      #2D6BD4;
+  --info-bg:   #E8F0FC;
+
+  /* Borders */
+  --border:        var(--paper-300);
+  --border-strong: var(--paper-400);
+  --border-soft:   #F0ECE6;
+  --border-dark:   rgba(255,255,255,0.10);
+  --ring:          color-mix(in oklab, var(--orange-500) 45%, transparent);
+
+  /* Data-viz sequence (charts) */
+  --viz-1: var(--orange-500);
+  --viz-2: var(--ink-950);
+  --viz-3: var(--orange-300);
+  --viz-4: var(--ink-400);
+  --viz-5: var(--orange-700);
+
+  /* ---------------------------------------------------------- TYPOGRAPHY */
+  --font-display: 'Familjen Grotesk', system-ui, sans-serif;
+  --font-sans:    'Hanken Grotesk', system-ui, -apple-system, sans-serif;
+  --font-mono:    'JetBrains Mono', ui-monospace, 'SF Mono', monospace;
+
+  /* Type scale (1.250 major-third-ish, dashboard-tuned) */
+  --text-2xs: 11px;
+  --text-xs:  12px;
+  --text-sm:  14px;
+  --text-md:  16px;   /* base */
+  --text-lg:  18px;
+  --text-xl:  22px;
+  --text-2xl: 28px;
+  --text-3xl: 36px;
+  --text-4xl: 48px;
+  --text-5xl: 64px;   /* hero stat numbers */
+
+  --leading-tight: 1.05;
+  --leading-snug:  1.2;
+  --leading-normal:1.5;
+
+  --tracking-tight: -0.02em;
+  --tracking-snug:  -0.01em;
+  --tracking-wide:   0.06em;  /* uppercase labels */
+
+  /* ----------------------------------------------------- SHAPE / SPACING */
+  /* Spacing scale (4px base) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10:40px;
+  --space-12:48px;
+  --space-16:64px;
+
+  /* Radii — generous, the signature of this system */
+  --radius-xs:  8px;
+  --radius-sm:  12px;
+  --radius-md:  16px;
+  --radius-lg:  22px;   /* default card */
+  --radius-xl:  28px;   /* large bento card */
+  --radius-2xl: 36px;   /* app shell */
+  --radius-pill:999px;
+
+  /* Shadows — soft, warm-tinted, low-contrast (cards float gently) */
+  --shadow-xs: 0 1px 2px rgba(40,30,18,0.04);
+  --shadow-sm: 0 2px 8px rgba(40,30,18,0.05);
+  --shadow-md: 0 8px 24px rgba(40,30,18,0.06);
+  --shadow-lg: 0 18px 48px rgba(40,30,18,0.08);
+  --shadow-orange: 0 10px 30px rgba(255,106,20,0.28);
+  --shadow-inset: inset 0 1px 0 rgba(255,255,255,0.6);
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur-fast: 130ms;
+  --dur-med:  220ms;
+  --dur-slow: 360ms;
+}
+
+/* ============================================================== SEMANTIC */
+/* Drop-in element styles. Apply via class or copy values. */
+
+.r26-display-1 { font-family: var(--font-display); font-weight: 500; font-size: var(--text-4xl); line-height: var(--leading-tight); letter-spacing: var(--tracking-tight); color: var(--fg1); }
+.r26-display-2 { font-family: var(--font-display); font-weight: 500; font-size: var(--text-3xl); line-height: var(--leading-tight); letter-spacing: var(--tracking-tight); color: var(--fg1); }
+.r26-h1 { font-family: var(--font-display); font-weight: 600; font-size: var(--text-2xl); line-height: var(--leading-snug); letter-spacing: var(--tracking-snug); color: var(--fg1); }
+.r26-h2 { font-family: var(--font-display); font-weight: 600; font-size: var(--text-xl); line-height: var(--leading-snug); letter-spacing: var(--tracking-snug); color: var(--fg1); }
+.r26-h3 { font-family: var(--font-sans); font-weight: 600; font-size: var(--text-lg); line-height: var(--leading-snug); color: var(--fg1); }
+.r26-stat { font-family: var(--font-display); font-weight: 500; font-size: var(--text-5xl); line-height: 1; letter-spacing: var(--tracking-tight); color: var(--fg1); font-feature-settings: 'tnum' 1; }
+.r26-body { font-family: var(--font-sans); font-weight: 400; font-size: var(--text-md); line-height: var(--leading-normal); color: var(--fg2); }
+.r26-body-sm { font-family: var(--font-sans); font-weight: 400; font-size: var(--text-sm); line-height: var(--leading-normal); color: var(--fg2); }
+.r26-label { font-family: var(--font-sans); font-weight: 600; font-size: var(--text-xs); line-height: 1.3; letter-spacing: var(--tracking-wide); text-transform: uppercase; color: var(--fg3); }
+.r26-code { font-family: var(--font-mono); font-weight: 400; font-size: var(--text-sm); color: var(--fg1); }
+
+/* ============================================================== DARK THEME
+   Light is the default (no attribute). Dark is opt-in via a toggle that sets
+   <html data-theme="dark">. We override ONLY the semantic + neutral-ramp +
+   text + soft-accent tokens, so every page that uses the surface, text,
+   paper-ramp and border tokens flips automatically. The orange ramp, the
+   client colors and the status hues stay identical, brand stays recognizable.
+   ========================================================================== */
+:root[data-theme="dark"] {
+  /* neutral paper ramp → inky warm surfaces */
+  --paper-0:   #24201A;   /* was white top card */
+  --paper-50:  #14110C;   /* app background */
+  --paper-100: #1F1A13;   /* cream card */
+  --paper-200: #2A2319;   /* sunken / track */
+  --paper-300: #383127;   /* hairline */
+  --paper-400: #4A4234;
+
+  /* semantic surfaces */
+  --bg-app:        #14110C;
+  --bg-app-warm:   #1E1810;
+  --surface:       #24201A;
+  --surface-cream: #1F1A13;
+  --surface-sunk:  #2A2319;
+  /* --surface-dark stays --ink-950 (already dark) */
+
+  /* text — warm off-whites (defined directly, not via ink ramp) */
+  --fg1: #F5EFE5;
+  --fg2: #C9BFAE;
+  --fg3: #A99B86;
+  --fg4: #7E7263;
+  --fg-on-dark:   #F5EFE5;
+  --fg-on-dark-2: #B7AEA0;
+
+  /* borders */
+  --border:        #383127;
+  --border-strong: #4A4234;
+  --border-soft:   #2C2620;
+
+  /* soft accent + status tints → dark-tinted */
+  --accent-soft:   #36281B;
+  --accent-soft-2: #45331F;
+  --success-bg: #13271C;
+  --warning-bg: #36281B;
+  --danger-bg:  #2E1714;
+  --info-bg:    #13223A;
+
+  /* shadows → deeper on dark */
+  --shadow-xs: 0 1px 2px rgba(0,0,0,0.30);
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.36);
+  --shadow-md: 0 8px 24px rgba(0,0,0,0.44);
+  --shadow-lg: 0 18px 48px rgba(0,0,0,0.55);
+  --shadow-inset: inset 0 1px 0 rgba(255,255,255,0.04);
+}
+
+/* smooth, non-jarring theme flip (respects reduced-motion) */
+@media (prefers-reduced-motion: no-preference){
+  body{ transition: background-color .25s var(--ease-out), color .25s var(--ease-out); }
+}

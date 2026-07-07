@@ -1,0 +1,22 @@
+# En-têtes Cloudflare Pages — Radar
+# Le site est protégé par Cloudflare Access (mur d'authentification email).
+# Ces en-têtes ajoutent une défense en profondeur + cache maîtrisé.
+
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: SAMEORIGIN
+
+# Données et logique : toujours revalider pour servir l'état le plus frais
+/supa.js
+  Cache-Control: no-cache
+/ui.js
+  Cache-Control: no-cache
+/chrome.js
+  Cache-Control: no-cache
+/export-csv.js
+  Cache-Control: no-cache
+/colors_and_type.css
+  Cache-Control: no-cache
+/INDEX.csv
+  Cache-Control: no-cache

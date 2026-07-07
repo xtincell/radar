@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<script>try{if(localStorage.getItem("radar:theme")==="dark")document.documentElement.dataset.theme="dark";}catch(e){}</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Radar — Command center des briefs</title>
+<link rel="stylesheet" href="colors_and_type.css?v=20260622">
+<link rel="stylesheet" href="radar.css?v=20260619">
+</head>
+<body>
+<div class="shell">
+
+  <div id="mtg-top" data-page="radar" data-sub="radar matinal"></div>
+
+  <!-- Barre d'outils propre au radar (scope + recherche + export) -->
+  <header class="topbar radar-tools">
+    <nav class="nav-scope" aria-label="Vue radar">
+      <button data-view="all" class="active">Vue d'ensemble</button>
+      <button data-view="late">En retard</button>
+      <button data-view="p0">P0</button>
+      <button data-view="wait">Attente client</button>
+    </nav>
+    <div class="spacer"></div>
+    <div class="searchbox">
+      <i><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></i>
+      <input id="search" type="search" placeholder="Rechercher un brief, marque, client…" autocomplete="off">
+    </div>
+    <button class="archive-pill" type="button" title="Exporter l'état actuel de la base au format CSV" onclick="exportBriefsCSV(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg><span>Export</span></button>
+  </header>
+
+  <!-- Masthead -->
+  <div class="masthead">
+    <div class="greet">
+      <div class="kick">radar matinal</div>
+      <h1 id="greet">Bonjour <em>👋</em></h1>
+      <div class="sub" id="mast-sub"></div>
+      <div class="filter-chip" id="filterchip">
+        <span class="dot"></span><span class="lbl"></span>
+        <button title="Retirer le filtre">✕</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stat strip -->
+  <div class="statstrip" id="statstrip"></div>
+
+  <!-- Bento -->
+  <div class="bento">
+
+    <!-- Radar queue (dark, hero) -->
+    <section class="card dark c-radar" id="radarcard">
+      <div class="card-head">
+        <div class="ct"><h3>À traiter</h3></div>
+        <span class="hint">trié par urgence</span>
+      </div>
+      <div class="queue-seg" id="queue-seg">
+        <button data-seg="all" class="active">Tout<span class="n"></span></button>
+        <button data-seg="late">Retard<span class="n"></span></button>
+        <button data-seg="p0">P0<span class="n"></span></button>
+        <button data-seg="wait">Attente<span class="n"></span></button>
+      </div>
+      <div class="queue-list" id="queue-list"></div>
+    </section>
+
+    <!-- Ring -->
+    <section class="card c-ring" id="ringcard">
+      <div class="card-head"><div class="ct"><h3>Portefeuille</h3></div></div>
+      <div class="ring-wrap"></div>
+    </section>
+
+    <!-- Échéances -->
+    <section class="card c-ech" id="echcard">
+      <div class="card-head"><div class="ct"><h3>Échéances</h3></div></div>
+      <div class="ech-body"></div>
+    </section>
+
+    <!-- Clients -->
+    <section class="card c-clients" id="clientscard">
+      <div class="card-head">
+        <div class="ct"><h3>Charge par client</h3></div>
+        <span class="hint">projets actifs · cliquer pour filtrer</span>
+      </div>
+      <div class="cl-list"></div>
+    </section>
+
+    <!-- Pipeline -->
+    <section class="card c-pipe" id="pipecard">
+      <div class="card-head"><div class="ct"><h3>Pipeline</h3></div></div>
+      <div class="pipe-body"></div>
+    </section>
+
+    <!-- Blocked -->
+    <section class="card c-blocked" id="blockedcard">
+      <div class="card-head"><div class="ct"><h3>Bloqués & attente client</h3></div></div>
+      <div class="bl-list"></div>
+    </section>
+
+    <!-- Team -->
+    <section class="card c-team" id="teamcard">
+      <div class="card-head"><div class="ct"><h3>Charge équipe</h3></div></div>
+      <div class="team-body"></div>
+    </section>
+
+  </div>
+</div>
+
+<script src="https://unpkg.com/lucide@1.21.0"></script>
+<script src="supa.js?v=20260639"></script>
+<script src="ui.js?v=20260639"></script>
+<script src="chrome.js?v=20260637"></script>
+<script src="export-csv.js?v=20260621"></script>
+<script src="radar.js?v=20260629"></script>
+</body>
+</html>
