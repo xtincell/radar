@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<script>try{if(localStorage.getItem("matanga:theme")==="dark")document.documentElement.dataset.theme="dark";}catch(e){}</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Matanga — Planning (Gantt)</title>
+<link rel="stylesheet" href="colors_and_type.css?v=20260633">
+<style>
+  :root{ --tens-fair:#1F9D63; --tens-tight:#FF8A3D; --tens-unfair:#E23D2E; --tens-none:#9A8F80; }
+  *{box-sizing:border-box} html,body{margin:0}
+  body{font-family:var(--font-text,'Hanken Grotesk',system-ui,sans-serif);
+    background:radial-gradient(1100px 640px at 90% -10%, var(--bg-app-warm) 0%, transparent 58%), var(--bg-app);
+    color:var(--fg1);min-height:100vh;-webkit-font-smoothing:antialiased}
+  .shell{max-width:1280px;margin:0 auto;padding:22px 24px 100px}
+  .masthead{margin:30px 2px 6px}
+  .kick{font-family:var(--font-mono);font-size:11.5px;text-transform:uppercase;letter-spacing:.14em;color:var(--orange-600);font-weight:600}
+  .masthead h1{font-family:var(--font-display);font-weight:500;font-size:clamp(28px,3.4vw,40px);line-height:1.04;letter-spacing:var(--tracking-tight);margin:7px 0 4px}
+  .masthead p{margin:0;color:var(--fg2);font-size:14.5px;max-width:74ch}
+  .legend{display:flex;flex-wrap:wrap;gap:14px;margin:16px 2px 6px;font-size:12.5px;color:var(--fg2)}
+  .legend .lg{display:inline-flex;align-items:center;gap:7px}
+  .legend .sw{width:13px;height:13px;border-radius:4px;flex:0 0 auto}
+  .legend .sw.f{background:var(--tens-fair)} .legend .sw.t{background:var(--tens-tight)} .legend .sw.u{background:var(--tens-unfair)} .legend .sw.n{background:var(--tens-none)}
+  .legend .hd{font-weight:700;color:var(--ink-900)}
+
+  .gwrap{margin-top:18px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg,16px);box-shadow:var(--shadow-sm);overflow:auto}
+  .gantt{position:relative;min-width:max-content}
+  .grow{display:flex;align-items:stretch;border-bottom:1px solid var(--border)}
+  .grow:last-child{border-bottom:0}
+  .gname{position:sticky;left:0;z-index:3;width:184px;flex:0 0 184px;background:var(--surface);border-right:1px solid var(--border);
+    padding:10px 13px;display:flex;flex-direction:column;justify-content:center;gap:3px}
+  .gname .nm{font-family:var(--font-display);font-weight:600;font-size:14px;color:var(--fg1)}
+  .gname .ld{font-family:var(--font-mono);font-size:10.5px;color:var(--fg3)}
+  .gname .ovl{font-family:var(--font-mono);font-size:10px;font-weight:700;color:var(--danger)}
+  .glanes{position:relative;flex:1}
+  .ghead .gname{background:var(--paper-50)}
+  .ghead{position:sticky;top:0;z-index:4;border-bottom:1px solid var(--border)}
+  .ghead .glanes{position:relative;height:34px}
+  .gmonth{position:absolute;top:4px;font-family:var(--font-mono);font-size:10.5px;font-weight:700;color:var(--fg2);text-transform:uppercase;letter-spacing:.04em}
+  .gweek{position:absolute;top:19px;font-family:var(--font-mono);font-size:9px;color:var(--fg4);transform:translateX(-50%)}
+  .gtick{position:absolute;top:0;bottom:0;width:1px;background:var(--border)}
+  .gtick.mon{background:color-mix(in srgb,var(--border) 160%,transparent)}
+  .gtoday{position:absolute;top:0;bottom:0;width:2px;background:var(--orange-500);z-index:2;opacity:.85}
+  .gtoday .lbl{position:absolute;top:2px;left:3px;font-family:var(--font-mono);font-size:9px;color:var(--orange-600);font-weight:700;white-space:nowrap}
+
+  .bar{position:absolute;height:18px;border-radius:6px;display:flex;align-items:center;padding:0 7px;cursor:pointer;
+    font-size:10.5px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 1px 3px rgba(0,0,0,.12);transition:filter .12s,transform .12s}
+  .bar:hover{filter:brightness(1.08);transform:translateY(-1px);z-index:5}
+  .bar.f{background:var(--tens-fair)} .bar.t{background:var(--tens-tight)} .bar.u{background:var(--tens-unfair)} .bar.n{background:var(--tens-none)}
+  .bar .hd{margin-left:5px;font-size:11px} /* losange hard-deadline ajouté inline */
+  .gload{position:absolute;top:0;bottom:0;background:var(--danger);opacity:.06;pointer-events:none}
+
+  .empty{padding:50px 20px;text-align:center;color:var(--fg3)}
+  .src{font-family:var(--font-mono);font-size:10.5px;color:var(--fg4);margin-top:18px;text-align:right}
+  .ctrls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:14px 2px 0}
+  select.flt{appearance:none;border:1px solid var(--border);background:var(--surface);color:var(--fg1);font:inherit;font-size:13px;font-weight:600;
+    padding:8px 30px 8px 12px;border-radius:var(--radius-pill);cursor:pointer;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 11px center}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div id="mtg-top" data-page="gantt" data-sub="planning & charge"></div>
+  <div class="masthead">
+    <div class="kick">Planning — charge & collisions</div>
+    <h1>Gantt de l'équipe</h1>
+    <p>Chaque barre = un projet ouvert, du début estimé à sa deadline. Couleur = tension du délai. Les barres qui <b>s'empilent</b> sur une même personne = collisions / surcharge. Le voile rouge marque les semaines en surcharge. ◆ = hard-deadline (exigée client).</p>
+  </div>
+  <div class="legend">
+    <span class="lg hd">Tension :</span>
+    <span class="lg"><span class="sw f"></span>Confort</span>
+    <span class="lg"><span class="sw t"></span>Serré (dans la moyenne)</span>
+    <span class="lg"><span class="sw u"></span>Délai injuste (trop court)</span>
+    <span class="lg"><span class="sw n"></span>Sans deadline</span>
+    <span class="lg">◆ hard-deadline</span>
+  </div>
+  <div class="ctrls"><select class="flt" id="f-client"></select><select class="flt" id="f-scope"><option value="open">Projets ouverts</option><option value="all">Tout (avec livrés)</option></select></div>
+  <div class="gwrap" id="gwrap"><div class="empty">Chargement…</div></div>
+  <div class="src" id="src"></div>
+</div>
+
+<script src="https://unpkg.com/lucide@1.21.0"></script>
+<script src="supa.js?v=20260639"></script>
+<script src="ui.js?v=20260639"></script>
+<script src="chrome.js?v=20260637"></script>
+<script>
+"use strict";
+/* ============================================================
+   Gantt — charge & collisions par responsable.
+   Barre = [début estimé → deadline]. Empilement (lanes) = collisions.
+   Couleur = deadlineTension (étalon agence). Voile = semaines surchargées.
+   ============================================================ */
+const $=s=>document.querySelector(s);
+const esc=s=>(s==null?"":String(s)).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const MONTHS=["jan","fév","mar","avr","mai","juin","juil","aoû","sep","oct","nov","déc"];
+const DAY=864e5, DAYPX=8, LANE_H=22, BAR_TOP=2;
+const TODAY=new Date(new Date().toDateString());
+const dadd=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x;};
+const dISO=s=>String(s||"").slice(0,10);
+const isD=s=>/^\d{4}-\d{2}-\d{2}$/.test(dISO(s));
+const parse=s=>new Date(dISO(s)+"T00:00:00");
+const DONE=new Set(["Envoyé dans Slack","Livré","Livré (cycle)","Validé","Bouclé","Archivé"]);
+const TENS_CLS={fair:"f",tight:"t",unfair:"u",none:"n"};
+
+// fenêtre fixe et bornée : aujourd'hui-14j → aujourd'hui+98j
+const WIN_START=dadd(TODAY,-14), WIN_END=dadd(TODAY,98);
+const TOTAL_DAYS=Math.round((WIN_END-WIN_START)/DAY);
+const xOf=d=>Math.round((parse(dISO(d.toISOString?d.toISOString():d))-WIN_START)/DAY)*DAYPX;
+const xOfISO=iso=>Math.round((parse(iso)-WIN_START)/DAY)*DAYPX;
+
+let ALL=[], BENCH={byType:{},overall:7};
+const state={client:"",scope:"open"};
+
+function primaryOwner(m){ const o=splitOwners(m.responsable); return o.length?o[0]:"— non assigné"; }
+function workStart(m, endISO){
+  // début estimé = deadline − durée-type (calendaire), borné à la réception
+  const lead=(BENCH.byType[m.type]!=null?BENCH.byType[m.type]:BENCH.overall!=null?BENCH.overall:7);
+  let s=dadd(parse(endISO), -Math.max(2,Math.round(lead)));
+  if(isD(m.date)){ const rc=parse(m.date); if(rc<parse(endISO) && rc>s) s=rc; }
+  return s;
+}
+function taskBar(m){
+  // fin = deadline si datée, sinon délai réaliste, sinon aujourd'hui+lead
+  let endISO = isD(m.deadline)?dISO(m.deadline):(realisticDeadlineISO(m,BENCH)||"");
+  if(!endISO){ endISO=dISO(dadd(TODAY,(BENCH.byType[m.type]!=null?BENCH.byType[m.type]:7)+5).toISOString()); }
+  const start=workStart(m,endISO), end=parse(endISO);
+  if(end<WIN_START || start>WIN_END) return null;        // hors fenêtre
+  const s=start<WIN_START?WIN_START:start, e=end>WIN_END?WIN_END:end;
+  const tension=isD(m.deadline)?deadlineTension(m,BENCH):"none";
+  return { m, start:s, end:e, x:Math.max(0,Math.round((s-WIN_START)/DAY)*DAYPX),
+    w:Math.max(14,Math.round((e-s)/DAY)*DAYPX), tension, hard:!!m.deadlineHard, endISO };
+}
+// répartition en lanes (greedy) : barres qui se chevauchent → lanes différentes
+function layout(bars){
+  bars.sort((a,b)=>a.start-b.start || b.end-a.end);
+  const laneEnds=[];
+  bars.forEach(b=>{ let placed=false;
+    for(let i=0;i<laneEnds.length;i++){ if(laneEnds[i]<=b.start){ b.lane=i; laneEnds[i]=b.end; placed=true; break; } }
+    if(!placed){ b.lane=laneEnds.length; laneEnds.push(b.end); } });
+  return laneEnds.length||1;
+}
+// charge hebdo : nb de barres actives par semaine (pour le voile surcharge)
+function weeklyLoad(bars){
+  const load=[]; // index semaine → count
+  for(let w=0; w*7<TOTAL_DAYS; w++){
+    const ws=dadd(WIN_START,w*7), we=dadd(WIN_START,w*7+7);
+    load.push(bars.filter(b=>b.start<we && b.end>ws).length);
+  }
+  return load;
+}
+
+function rulerHTML(){
+  let ticks="", months="";
+  let lastMonth=-1;
+  for(let i=0;i<=TOTAL_DAYS;i++){
+    const d=dadd(WIN_START,i), x=i*DAYPX;
+    if(d.getDay()===1){ ticks+=`<span class="gtick mon" style="left:${x}px"></span><span class="gweek" style="left:${x}px">${d.getDate()}</span>`; }
+    if(d.getMonth()!==lastMonth){ lastMonth=d.getMonth(); months+=`<span class="gmonth" style="left:${x+3}px">${MONTHS[d.getMonth()]} ${String(d.getFullYear()).slice(2)}</span>`; }
+  }
+  const tx=Math.round((TODAY-WIN_START)/DAY)*DAYPX;
+  return {ticks, months, todayX:tx};
+}
+
+function render(){
+  let rows=ALL.filter(m=>{
+    if(m.entree==="Doublon"||(m.ndeg||"").charAt(0)==="≈"||m.statut==="Archivé"||m.statut==="Frozen") return false;
+    if(state.client && m.client!==state.client) return false;
+    if(state.scope==="open" && DONE.has(m.statut)) return false;
+    return true;
+  });
+  // bars par personne
+  const byPerson={};
+  rows.forEach(m=>{ const b=taskBar(m); if(!b) return; (byPerson[primaryOwner(m)]=byPerson[primaryOwner(m)]||[]).push(b); });
+  const persons=Object.keys(byPerson).sort((a,b)=>byPerson[b].length-byPerson[a].length);
+  const ruler=rulerHTML();
+  const width=TOTAL_DAYS*DAYPX;
+
+  if(!persons.length){ $("#gwrap").innerHTML=`<div class="empty">Aucun projet daté à planifier pour ce filtre.</div>`; return; }
+
+  let html=`<div class="gantt" style="--w:${width}px">
+    <div class="grow ghead"><div class="gname"><span class="nm">Responsable</span><span class="ld">${persons.length} pers. · ${rows.length} projets</span></div>
+      <div class="glanes" style="width:${width}px;min-width:${width}px">${ruler.months}${ruler.ticks}<div class="gtoday" style="left:${ruler.todayX}px"><span class="lbl">aujourd'hui</span></div></div></div>`;
+
+  for(const p of persons){
+    const bars=byPerson[p];
+    const lanes=layout(bars);
+    const load=weeklyLoad(bars);
+    const peak=Math.max(0,...load);
+    const h=lanes*LANE_H+6;
+    // voile surcharge (semaines où ≥4 projets concurrents)
+    let veil="";
+    load.forEach((n,w)=>{ if(n>=4){ veil+=`<span class="gload" style="left:${w*7*DAYPX}px;width:${7*DAYPX}px"></span>`; } });
+    const barsHTML=bars.map(b=>{
+      const lbl=esc((b.m.ndeg||"")+" · "+(b.m.projet||"").slice(0,40));
+      const tip=esc(`${b.m.ndeg} — ${b.m.projet}\n${b.m.client||""} ${b.m.marque?("· "+b.m.marque):""}\nfin ${b.endISO}${b.hard?" (hard-deadline)":""} · tension ${b.tension}`);
+      return `<div class="bar ${TENS_CLS[b.tension]}" style="left:${b.x}px;top:${BAR_TOP+b.lane*LANE_H}px;width:${b.w}px" title="${tip}" data-code="${esc(b.m.ndeg)}">${lbl}${b.hard?'<span class="hd">◆</span>':''}</div>`;
+    }).join("");
+    html+=`<div class="grow"><div class="gname"><span class="nm">${esc(p)}</span><span class="ld">${bars.length} projet${bars.length>1?"s":""} · pic ${peak}</span>${peak>=4?`<span class="ovl">⚠ surcharge</span>`:""}</div>
+      <div class="glanes" style="width:${width}px;min-width:${width}px;height:${h}px">${veil}<span class="gtoday" style="left:${ruler.todayX}px"></span>${barsHTML}</div></div>`;
+  }
+  html+=`</div>`;
+  $("#gwrap").innerHTML=html;
+  $("#gwrap").querySelectorAll(".bar").forEach(b=>b.addEventListener("click",()=>location.href="tache.html?code="+encodeURIComponent(b.dataset.code)));
+}
+
+function fillClients(){
+  const cs=[...new Set(ALL.map(m=>m.client).filter(Boolean))].sort();
+  $("#f-client").innerHTML=`<option value="">Tous les clients</option>`+cs.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join("");
+}
+async function boot(){
+  try{ ALL=await loadBriefsLive(); }catch(e){ ALL=[]; }
+  BENCH=(window.leadBenchmark?leadBenchmark(ALL):{byType:{},overall:7});
+  fillClients();
+  $("#f-client").addEventListener("change",e=>{ state.client=e.target.value; render(); });
+  $("#f-scope").addEventListener("change",e=>{ state.scope=e.target.value; render(); });
+  render();
+  $("#src").textContent=(window.SUPA_SOURCE==="supabase")?"Source : Supabase (live) · fenêtre J-14 → J+98":"Source : —";
+  if(window.sourceBanner) sourceBanner();
+  if(window.lucide) window.lucide.createIcons();
+}
+document.addEventListener("DOMContentLoaded", boot);
+</script>
+</body>
+</html>

@@ -1,5 +1,5 @@
 /* ============================================================
-   Radar — styles (Dashboard)
+   Matanga RADAR v2 — styles (Dashboard R26)
    Bento command center. Orange / ink / warm paper.
    ============================================================ */
 *{box-sizing:border-box}
@@ -27,17 +27,17 @@ button,input,select{font-family:inherit;color:inherit}
 
 /* client + status color tokens (warm, brand-leaning, harmonious) */
 :root{
-  --c-cad:#FF6A14;   /* client palette 1 — orange (primary) */
-  --c-frc:#2D6BD4;   /* client palette 2 — blue */
-  --c-eco:#1F9D63;   /* client palette 3 — green */
-  --c-bel:#E23D2E;   /* client palette 4 — red */
-  --c-nsi:#9A3F57;   /* client palette 5 — plum */
-  --c-sof:#8F3208;   /* client palette 6 — brown */
-  --c-dan:#3E8FA8;   /* client palette 7 — teal */
-  --c-dlf:#C2440A;   /* client palette 8 — rust */
-  --c-trx:#5E6B30;   /* client palette 9 — olive */
-  --c-flo:#B07A1E;   /* client palette 10 — amber */
-  --c-fok:#7C5026;   /* client palette 11 — taupe-brown */
+  --c-cad:#FF6A14;   /* Cadyst/Panzani — orange (primary) */
+  --c-frc:#2D6BD4;   /* FrieslandCampina — blue */
+  --c-eco:#1F9D63;   /* Ecobank — green */
+  --c-bel:#E23D2E;   /* Bel Group — red */
+  --c-nsi:#9A3F57;   /* NSIA — plum */
+  --c-sof:#8F3208;   /* Sofavin — brown */
+  --c-dan:#3E8FA8;   /* Danone — teal */
+  --c-dlf:#C2440A;   /* Delifood — rust */
+  --c-trx:#5E6B30;   /* TRADEX — olive */
+  --c-flo:#B07A1E;   /* Florida — amber */
+  --c-fok:#7C5026;   /* Fokou — taupe-brown */
   --c-other:#9A8F80; /* others — warm gray */
   --st-cours:#2D6BD4;
   --st-attente:#FF8A3D;

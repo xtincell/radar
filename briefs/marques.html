@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<script>try{if(localStorage.getItem("matanga:theme")==="dark")document.documentElement.dataset.theme="dark";}catch(e){}</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Matanga — Wiki marques</title>
+<link rel="stylesheet" href="colors_and_type.css?v=20260622">
+<style>
+  :root{
+    --c-cad:#FF6A14;--c-frc:#2D6BD4;--c-eco:#1F9D63;--c-bel:#E23D2E;--c-nsi:#9A3F57;
+    --c-sof:#8F3208;--c-other:#9A8F80;--c-ref:#7A6CCB;
+  }
+  *{box-sizing:border-box} html,body{margin:0}
+  body{font-family:var(--font-text,'Hanken Grotesk',system-ui,sans-serif);
+    background:radial-gradient(1200px 700px at 88% -8%, var(--bg-app-warm) 0%, transparent 60%), var(--bg-app);
+    color:var(--fg1);min-height:100vh;-webkit-font-smoothing:antialiased;}
+  .shell{max-width:1180px;margin:0 auto;padding:22px 30px 90px}
+  .masthead{margin:30px 2px 8px}
+  .kick{font-family:var(--font-mono);font-size:11.5px;text-transform:uppercase;letter-spacing:.13em;color:var(--orange-600);font-weight:600}
+  .masthead h1{font-family:var(--font-display);font-weight:600;font-size:30px;line-height:1.05;margin:6px 0 4px}
+  .masthead p{color:var(--fg2);font-size:14px;margin:0;max-width:70ch}
+
+  .docwrap{display:grid;grid-template-columns:236px 1fr;gap:18px;margin-top:18px;align-items:start}
+  @media(max-width:820px){.docwrap{grid-template-columns:1fr}}
+  .docnav{position:sticky;top:78px;display:flex;flex-direction:column;gap:4px;background:var(--surface);
+    border:1px solid var(--border);border-radius:var(--radius-lg,16px);padding:12px;box-shadow:var(--shadow-sm)}
+  @media(max-width:820px){.docnav{position:static}}
+  .docnav .grp{font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--fg3);padding:8px 9px 4px}
+  .docnav button{display:flex;align-items:center;gap:9px;width:100%;text-align:left;border:0;background:transparent;
+    color:var(--fg1);font:inherit;font-size:13.5px;font-weight:600;padding:9px 10px;border-radius:var(--radius-sm,10px);cursor:pointer;transition:.12s}
+  .docnav button:hover{background:var(--paper-100)}
+  .docnav button.sel{background:var(--ink-950);color:#F7F2EA}
+  .docnav button .dot{width:9px;height:9px;border-radius:3px;flex:0 0 auto;background:var(--c-other)}
+  .docnav button.sel .dot{outline:2px solid rgba(255,255,255,.5)}
+  .docnav button .n{font-family:var(--font-mono);font-size:10px;color:var(--fg3);margin-left:auto}
+  .docnav button.sel .n{color:rgba(255,255,255,.6)}
+
+  .doc{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg,16px);
+    padding:18px 30px 34px;box-shadow:var(--shadow-sm);min-height:320px;border-top:4px solid var(--c-other)}
+  .doc .loading,.doc .err{color:var(--fg3);font-size:13.5px;font-family:var(--font-mono);padding:30px 4px}
+  .doc .err{color:var(--c-bel)}
+  .updated{font-family:var(--font-mono);font-size:10.5px;color:var(--fg3);text-transform:uppercase;letter-spacing:.05em;margin:0 0 2px 2px}
+
+  /* vue client (live data) */
+  .cv-h{font-family:var(--font-display);font-weight:600;font-size:25px;margin:4px 0 2px}
+  .cv-sub{font-family:var(--font-mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--fg3);margin-bottom:14px}
+  .cv-sec{font-family:var(--font-mono);font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--orange-600);font-weight:700;margin:22px 0 10px;display:flex;align-items:center;gap:10px}
+  .cv-sec::after{content:"";flex:1;height:1px;background:var(--border)}
+  .mkt-card{background:var(--paper-50);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:10px}
+  .mkt-card .mh{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:9px}
+  .mkt-card .mh .pill{font-family:var(--font-mono);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:3px 9px;border-radius:999px;background:var(--accent-soft);color:var(--orange-700)}
+  .mkt-card .mh .pays{font-family:var(--font-display);font-weight:600;font-size:15px;color:var(--fg1)}
+  .mkt-row{display:grid;grid-template-columns:108px 1fr;gap:6px 12px;margin:4px 0;align-items:start}
+  .mkt-row .lbl{font-family:var(--font-mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--fg3);font-weight:700;padding-top:3px}
+  .mkt-row .val{font-size:13px;color:var(--fg1);line-height:1.45}
+  .mkt-chip{display:inline-block;font-size:11.5px;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:2px 8px;margin:2px 4px 2px 0;color:var(--fg2)}
+  .mkt-rule{font-size:12.5px;color:var(--fg1);line-height:1.45;padding-left:14px;position:relative;margin:3px 0}
+  .mkt-rule::before{content:"›";position:absolute;left:2px;color:var(--orange-500);font-weight:700}
+  .ct-card{background:var(--paper-50);border:1px solid var(--border);border-radius:12px;padding:12px 15px;margin-bottom:8px}
+  .ct-card .cn{font-weight:700;font-size:14px;color:var(--fg1)} .ct-card .cr{font-size:12px;color:var(--fg3);margin-left:6px}
+  @media(max-width:680px){.mkt-row{grid-template-columns:1fr}.mkt-row .lbl{padding-top:0}}
+
+  /* fiche .md (complément) */
+  .md{max-width:80ch;margin-top:8px}
+  .md h1{font-family:var(--font-display);font-weight:600;font-size:23px;line-height:1.08;margin:20px 0 6px}
+  .md h2{font-family:var(--font-display);font-weight:600;font-size:17px;margin:24px 0 4px;padding-top:13px;border-top:1px solid var(--border)}
+  .md h3{font-size:14px;font-weight:700;margin:13px 0 2px;color:var(--fg1)} .md h3.sub{color:var(--fg2);font-weight:600;font-size:13px;margin:7px 0 2px 2px}
+  .md p{font-size:14px;line-height:1.55;color:var(--fg1);margin:6px 0}
+  .md ul{margin:6px 0 10px;padding-left:20px} .md li{font-size:13.5px;line-height:1.5;margin:3px 0}
+  .md blockquote{margin:8px 0;padding:10px 14px;background:var(--paper-100);border-left:3px solid var(--orange-400);border-radius:8px;font-size:13px;color:var(--fg2);line-height:1.5}
+  .md hr{border:0;border-top:1px solid var(--border);margin:18px 0}
+  .md code{font-family:var(--font-mono);font-size:11.5px;background:var(--paper-100);border:1px solid var(--border);border-radius:6px;padding:1px 6px;color:var(--orange-600)}
+  .md strong{font-weight:700;color:var(--fg1)} .md a{color:var(--orange-600);font-weight:600}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div id="mtg-top" data-page="marques" data-sub="wiki marques (live)"></div>
+  <header class="masthead">
+    <div class="kick">Wiki — connaissance client</div>
+    <h1>Marques &amp; clients</h1>
+    <p>Le savoir de l'agence, <b>vivant depuis la base</b> : par client, ses marchés (dimensions, SKU, signature, langue, claims, spécificités) et ses interlocuteurs avec leurs conditions de validation. Les fiches <code>.md</code> curatées complètent en bas.</p>
+  </header>
+
+  <div class="docwrap">
+    <nav class="docnav" id="docnav" aria-label="Wiki"></nav>
+    <section class="doc">
+      <div class="updated" id="docMeta"></div>
+      <div id="docBody"><div class="loading">Chargement…</div></div>
+    </section>
+  </div>
+</div>
+
+<script src="https://unpkg.com/lucide@1.21.0"></script>
+<script src="supa.js?v=20260639"></script>
+<script src="ui.js?v=20260639"></script>
+<script src="chrome.js?v=20260637"></script>
+<script>
+"use strict";
+const esc = s => (s==null?"":String(s)).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+const $ = id => document.getElementById(id);
+const arr = a => Array.isArray(a)?a:[];
+
+const CLIENT_COLOR={"FrieslandCampina":"--c-frc","Cadyst/Panzani":"--c-cad","Ecobank":"--c-eco","NSIA":"--c-nsi","Sofavin/Cap Esterias":"--c-sof","Bel Group":"--c-bel"};
+const CLIENT_MD={"FrieslandCampina":"FRC.md","Cadyst/Panzani":"CAD.md","Ecobank":"ECO.md","Sofavin/Cap Esterias":"SOF.md","Bel Group":"CLIENTS-DIVERS.md"};
+const DOCS=[
+  {grp:"Références", file:"NOMMAGE.md",       label:"Canon de nommage",  color:"--c-ref"},
+  {grp:"Références", file:"REGISTRE.md",      label:"Registre",          color:"--c-ref"},
+  {grp:"Références", file:"RECO-LIBRARY.md",  label:"Bibliothèque reco", color:"--c-ref"},
+  {grp:"Références", file:"CONSOLIDATION.md", label:"Consolidation",     color:"--c-ref"},
+  {grp:"Références", file:"DRIVE-SYNC.md",    label:"Drive — sync",      color:"--c-ref"},
+  {grp:"Marques (fiches .md)", file:"FRC.md", label:"FRC (détaillé)",    color:"--c-frc"},
+  {grp:"Marques (fiches .md)", file:"CAD.md", label:"Cadyst (détaillé)", color:"--c-cad"},
+  {grp:"Marques (fiches .md)", file:"ECO.md", label:"Ecobank (détaillé)",color:"--c-eco"},
+  {grp:"Marques (fiches .md)", file:"SOF.md", label:"Sofavin (détaillé)",color:"--c-sof"},
+  {grp:"Marques (fiches .md)", file:"CLIENTS-DIVERS.md", label:"Autres clients", color:"--c-other"},
+];
+let MARKETS=[], CONTACTS=[], CLIENTS=[], CUR="";
+
+/* ── mini-markdown (fiches .md complémentaires) ── */
+function inline(s){ return s.replace(/`([^`]+)`/g,(m,c)=>`<code>${c}</code>`).replace(/\*\*([^*]+)\*\*/g,(m,b)=>`<strong>${b}</strong>`).replace(/(https?:\/\/[^\s)]+)/g,(m,u)=>`<a href="${u}" target="_blank" rel="noopener">${u}</a>`); }
+function renderMD(src){ const lines=src.replace(/\r/g,"").split("\n"); let out=[],inList=false; const cl=()=>{if(inList){out.push("</ul>");inList=false;}};
+  for(let raw of lines){ const line=raw.replace(/\s+$/,""); if(/^\s*$/.test(line)){cl();continue;}
+    if(/^---+$/.test(line.trim())){cl();out.push("<hr>");continue;} let m;
+    if(m=line.match(/^###\s+(↳\s*)?(.*)$/)){cl();out.push(`<h3 class="${m[1]?'sub':''}">${m[1]?'↳ ':''}${inline(esc(m[2]))}</h3>`);continue;}
+    if(m=line.match(/^##\s+(.*)$/)){cl();out.push(`<h2>${inline(esc(m[1]))}</h2>`);continue;}
+    if(m=line.match(/^#\s+(.*)$/)){cl();out.push(`<h1>${inline(esc(m[1]))}</h1>`);continue;}
+    if(m=line.match(/^>\s?(.*)$/)){cl();out.push(`<blockquote>${inline(esc(m[1]))}</blockquote>`);continue;}
+    if(m=line.match(/^[-*]\s+(.*)$/)){if(!inList){out.push("<ul>");inList=true;}out.push(`<li>${inline(esc(m[1]))}</li>`);continue;}
+    cl();out.push(`<p>${inline(esc(line))}</p>`);}
+  cl(); return out.join("\n"); }
+
+function buildNav(activeKey){
+  const groups={};
+  CLIENTS.forEach(c=>{ (groups["Clients (live)"]=groups["Clients (live)"]||[]).push({key:"c:"+c, label:c, color:CLIENT_COLOR[c]||"--c-other", n:MARKETS.filter(x=>x.client===c).length}); });
+  DOCS.forEach(d=>{ (groups[d.grp]=groups[d.grp]||[]).push({key:d.file,label:d.label,color:d.color}); });
+  let html=""; for(const g of ["Clients (live)","Références","Marques (fiches .md)"]){ if(!groups[g])continue;
+    html+=`<div class="grp">${esc(g)}</div>`+groups[g].map(it=>`<button data-key="${esc(it.key)}" class="${it.key===activeKey?'sel':''}"><span class="dot" style="background:var(${it.color})"></span>${esc(it.label)}${it.n?`<span class="n">${it.n}</span>`:""}</button>`).join("");
+  }
+  $("docnav").innerHTML=html;
+  $("docnav").querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>select(b.getAttribute("data-key"))));
+}
+
+function marketCard(mk){
+  const chips=(l,items)=> items&&items.length?`<div class="mkt-row"><span class="lbl">${l}</span><div class="val">${items.map(x=>`<span class="mkt-chip">${esc(x)}</span>`).join("")}</div></div>`:"";
+  const rules=(l,items)=> items&&items.length?`<div class="mkt-row"><span class="lbl">${l}</span><div class="val">${items.map(x=>`<div class="mkt-rule">${esc(x)}</div>`).join("")}</div></div>`:"";
+  const line=(l,v)=> v?`<div class="mkt-row"><span class="lbl">${l}</span><div class="val">${esc(v)}</div></div>`:"";
+  return `<div class="mkt-card"><div class="mh"><span class="pill">${esc(mk.marque||"—")}</span>${mk.pays?`<span class="pays">${esc(mk.pays)}</span>`:""}</div>
+    ${chips("Dimensions",arr(mk.dimensions))}${chips("SKU / offres",arr(mk.skus))}${line("Signature",mk.signature)}${line("Langue",mk.langue)}${chips("Claims",arr(mk.claims))}${rules("Spécificités",arr(mk.specificites))}</div>`;
+}
+function contactCard(c){ return `<div class="ct-card"><div><span class="cn">${esc(c.nom)}</span><span class="cr">${esc(c.role||"")}</span></div>${arr(c.conditions_validation).map(x=>`<div class="mkt-rule">${esc(x)}</div>`).join("")}</div>`; }
+
+async function renderClient(client){
+  const mk=MARKETS.filter(x=>x.client===client), ct=CONTACTS.filter(x=>x.client===client);
+  const col=CLIENT_COLOR[client]||"--c-other";
+  document.querySelector(".doc").style.borderTopColor=`var(${col})`;
+  $("docMeta").textContent="Source : base live (client_markets / client_contacts)";
+  let html=`<div class="cv-h">${esc(client)}</div><div class="cv-sub">${mk.length} marché${mk.length>1?"s":""} · ${ct.length} interlocuteur${ct.length>1?"s":""}</div>`;
+  html+=`<div class="cv-sec">Marchés & particularités</div>`+(mk.length?mk.map(marketCard).join(""):`<div class="loading">Aucun marché en base.</div>`);
+  if(ct.length) html+=`<div class="cv-sec">Interlocuteurs — comment faire valider</div>`+ct.map(contactCard).join("");
+  // fiche .md curatée en complément
+  const mdFile=CLIENT_MD[client];
+  if(mdFile){ html+=`<div class="cv-sec">Fiche détaillée (curatée)</div><div id="cv-md" class="md"><div class="loading">Chargement de la fiche…</div></div>`; }
+  $("docBody").innerHTML=html;
+  if(mdFile){ try{ const r=await fetch(mdFile,{cache:"no-cache"}); $("cv-md").innerHTML = r.ok?renderMD(await r.text()):'<div class="err">Fiche indisponible.</div>'; }catch(e){ const el=$("cv-md"); if(el) el.innerHTML='<div class="err">Fiche indisponible.</div>'; } }
+  if(window.lucide) window.lucide.createIcons();
+}
+async function renderDoc(file){
+  document.querySelector(".doc").style.borderTopColor=`var(${(DOCS.find(d=>d.file===file)||{}).color||"--c-ref"})`;
+  $("docMeta").textContent="";
+  $("docBody").innerHTML=`<div class="loading">Chargement…</div>`;
+  try{ const r=await fetch(file,{cache:"no-cache"}); if(!r.ok) throw new Error("HTTP "+r.status);
+    $("docBody").innerHTML=`<div class="md">${renderMD(await r.text())}</div>`;
+    const lm=r.headers.get("last-modified"); $("docMeta").textContent=lm?("Mis à jour · "+new Date(lm).toLocaleDateString("fr-FR",{day:"2-digit",month:"short",year:"numeric"})):("Source · "+file);
+  }catch(err){ $("docBody").innerHTML=`<div class="err">Impossible de charger ${esc(file)} (${esc(err.message)}).</div>`; }
+  if(window.lucide) window.lucide.createIcons();
+}
+function select(key){
+  CUR=key; try{ localStorage.setItem("matanga:wiki", key); }catch(e){}
+  if(location.hash.slice(1)!==key) history.replaceState(null,"","#"+key);
+  document.querySelectorAll(".docnav button").forEach(b=>b.classList.toggle("sel", b.getAttribute("data-key")===key));
+  if(key.startsWith("c:")) renderClient(key.slice(2)); else renderDoc(key);
+  document.querySelector(".shell").scrollIntoView({block:"start"});
+}
+
+(async function init(){
+  try{ MARKETS=await loadMarkets(); CONTACTS=await loadContacts(); }catch(e){ MARKETS=[]; CONTACTS=[]; }
+  CLIENTS=[...new Set(MARKETS.map(m=>m.client).filter(Boolean))].sort();
+  const validKey=k=>{ if(!k) return false; if(k.startsWith("c:")) return CLIENTS.includes(k.slice(2)); return DOCS.some(d=>d.file===k); };
+  let start=location.hash.slice(1); if(!validKey(start)){ try{ start=localStorage.getItem("matanga:wiki")||""; }catch(e){} }
+  if(!validKey(start)) start = CLIENTS.length?("c:"+CLIENTS[0]):(DOCS[0].file);
+  buildNav(start); select(start);
+  window.addEventListener("hashchange",()=>{ const k=location.hash.slice(1); if(validKey(k)){ buildNav(k); select(k); } });
+  if(window.lucide) window.lucide.createIcons();
+})();
+</script>
+</body>
+</html>

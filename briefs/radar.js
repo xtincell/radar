@@ -1,6 +1,6 @@
 "use strict";
 /* ===========================================================
-   Radar — logic
+   Matanga RADAR v2 — logic
    Reads window.BRIEFS (from data.js). Vanilla JS.
    =========================================================== */
 
@@ -9,8 +9,11 @@ const DONE_STATUS = new Set(["Livré","Livré (cycle)","Validé","Bouclé","Arch
 const CLOSED_STATUS = new Set(["Envoyé dans Slack","Livré","Livré (cycle)","Validé","Bouclé"]); // "traités"
 const isFrozen = m => m.statut==="Frozen" || m.statut==="Gelé";   // gelé : ni actif, ni traité
 
-// Mapping client → couleur : vide par défaut (pas de client en dur). À renseigner via app_config côté serveur.
-const CLIENT_VAR = {};
+const CLIENT_VAR = {
+  "Cadyst/Panzani":"--c-cad","FrieslandCampina":"--c-frc","Ecobank":"--c-eco","Bel Group":"--c-bel",
+  "NSIA":"--c-nsi","Sofavin/Cap Esterias":"--c-sof","Danone":"--c-dan","Delifood":"--c-dlf",
+  "TRADEX SA":"--c-trx","Florida":"--c-flo","Fokou Gabon":"--c-fok"
+};
 const clientVar = c => CLIENT_VAR[c] || "--c-other";
 const clientCol = c => `var(${clientVar(c)})`;
 
@@ -20,6 +23,7 @@ const STATUT_COL = {
   "Validé":"var(--st-livre)","Bouclé":"var(--st-boucle)","Envoyé dans Slack":"var(--st-slack)","Frozen":"var(--st-frozen)","Archivé":"var(--st-archive)","":"var(--st-recu)"
 };
 const ACTIVE_STATUSES = ["En cours","En attente client","Reçu","Bloqué"];
+const TEAM = ["Alexandre","Loïc Papin","William K. Mandengue","Serge","Vanelle","Lydienne","Ariel","Auriol","Derick","Nelson","Stephane Ondoua","Luther"];
 const STATUT_OPTS = ["Reçu","En cours","En attente client","Bloqué","Envoyé dans Slack","Livré","Validé","Bouclé","Frozen","Archivé"];
 // date locale (Douala UTC+1) — pas d'UTC (corrige un décalage de jour sur closed_at)
 const todayISO = () => { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; };
@@ -28,7 +32,7 @@ const $ = s => document.querySelector(s);
 const esc = s => (s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
 // ---- triage (local) ----
-const TKEY = "radar:done:";
+const TKEY = "matanga:radar:done:";
 const isTraite = nd => { try { return localStorage.getItem(TKEY+nd)==="1"; } catch(e){ return false; } };
 const setTraite = (nd,v) => { try { v?localStorage.setItem(TKEY+nd,"1"):localStorage.removeItem(TKEY+nd); } catch(e){} };
 
@@ -51,7 +55,8 @@ const URG_CLS = {late:"urg-late",block:"urg-block",p0:"urg-p0",wait:"urg-wait",p
 
 function normResp(r){
   if(!r) return "";
-  return r.trim();
+  const x = r.replace(/Dérick/g,"Derick").trim();
+  return x;
 }
 
 const state = { client:"", q:"", seg:"all" };

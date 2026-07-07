@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<script>try{if(localStorage.getItem("matanga:theme")==="dark")document.documentElement.dataset.theme="dark";}catch(e){}</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Matanga — Wiki clients</title>
+<link rel="stylesheet" href="colors_and_type.css?v=20260625">
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg-app);color:var(--fg1);font-family:var(--font-sans);-webkit-font-smoothing:antialiased;min-height:100vh}
+  .wrap{max-width:1180px;margin:0 auto;padding:14px 18px 70px}
+  .head{margin:16px 2px 6px}
+  .head h1{font-family:var(--font-display);font-weight:600;font-size:30px;margin:0 0 4px;letter-spacing:-.01em}
+  .head .sub{color:var(--fg2);font-size:14px}
+  .bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:16px 2px 18px}
+  .bar input{flex:1;min-width:200px;font:inherit;font-size:14px;padding:10px 13px;border:1px solid var(--border);border-radius:var(--radius-pill);background:var(--surface);color:var(--fg1)}
+  .bar input:focus{outline:2px solid var(--orange-400);border-color:transparent}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px;cursor:pointer;
+    box-shadow:var(--shadow-sm);transition:transform .14s var(--ease-out),box-shadow .14s,border-color .14s}
+  .card:hover{transform:translateY(-3px);box-shadow:var(--shadow-md);border-color:var(--orange-400)}
+  .card h3{font-family:var(--font-display);font-weight:600;font-size:19px;margin:0 0 8px;letter-spacing:-.01em}
+  .pills{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+  .pill{font-family:var(--font-mono);font-size:10.5px;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--surface-sunk);color:var(--fg2);border:1px solid var(--border)}
+  .pill.mk{background:var(--accent-soft);color:var(--orange-700);border-color:transparent}
+  .card .mq{color:var(--fg3);font-size:12.5px;margin-top:10px;line-height:1.4}
+  .empty{color:var(--fg3);text-align:center;padding:60px 0;font-style:italic}
+
+  .scrim{position:fixed;inset:0;background:rgba(20,16,10,.5);opacity:0;pointer-events:none;transition:opacity .2s;z-index:60;backdrop-filter:blur(2px)}
+  .scrim.show{opacity:1;pointer-events:auto}
+  .drawer{position:fixed;top:0;right:0;height:100vh;width:min(640px,100%);background:var(--surface);
+    border-left:1px solid var(--border);box-shadow:var(--shadow-lg);transform:translateX(100%);
+    transition:transform .26s var(--ease-out);z-index:70;overflow:auto}
+  .drawer.show{transform:none}
+  .dh{padding:22px 24px 14px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface);z-index:1}
+  .dh h2{margin:0;font-family:var(--font-display);font-weight:600;font-size:24px}
+  .dh .pills{margin-top:10px}
+  .dclose{position:absolute;top:16px;right:16px;width:34px;height:34px;border:1px solid var(--border);background:var(--bg-app);
+    border-radius:10px;cursor:pointer;font-size:16px;color:var(--fg2)}
+  .dclose:hover{border-color:var(--orange-400);color:var(--orange-600)}
+  .db{padding:18px 24px 60px}
+  .sec{margin:18px 0}
+  .sec h4{font-family:var(--font-mono);font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--orange-700);margin:0 0 8px;display:flex;align-items:center;gap:8px}
+  .sec h4::after{content:"";flex:1;height:1px;background:var(--border)}
+  .md{background:var(--surface-cream);border:1px solid var(--border);border-radius:var(--radius-md);padding:13px 15px;line-height:1.6;font-size:14px}
+  .md h5{font-family:var(--font-display);font-size:14.5px;margin:8px 0 5px;color:var(--fg1)}
+  .md ul{margin:4px 0;padding-left:18px}.md li{margin:2px 0;color:var(--fg2)}
+  .md p{margin:4px 0;color:var(--fg2)}
+  textarea{width:100%;font:inherit;font-size:13px;font-family:var(--font-mono);line-height:1.5;padding:11px 13px;border:1px solid var(--border);
+    border-radius:var(--radius-md);background:var(--bg-app);color:var(--fg1);min-height:120px;resize:vertical}
+  textarea:focus{outline:2px solid var(--orange-400);border-color:transparent}
+  .actions{display:flex;gap:9px;margin-top:14px;flex-wrap:wrap}
+  .btn{border:0;background:var(--ink-950);color:#F7F2EA;font:inherit;font-weight:700;font-size:14px;padding:11px 18px;border-radius:999px;cursor:pointer}
+  .btn:hover{filter:brightness(1.12)} .btn.ghost{background:transparent;color:var(--fg2);border:1px solid var(--border)}
+  .btn.ghost:hover{border-color:var(--orange-400);color:var(--orange-600);filter:none}
+  .lk{font-family:var(--font-mono);font-size:12px;color:var(--orange-700);text-decoration:none}.lk:hover{text-decoration:underline}
+  .note{font-size:12px;color:var(--fg3);margin-top:6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="mtg-top" data-page="wiki" data-sub="wiki clients"></div>
+
+  <div class="head">
+    <h1>Wiki clients</h1>
+    <div class="sub">Connaissance par client : identité &amp; marchés, exigences par marché, charte &amp; créa, contacts &amp; validation. Source de vérité éditable ici, sauvegardée dans Notion.</div>
+  </div>
+
+  <div class="bar">
+    <input id="q" type="search" placeholder="Rechercher un client, un marché, une marque…" autocomplete="off">
+    <span class="note" id="count"></span>
+  </div>
+
+  <div id="grid" class="grid"><div class="empty">Chargement…</div></div>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" aria-hidden="true"></aside>
+
+<script src="https://unpkg.com/lucide@1.21.0"></script>
+<script src="supa.js?v=20260639"></script>
+<script src="ui.js?v=20260639"></script>
+<script src="chrome.js?v=20260637"></script>
+<script>
+"use strict";
+const $=s=>document.querySelector(s);
+const esc=s=>(s==null?"":String(s)).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+let CLIENTS=[], CANEDIT=false, CUR=null;
+
+// mini-rendu markdown (titres ###/##, **gras**, listes -)
+function md(t){
+  const lines=String(t||"").split(/\r?\n/); let html="",inUl=false;
+  const inl=s=>esc(s).replace(/\*\*(.+?)\*\*/g,"<b>$1</b>");
+  for(let l of lines){
+    if(/^\s*-\s+/.test(l)){ if(!inUl){html+="<ul>";inUl=true;} html+="<li>"+inl(l.replace(/^\s*-\s+/,""))+"</li>"; continue; }
+    if(inUl){html+="</ul>";inUl=false;}
+    const h=l.match(/^(#{2,5})\s+(.*)$/);
+    if(h){ html+="<h5>"+inl(h[2])+"</h5>"; continue; }
+    if(l.trim()==="") continue;
+    html+="<p>"+inl(l)+"</p>";
+  }
+  if(inUl)html+="</ul>";
+  return html||"<p style='color:var(--fg3)'>—</p>";
+}
+
+function cardHTML(c){
+  const mk=(c.pays||"").split(/,\s*/).filter(Boolean).slice(0,4).map(p=>`<span class="pill mk">${esc(p)}</span>`).join("");
+  return `<div class="card" data-id="${c.id}">
+    <h3>${esc(c.nom)}</h3>
+    <div class="pills">${c.secteur?`<span class="pill">${esc(c.secteur)}</span>`:""}${mk||'<span class="pill">marché à préciser</span>'}</div>
+    ${c.marques?`<div class="mq">${esc(c.marques)}</div>`:""}
+  </div>`;
+}
+function render(){
+  const q=($("#q").value||"").toLowerCase().trim();
+  const list=CLIENTS.filter(c=>!q || (c.nom+" "+c.pays+" "+c.marques+" "+c.secteur).toLowerCase().includes(q));
+  $("#count").textContent=list.length+" / "+CLIENTS.length+" clients";
+  $("#grid").innerHTML = list.length ? list.map(cardHTML).join("") : `<div class="empty">Aucun client ne correspond.</div>`;
+  document.querySelectorAll(".card").forEach(el=>el.onclick=()=>openClient(el.dataset.id));
+}
+
+const SECTIONS=[
+  {k:"exigences",ic:"globe",t:"Exigences par marché"},
+  {k:"charte",ic:"palette",t:"Charte & créa (Do / Don't)"},
+  {k:"contacts",ic:"users",t:"Contacts & validation"},
+  {k:"notes",ic:"sticky-note",t:"Notes"},
+];
+function viewHTML(c){
+  const pays=(c.pays||"").split(/,\s*/).filter(Boolean).map(p=>`<span class="pill mk">${esc(p)}</span>`).join("");
+  const secs=SECTIONS.map(s=>`<div class="sec"><h4><i data-lucide="${s.ic}" style="width:14px;height:14px"></i>${esc(s.t)}</h4><div class="md">${md(c[s.k])}</div></div>`).join("");
+  return `<div class="dh">
+      <button class="dclose" id="dclose">✕</button>
+      <h2>${esc(c.nom)}</h2>
+      <div class="pills">${c.secteur?`<span class="pill">${esc(c.secteur)}</span>`:""}${c.langues?`<span class="pill">${esc(c.langues)}</span>`:""}${pays}</div>
+    </div>
+    <div class="db">
+      <div class="sec"><h4><i data-lucide="building-2" style="width:14px;height:14px"></i>Identité & marchés</h4>
+        <div class="md"><p><b>Marques :</b> ${esc(c.marques||"—")}</p><p><b>Marchés :</b> ${esc(c.pays||"—")}</p><p><b>Langue(s) :</b> ${esc(c.langues||"—")}</p></div></div>
+      ${secs}
+      <a class="lk" href="dashboard.html?c=${encodeURIComponent(c.nom)}">→ Voir les projets de ${esc(c.nom)} dans le radar</a>
+      <div class="actions">${CANEDIT?`<button class="btn" id="edit">✎ Éditer la fiche</button>`:`<span class="note">Édition réservée au manager / superviseur.</span>`}</div>
+    </div>`;
+}
+function editHTML(c){
+  const fields=[
+    {k:"secteur",t:"Secteur",ta:false},{k:"langues",t:"Langue(s)",ta:false},
+    {k:"pays",t:"Marchés (séparés par des virgules)",ta:false},{k:"marques",t:"Marques",ta:false},
+    {k:"exigences",t:"Exigences par marché (markdown)",ta:true},
+    {k:"charte",t:"Charte & créa — Do / Don't (markdown)",ta:true},
+    {k:"contacts",t:"Contacts & validation (markdown)",ta:true},
+    {k:"notes",t:"Notes (markdown)",ta:true},
+  ];
+  const body=fields.map(f=>`<div class="sec"><h4>${esc(f.t)}</h4>${
+    f.ta?`<textarea data-k="${f.k}">${esc(c[f.k]||"")}</textarea>`
+        :`<input data-k="${f.k}" style="width:100%;font:inherit;font-size:14px;padding:10px 13px;border:1px solid var(--border);border-radius:10px;background:var(--bg-app);color:var(--fg1)" value="${esc(c[f.k]||"")}">`
+  }</div>`).join("");
+  return `<div class="dh"><button class="dclose" id="dclose">✕</button><h2>Éditer — ${esc(c.nom)}</h2></div>
+    <div class="db">${body}
+      <div class="actions"><button class="btn" id="save">Enregistrer</button><button class="btn ghost" id="cancel">Annuler</button></div>
+      <div class="note">Sauvegardé dans Supabase (source de vérité). La sauvegarde Notion est gérée séparément (backup).</div>
+    </div>`;
+}
+function openClient(id){
+  CUR=CLIENTS.find(c=>String(c.id)===String(id)); if(!CUR) return;
+  $("#drawer").innerHTML=viewHTML(CUR); showDrawer(); wireDrawer(false);
+}
+function showDrawer(){ $("#drawer").classList.add("show"); $("#scrim").classList.add("show"); if(window.lucide)lucide.createIcons(); }
+function closeDrawer(){ $("#drawer").classList.remove("show"); $("#scrim").classList.remove("show"); }
+function wireDrawer(editing){
+  $("#dclose").onclick=closeDrawer;
+  if(!editing && CANEDIT && $("#edit")) $("#edit").onclick=()=>{ $("#drawer").innerHTML=editHTML(CUR); wireDrawer(true); if(window.lucide)lucide.createIcons(); };
+  if(editing){
+    $("#cancel").onclick=()=>openClient(CUR.id);
+    $("#save").onclick=async()=>{
+      const patch={};
+      $("#drawer").querySelectorAll("[data-k]").forEach(el=>patch[el.dataset.k]=el.value);
+      const btn=$("#save"); btn.disabled=true; btn.textContent="Enregistrement…";
+      try{ const [row]=await updateClient(CUR.id,patch); Object.assign(CUR,row||patch);
+        const i=CLIENTS.findIndex(c=>c.id===CUR.id); if(i>=0)CLIENTS[i]=CUR;
+        flash&&flash("✓ Fiche enregistrée","ok"); openClient(CUR.id); render();
+      }catch(e){ flash?flash("Échec : "+e.message,"err"):alert(e.message); btn.disabled=false; btn.textContent="Enregistrer"; }
+    };
+  }
+}
+
+$("#scrim").onclick=closeDrawer;
+document.addEventListener("keydown",e=>{ if(e.key==="Escape")closeDrawer(); });
+$("#q").addEventListener("input",render);
+
+(async function(){
+  try{ const id=await (window.loadIdentity?loadIdentity():Promise.resolve({role:"owner"})); CANEDIT=(id.role==="owner"||id.role==="supervisor"); }catch(e){ CANEDIT=true; }
+  try{ CLIENTS=await loadClients(); render(); }
+  catch(e){ $("#grid").innerHTML=`<div class="empty">Impossible de charger le wiki (${esc(e.message)}).</div>`; }
+})();
+</script>
+</body>
+</html>

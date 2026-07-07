@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<script>try{if(localStorage.getItem("matanga:theme")==="dark")document.documentElement.dataset.theme="dark";}catch(e){}</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Matanga — Faits</title>
+<link rel="stylesheet" href="colors_and_type.css?v=20260630">
+<style>
+  :root{--c-cad:#FF6A14;--c-frc:#2D6BD4;--c-eco:#1F9D63;--c-bel:#E23D2E;--c-nsi:#9A3F57;--c-sof:#8F3208;--c-other:#9A8F80;}
+  *{box-sizing:border-box} html,body{margin:0}
+  body{font-family:var(--font-text,'Hanken Grotesk',system-ui,sans-serif);
+    background:radial-gradient(1100px 640px at 90% -10%, var(--bg-app-warm) 0%, transparent 58%), var(--bg-app);
+    color:var(--fg1);min-height:100vh;-webkit-font-smoothing:antialiased}
+  .shell{max-width:880px;margin:0 auto;padding:22px 28px 100px}
+  .hero{margin:30px 2px 6px}
+  .hero .hi{font-family:var(--font-mono);font-size:11px;text-transform:uppercase;letter-spacing:.16em;color:var(--orange-600);font-weight:600}
+  .hero h1{font-family:var(--font-display);font-weight:500;font-size:clamp(28px,3.4vw,40px);line-height:1.04;letter-spacing:var(--tracking-tight);margin:7px 0 4px}
+  .hero h1 em{font-style:normal;color:var(--success)}
+  .hero p{margin:0;color:var(--fg2);font-size:14.5px}
+  .seg{display:inline-flex;gap:4px;background:var(--paper-100);border-radius:var(--radius-pill);padding:5px;margin:18px 0 4px}
+  .seg button{border:0;background:transparent;cursor:pointer;border-radius:var(--radius-pill);padding:9px 18px;font:inherit;font-size:13.5px;font-weight:600;color:var(--fg2);transition:.13s}
+  .seg button.on{background:var(--ink-950);color:#F7F2EA}
+  .ctl{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 2px 2px}
+  .me-pill{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--orange-300);background:var(--accent-soft,#fff4ec);color:var(--orange-700);font:inherit;font-size:13px;font-weight:700;padding:9px 14px;border-radius:var(--radius-pill);cursor:pointer;white-space:nowrap}
+  .me-pill .who{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:var(--orange-500);color:#fff;font-size:11px;font-weight:800}
+  .me-pill.empty{border-color:var(--border);background:var(--surface);color:var(--fg2)} .me-pill.empty .who{background:var(--ink-900)}
+  .count{font-family:var(--font-mono);font-size:12px;color:var(--fg3);margin-left:auto}
+  .day{margin:24px 0 8px;display:flex;align-items:baseline;gap:11px}
+  .day h2{font-family:var(--font-display);font-weight:600;font-size:16px;margin:0;color:var(--fg1)}
+  .day .gl{flex:1;height:1px;background:var(--border)} .day .n{font-family:var(--font-mono);font-size:11px;color:var(--fg3)}
+  .rows{display:flex;flex-direction:column;gap:7px}
+  .row{display:grid;grid-template-columns:auto 1fr auto;gap:13px;align-items:center;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md,12px);padding:12px 15px;transition:.13s}
+  .row:hover{border-color:var(--orange-300)}
+  .check{width:23px;height:23px;border-radius:7px;background:var(--success);border:1.8px solid var(--success);color:#fff;cursor:pointer;display:grid;place-items:center;flex:0 0 auto;transition:.12s}
+  .check:hover{filter:brightness(.94)}
+  .main{min-width:0;cursor:pointer;display:flex;align-items:center;gap:11px}
+  .cdot{width:8px;height:8px;border-radius:50%;flex:0 0 auto}
+  .pt{font-weight:600;font-size:14px;color:var(--fg1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-decoration:line-through;text-decoration-color:var(--fg4)}
+  .ps{font-size:12px;color:var(--fg3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .who-t{font-size:12px;color:var(--fg2);font-weight:600;white-space:nowrap}
+  .ontime{font-family:var(--font-mono);font-size:9.5px;font-weight:700;padding:3px 8px;border-radius:999px;white-space:nowrap}
+  .ontime.ok{background:#dcf6e3;color:#137a3a} .ontime.late{background:#fde3d6;color:#c2440a}
+  .empty{text-align:center;color:var(--fg3);padding:48px 20px;font-size:15px;font-family:var(--font-display)}
+  .src{font-family:var(--font-mono);font-size:10.5px;color:var(--fg4);margin-top:24px;text-align:right}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div id="mtg-top" data-page="faits" data-sub="ce qui est fait"></div>
+  <div class="hero">
+    <div class="hi">Ce qui est <span style="color:var(--success)">fait</span></div>
+    <h1>Faits <em id="periodlbl">— aujourd'hui</em></h1>
+    <p id="sub">Coché = livré. Reclique sur la coche verte pour <b>rouvrir</b> une tâche.</p>
+  </div>
+  <div class="seg" id="seg">
+    <button data-p="day" class="on">Aujourd'hui</button>
+    <button data-p="week">Cette semaine</button>
+    <button data-p="month">Ce mois</button>
+  </div>
+  <div class="ctl">
+    <button class="me-pill empty" id="me-pill" type="button" title="Choisir qui tu es"></button>
+    <span class="count" id="count"></span>
+  </div>
+  <div id="list"></div>
+  <div class="src" id="src"></div>
+</div>
+
+<script src="https://unpkg.com/lucide@1.21.0"></script>
+<script src="supa.js?v=20260639"></script>
+<script src="ui.js?v=20260639"></script>
+<script src="chrome.js?v=20260637"></script>
+<script>
+"use strict";
+const clientCol = window.clientVar;
+const $=s=>document.querySelector(s);
+const esc=s=>(s==null?"":String(s)).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const MONTHS=["janv.","févr.","mars","avr.","mai","juin","juil.","août","sept.","oct.","nov.","déc."];
+const JOURS=["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
+const TODAY=new Date(new Date().toDateString());
+const dStr=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+const DONE=new Set(["Envoyé dans Slack","Livré","Livré (cycle)","Validé","Bouclé","Archivé"]);
+const effDone=m=>DONE.has(m.statut)||(m.closedAt&&String(m.closedAt).length>=4);
+const initial=s=>((s||"").trim().charAt(0).toUpperCase()||"?");
+
+let ALL=[]; const state={period:"day", resp:""};
+
+function periodRange(){
+  if(state.period==="day"){ return [dStr(TODAY), dStr(TODAY)]; }
+  if(state.period==="week"){ const d=new Date(TODAY); const wd=(d.getDay()+6)%7; const mon=new Date(d); mon.setDate(d.getDate()-wd); return [dStr(mon), dStr(TODAY)]; }
+  const m0=new Date(TODAY.getFullYear(),TODAY.getMonth(),1); return [dStr(m0), dStr(TODAY)];
+}
+function lockedMember(){ const id=window.MTG_IDENTITY; return (id&&id.role==="member"&&id.person)?id.person:""; }
+function mine(m){ if(!state.resp) return true; return ownsTask(m.responsable, state.resp); }
+
+function render(){
+  const [a,b]=periodRange();
+  const done=ALL.filter(m=>{ if(m.entree==="Doublon"||(m.ndeg||"").charAt(0)==="≈") return false;
+    if(!effDone(m)) return false; const cl=String(m.closedAt||"").slice(0,10);
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(cl)) return false; return cl>=a && cl<=b && mine(m); });
+  $("#periodlbl").textContent = state.period==="day"?"— aujourd'hui":state.period==="week"?"— cette semaine":"— ce mois";
+  $("#count").textContent = `${done.length} fait${done.length>1?"s":""}`+(state.resp?` · ${state.resp}`:"");
+  // groupé par jour (closed_at), récent d'abord
+  const byDay={}; done.forEach(m=>{ const cl=String(m.closedAt).slice(0,10); (byDay[cl]=byDay[cl]||[]).push(m); });
+  const days=Object.keys(byDay).sort((x,y)=>y.localeCompare(x));
+  if(!days.length){ $("#list").innerHTML=`<div class="empty">Rien de coché sur cette période${state.resp?" pour "+esc(state.resp):""}.</div>`; return; }
+  const onTime=m=>(!m.deadline||String(m.closedAt).slice(0,10)<=m.deadline);
+  let html="";
+  for(const d of days){
+    const dt=new Date(d+"T00:00:00"); const lbl=`${JOURS[dt.getDay()]} ${dt.getDate()} ${MONTHS[dt.getMonth()]}`;
+    const arr=byDay[d].sort((x,y)=>(x.ndeg||"").localeCompare(y.ndeg||"",undefined,{numeric:true}));
+    html+=`<div class="day"><h2>${esc(d===dStr(TODAY)?"Aujourd'hui":lbl)}</h2><span class="gl"></span><span class="n">${arr.length}</span></div><div class="rows">`;
+    html+=arr.map(m=>{ const sub=[m.marque,m.client].filter(Boolean).join(" · ");
+      const who=(!state.resp&&m.responsable)?`<span class="who-t">${esc((m.responsable||"").replace(/Dérick/g,"Derick").split(/[\/&]/)[0].trim())}</span>`:"";
+      const ot=m.deadline?`<span class="ontime ${onTime(m)?"ok":"late"}">${onTime(m)?"à temps":"en retard"}</span>`:"";
+      return `<div class="row" data-nd="${esc(m.ndeg)}">
+        <button class="check" data-uncheck="${esc(m.ndeg)}" title="Rouvrir (décocher)"><i data-lucide="check" style="width:14px;height:14px"></i></button>
+        <div class="main" data-open="${esc(m.ndeg)}"><span class="cdot" style="background:${clientCol(m.client)}"></span>
+          <div style="min-width:0"><div class="pt">${esc(m.projet)||"sans titre"}</div><div class="ps">${esc(sub)}</div></div></div>
+        <div style="display:flex;gap:8px;align-items:center">${ot}${who}</div></div>`;
+    }).join("")+`</div>`;
+  }
+  $("#list").innerHTML=html; if(window.lucide) window.lucide.createIcons();
+}
+
+async function uncheck(nd){
+  const m=ALL.find(x=>x.ndeg===nd); if(!m||!m.id||!isLive()){ flash("Hors-ligne","warn"); return; }
+  const prev={statut:m.statut,closedAt:m.closedAt};
+  m.statut="En cours"; m.closedAt=""; render();
+  try{ await reopenTask(m.id,m.ndeg); }catch(e){ m.statut=prev.statut; m.closedAt=prev.closedAt; render(); flash("Échec","err"); }
+}
+function renderPill(){ const pill=$("#me-pill"), me=getMe();
+  if(me&&me!=="*"){ pill.classList.remove("empty"); pill.innerHTML=`<span class="who">${esc(initial(me))}</span>${esc(me)}${lockedMember()?"":'<span style="color:var(--fg3);font-size:11.5px">· changer</span>'}`; }
+  else if(me==="*"){ pill.classList.remove("empty"); pill.innerHTML=`<span class="who">★</span>Tout l'équipe`; }
+  else { pill.classList.add("empty"); pill.innerHTML=`<span class="who">?</span>Qui es-tu&nbsp;?`; }
+}
+function applyIdentity(){ const lm=lockedMember(); if(lm){ setMe(lm); } const me=getMe(); state.resp=(me&&me!=="*")?me:""; renderPill(); }
+
+async function boot(){
+  try{ ALL=await loadBriefsLive(); }catch(e){ ALL=[]; }
+  applyIdentity();
+  $("#seg").addEventListener("click",e=>{ const b=e.target.closest("[data-p]"); if(!b) return;
+    state.period=b.dataset.p; $("#seg").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b)); render(); });
+  $("#me-pill").addEventListener("click",()=>{ if(lockedMember()) return;
+    const names=teamFrom(ALL); const pick=prompt("Qui es-tu ? (nom exact, vide = tout voir)\n"+names.join(", ")); if(pick===null) return;
+    setMe(pick.trim()||"*"); applyIdentity(); render(); });
+  $("#list").addEventListener("click",e=>{ const u=e.target.closest("[data-uncheck]"); if(u){ e.stopPropagation(); uncheck(u.dataset.uncheck); return; }
+    const o=e.target.closest("[data-open]"); if(o){ const m=ALL.find(x=>x.ndeg===o.dataset.open); if(window.openBriefModal&&m) openBriefModal(m); else location.href="tache.html?code="+encodeURIComponent(o.dataset.open); } });
+  render();
+  $("#src").textContent=(window.SUPA_SOURCE==="supabase")?"Source : Supabase (live)":"Source : —";
+  if(window.sourceBanner) sourceBanner();
+  if(window.lucide) window.lucide.createIcons();
+}
+document.addEventListener("DOMContentLoaded", boot);
+</script>
+</body>
+</html>

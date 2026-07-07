@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<script>try{if(localStorage.getItem("matanga:theme")==="dark")document.documentElement.dataset.theme="dark";}catch(e){}</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Matanga — Briefs à valider (Derick)</title>
+<link rel="stylesheet" href="colors_and_type.css?v=20260622">
+<style>
+  :root{
+    --c-cad:#FF6A14;--c-frc:#2D6BD4;--c-eco:#1F9D63;--c-bel:#E23D2E;--c-nsi:#9A3F57;
+    --c-sof:#8F3208;--c-dan:#3E8FA8;--c-dlf:#C2440A;--c-trx:#5E6B30;--c-flo:#B07A1E;
+    --c-fok:#7C5026;--c-other:#9A8F80;--accent:#FF6A14;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg-app,#F7F2EA);color:var(--fg1,#241E17);font-family:var(--font-sans,system-ui);-webkit-font-smoothing:antialiased;min-height:100vh}
+  .wrap{max-width:1080px;margin:0 auto;padding:16px 18px 60px}
+  .head{margin:18px 0 6px}
+  .head h1{font-family:var(--font-display,Georgia);font-weight:600;font-size:30px;margin:0 0 4px}
+  .head h1 em{color:var(--accent);font-style:normal}
+  .head .sub{color:var(--fg2,#5A5046);font-size:14px;max-width:70ch}
+  .note{background:color-mix(in srgb,var(--accent) 9%,var(--surface,#fff));border:1px solid color-mix(in srgb,var(--accent) 30%,var(--border,#E7DFD3));border-radius:12px;padding:12px 15px;font-size:13px;color:var(--fg2);margin:12px 0;line-height:1.45}
+  .stats{display:flex;gap:12px;flex-wrap:wrap;margin:12px 0}
+  .stat{background:var(--surface,#fff);border:1px solid var(--border,#E7DFD3);border-radius:14px;padding:11px 15px;min-width:120px}
+  .stat .v{font-family:var(--font-display,Georgia);font-size:24px;font-weight:600}
+  .stat .l{font-family:var(--font-mono,monospace);font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--fg3,#857B6E)}
+  .bar{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin:10px 0 18px}
+  .bar input,.bar select{font:inherit;font-size:13px;padding:8px 11px;border:1px solid var(--border,#E7DFD3);border-radius:999px;background:var(--surface,#fff);color:var(--fg1)}
+  .bar input{flex:1;min-width:180px}
+  .grp{margin:18px 0 6px;display:flex;align-items:center;gap:9px}
+  .grp .cdot{width:11px;height:11px;border-radius:3px}
+  .grp h2{font-family:var(--font-display,Georgia);font-weight:600;font-size:17px;margin:0;flex:0 0 auto}
+  .grp .n{font-family:var(--font-mono,monospace);font-size:11px;color:var(--fg3);flex:1}
+  .grp .all{border:1px solid var(--border);background:transparent;color:var(--accent);font:inherit;font-size:12px;font-weight:700;padding:6px 11px;border-radius:999px;cursor:pointer}
+  .grp .all:hover{background:color-mix(in srgb,var(--accent) 10%,transparent)}
+  .rows{display:flex;flex-direction:column;gap:7px}
+  .row{display:flex;gap:12px;align-items:flex-start;background:var(--surface,#fff);border:1px solid var(--border,#E7DFD3);border-left:3px solid var(--accent);border-radius:12px;padding:11px 13px}
+  .row .info{flex:1;min-width:0}
+  .row .pt{font-weight:600;font-size:14.5px;line-height:1.25;cursor:pointer}
+  .row .pt:hover{color:var(--accent)}
+  .row .ps{font-family:var(--font-mono,monospace);font-size:11px;color:var(--fg3);margin-top:2px}
+  .row .ded{font-size:12.5px;color:var(--fg2);margin-top:6px;line-height:1.4;border-left:2px solid var(--border);padding-left:9px}
+  .row .ded b{color:var(--fg3);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.04em}
+  .row .meta{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex:0 0 auto}
+  .resp{font-size:12px;color:var(--fg2);white-space:nowrap}
+  .resp.none{color:var(--fg4,#A89C8B);font-style:italic}
+  .ok{border:1px solid var(--accent);background:var(--accent);color:#fff;font:inherit;font-size:12.5px;font-weight:700;padding:7px 13px;border-radius:999px;cursor:pointer;white-space:nowrap}
+  .ok:hover{filter:brightness(1.05)} .ok:disabled{opacity:.5;cursor:default}
+  .empty{text-align:center;color:var(--fg3);padding:50px 0;font-size:15px}
+  .src{margin-top:26px;font-family:var(--font-mono,monospace);font-size:11px;color:var(--fg4,#A89C8B)}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink-950,#241E17);color:#F7F2EA;padding:11px 18px;border-radius:999px;font-size:13px;box-shadow:0 6px 24px rgba(0,0,0,.2);opacity:0;transition:.2s;pointer-events:none;z-index:200}
+  .toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="mtg-top" data-page="valider" data-sub="briefs à valider"></div>
+
+  <div class="head">
+    <h1>Briefs <em>à valider</em></h1>
+    <div class="sub">Règle Matanga : aucun projet ne démarre sans un brief client. Quand il manque, il est <b>déduit</b> des livrables / propositions créatives — à toi, Derick, de le <b>valider</b> (il devient alors le brief créa de référence).</div>
+  </div>
+
+  <div class="note" id="note"></div>
+  <div class="stats" id="stats"></div>
+
+  <div class="bar">
+    <input id="search" type="search" placeholder="Rechercher (code, projet, client…)">
+    <select id="f-client"></select>
+  </div>
+
+  <div id="list"></div>
+  <div class="src" id="src"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://unpkg.com/lucide@1.21.0"></script>
+<script src="supa.js?v=20260639"></script>
+<script src="ui.js?v=20260639"></script>
+<script src="chrome.js?v=20260637"></script>
+<script>
+"use strict";
+const $ = s => document.querySelector(s);
+const esc = s => (s==null?"":String(s)).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const clientCol = window.clientVar;
+const normResp = r => (r||"").replace(/Dérick/g,"Derick").trim();
+
+let ROWS=[], BYNDEG={};
+const state = { q:"", client:"" };
+function toast(m){ const t=$("#toast"); t.textContent=m; t.classList.add("show"); setTimeout(()=>t.classList.remove("show"),2400); }
+
+// un projet « à valider » = Maître dont le brief n'est pas encore validé
+const aValider = m => m.entree==="Maître" && (m.briefEtat==="déduit" || m.briefEtat==="absent" || (m.briefEtat||"")==="");
+
+// Brief client reconstitué à partir de l'existant (livrables, contexte, type…).
+function composeBrief(m){
+  const clean = (m.comm||"").replace(/\[[^\]]*\]/g,"").replace(/·\s*date ≈[^|·]*/g,"").replace(/\s*\|\s*/g," · ").trim();
+  return [
+    ["Client", [m.client,m.marque].filter(Boolean).join(" · ")||"—"],
+    ["Objet", m.projet||"—"],
+    ["Type · niveau", [m.type,m.niveau].filter(Boolean).join(" · ")||"—"],
+    ["Livrables attendus", m.livrables||"(à préciser)"],
+    ["Contexte connu", clean||"—"],
+    ["Échéance", m.deadline||"—"],
+  ];
+}
+
+function pass(m){
+  if(state.client && m.client!==state.client) return false;
+  if(state.q){ const hay=(m.ndeg+" "+m.projet+" "+m.client+" "+m.marque+" "+m.comm).toLowerCase(); if(!hay.includes(state.q.toLowerCase())) return false; }
+  return true;
+}
+
+async function validate(nd, btn){
+  const m = BYNDEG[nd]; if(!m) return;
+  if(!(window.SUPA_SOURCE==="supabase" && m.id)){ toast("Hors-ligne : validation non enregistrée"); return; }
+  if(btn) btn.disabled=true;
+  try{ await updateBrief(m.id,{brief_etat:"validé"}); m.briefEtat="validé"; fillFilters(); render(); toast(nd+" — brief validé ✓"); }
+  catch(e){ if(btn) btn.disabled=false; toast("Échec : "+(e.message||e)); }
+}
+async function validateAll(client){
+  const list = ROWS.filter(aValider).filter(pass).filter(m=>m.client===client && m.id);
+  if(!list.length) return;
+  if(!confirm(`Valider les ${list.length} briefs de ${client} ?`)) return;
+  toast(`Validation de ${list.length} briefs…`);
+  for(const m of list){ try{ await updateBrief(m.id,{brief_etat:"validé"}); m.briefEtat="validé"; }catch(e){} }
+  fillFilters(); render(); toast(`${client} : briefs validés ✓`);
+}
+
+function rowHtml(m){
+  const resp = normResp(m.responsable), par = (m.entrePar||"").trim();
+  return `<div class="row" data-nd="${esc(m.ndeg)}">
+    <div class="info">
+      <div class="pt" data-open="${esc(m.ndeg)}">${esc(m.projet)||"<i>sans titre</i>"}</div>
+      <div class="ps">${esc(m.ndeg)} · ${esc(m.marque||m.client)}${par?" · entré par "+esc(par):""}${resp?" · créa : "+esc(resp):""}</div>
+      <div class="ded"><b>brief reconstitué — à valider</b>${composeBrief(m).map(([k,v])=>`<div><span style="color:var(--fg3)">${esc(k)} :</span> ${esc(v)}</div>`).join("")}</div>
+    </div>
+    <div class="meta">
+      <button class="ok" data-val="${esc(m.ndeg)}">Valider</button>
+      <a class="resp" href="tache.html?code=${encodeURIComponent(m.ndeg)}">ouvrir la fiche →</a>
+    </div>
+  </div>`;
+}
+
+function render(){
+  const todo = ROWS.filter(aValider);
+  const vis = todo.filter(pass);
+  const total = ROWS.filter(m=>m.entree==="Maître").length;
+  const valides = ROWS.filter(m=>m.entree==="Maître" && m.briefEtat==="validé").length;
+  $("#stats").innerHTML =
+    `<div class="stat"><div class="v">${todo.length}</div><div class="l">À valider</div></div>`+
+    `<div class="stat"><div class="v">${valides}</div><div class="l">Validés</div></div>`+
+    `<div class="stat"><div class="v">${total?Math.round(valides/total*100):0}%</div><div class="l">Couverture brief</div></div>`;
+
+  if(!vis.length){
+    $("#list").innerHTML = todo.length
+      ? `<div class="empty">Aucun brief à valider ne correspond aux filtres.</div>`
+      : `<div class="empty">Tout est validé ✓<br><span style="font-size:13px;color:var(--fg4)">Chaque projet a un brief client validé.</span></div>`;
+    return;
+  }
+  const groups={}; vis.forEach(m=>{ (groups[m.client]=groups[m.client]||[]).push(m); });
+  $("#list").innerHTML = Object.entries(groups).sort((a,b)=>b[1].length-a[1].length).map(([cl,arr])=>{
+    arr.sort((a,b)=>(a.ndeg||"").localeCompare(b.ndeg||"",undefined,{numeric:true}));
+    return `<div class="grp"><span class="cdot" style="background:${clientCol(cl)}"></span><h2>${esc(cl||"—")}</h2><span class="n">${arr.length} à valider</span><button class="all" data-allclient="${esc(cl)}">Tout valider</button></div>
+      <div class="rows">${arr.map(rowHtml).join("")}</div>`;
+  }).join("");
+}
+
+function fillFilters(){
+  const todo = ROWS.filter(aValider);
+  const clients=[...new Set(todo.map(m=>m.client).filter(Boolean))].sort();
+  const cur = state.client;
+  $("#f-client").innerHTML = `<option value="">Tous les clients</option>`+clients.map(c=>`<option value="${esc(c)}"${c===cur?" selected":""}>${esc(c)}</option>`).join("");
+}
+
+function bind(){
+  $("#search").addEventListener("input", e=>{ state.q=e.target.value; render(); });
+  $("#f-client").addEventListener("change", e=>{ state.client=e.target.value; render(); });
+  document.addEventListener("click", e=>{
+    const v=e.target.closest("[data-val]"); if(v){ validate(v.getAttribute("data-val"), v); return; }
+    const a=e.target.closest("[data-allclient]"); if(a){ validateAll(a.getAttribute("data-allclient")); return; }
+    const o=e.target.closest("[data-open]"); if(o){ location.href="tache.html?code="+encodeURIComponent(o.getAttribute("data-open")); }
+  });
+}
+
+async function boot(){
+  try{ ROWS = await loadBriefsLive(); }catch(e){ ROWS=[]; }
+  BYNDEG = Object.fromEntries(ROWS.map(r=>[r.ndeg,r]));
+  $("#note").innerHTML = `<b>Comment ça marche ?</b> Les briefs ci-dessous ont été <b>reconstitués automatiquement</b> à partir des livrables et échanges (car non bloquants à l'époque). Vérifie‑les et clique <b>Valider</b> — un projet sans brief validé reste ici. Tu peux aussi <b>tout valider</b> par client.`;
+  fillFilters(); bind(); render();
+  $("#src").textContent = (window.SUPA_SOURCE==="supabase") ? "Source : Supabase (live)" : (window.SUPA_SOURCE==="csv") ? "Source : INDEX.csv (hors-ligne — validation désactivée)" : "Source : —";
+  if(window.sourceBanner) sourceBanner();
+  if(window.lucide) window.lucide.createIcons();
+}
+document.addEventListener("DOMContentLoaded", boot);
+</script>
+</body>
+</html>

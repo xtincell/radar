@@ -1,6 +1,6 @@
 "use strict";
 /* ============================================================
-   Radar — chrome partagé (chrome.js)
+   Matanga RADAR — chrome partagé (chrome.js)
    UNE seule barre de navigation pour tout le système : marque,
    liens (ordre + état actif identiques partout), chip identité,
    toggle de thème clair/sombre. Tue la racine du problème des
@@ -14,7 +14,7 @@
 (function(){
 
 /* ---- thème : clair par défaut, sombre opt-in, persistant ---- */
-const THEME_KEY = "radar:theme";
+const THEME_KEY = "matanga:theme";
 function getTheme(){ try{ return localStorage.getItem(THEME_KEY)==="dark" ? "dark" : "light"; }catch(e){ return "light"; } }
 function applyTheme(t){
   if(t==="dark") document.documentElement.setAttribute("data-theme","dark");
@@ -26,15 +26,33 @@ applyTheme(getTheme());                 // appliqué le plus tôt possible
 window.MTG_toggleTheme = toggleTheme;
 window.MTG_getTheme = getTheme;
 
-/* ---- modèle de navigation (source unique de vérité) ----
-   Seule la vue radar est servie par ce déploiement — les autres vues de
-   l'app d'origine (projets, wiki, rapport, etc.) ont été retirées. */
+/* ---- modèle de navigation (source unique de vérité) ---- */
+/* 7 destinations. « Entrées » vit désormais dans Projets (vue chrono) et
+   « Équipe » dans Rapport (par responsable) — accessibles via un lien depuis
+   ces pages, plus dans la nav principale pour réduire le bruit. */
 const NAV = [
-  {key:"radar", label:"Aujourd'hui", href:"radar.html", icon:"radar"},
+  {key:"radar",     label:"Aujourd'hui", href:"radar.html",     icon:"radar"},
+  {key:"dashboard", label:"Projets",     href:"dashboard.html", icon:"layout-grid"},
+  {key:"wiki",      label:"Wiki",        href:"wiki.html",      icon:"book-open"},
+  {key:"marques",   label:"Marques",     href:"marques.html",   icon:"library"},
+  {key:"valider",   label:"À valider",   href:"valider.html",   icon:"badge-check"},
+  {key:"todo",      label:"À faire",     href:"todo.html",      icon:"check-square"},
+  {key:"bilan",     label:"Bilan",       href:"bilan.html",     icon:"calendar-check"},
+  {key:"faits",     label:"Faits",       href:"faits.html",     icon:"check-check"},
+  {key:"rapport",   label:"Rapport",     href:"rapport.html",   icon:"bar-chart-3"},
+  {key:"sla",       label:"SLA",         href:"sla.html",       icon:"gauge"},
+  {key:"gantt",     label:"Planning",    href:"gantt.html",     icon:"calendar-range"},
+  {key:"archive",   label:"Historique",  href:"archive.html",   icon:"archive"},
+  {key:"gel",       label:"Gelés",       href:"gel.html",       icon:"snowflake"},
+  {key:"gabarits",   label:"Présentation",href:"gabarits.html",                  icon:"presentation"},
+  {key:"ticket",     label:"Ticket",      href:"ticket.html",                    icon:"plus"},
+  {key:"equipe",     label:"Équipe",      href:"equipe.html",                    icon:"users"},
+  {key:"evaluation", label:"Éval",        href:"rh/evaluation-departement.html", icon:"user-check"},
+  {key:"entrees",    label:"Entrées",     href:"entrees.html",                   icon:"list"},
 ];
 const NAV_SECONDARY = [];
-const NAV_PRIMARY   = ["radar"];
-const NAV_MORE_KEYS = [];
+const NAV_PRIMARY   = ["radar","todo","dashboard","valider","bilan"];
+const NAV_MORE_KEYS = ["equipe","evaluation","rapport","faits","gantt","sla","wiki","marques","archive","gel","gabarits"];
 const esc = s => (s==null?"":String(s)).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const initial = s => ((s||"").trim().charAt(0).toUpperCase() || "?");
 
@@ -179,10 +197,20 @@ function applyIdent(id){
   const chip=document.getElementById("mtg-id");
   if(chip && chip.parentElement){ chip.outerHTML = idChipHTML(); wire(); if(window.lucide) window.lucide.createIcons(); }
   applyGreet();
+  // Lien « Évaluations RH » : injecté dans le menu Plus, owner uniquement (gate serveur /rh/*).
+  const mm=document.getElementById("mtg-more-menu");
+  if(mm && IDENT && IDENT.role==="owner" && !mm.querySelector("[data-key='rh']")){
+    const btn=document.createElement("button");
+    btn.dataset.goto="rh/evaluation-departement.html"; btn.dataset.key="rh";
+    btn.style.cssText="border-top:1px solid var(--border);margin-top:4px;padding-top:8px";
+    btn.innerHTML=`<span class="ic"><i data-lucide="file-badge-2" style="width:15px;height:15px"></i></span>Évaluations RH`;
+    mm.appendChild(btn);
+    if(window.lucide) window.lucide.createIcons();
+  }
 }
 /* Salutation dynamique « Bonjour, <prénom> » (élément #greet, ex. radar.html).
    Reflète l'utilisateur authentifié ; pour l'owner en mode « voir comme », suit la
-   personne regardée. Prénom = 1er mot du nom (« Jean K. Dupont » → « Jean »). */
+   personne regardée. Prénom = 1er mot du nom (« William K. Mandengue » → « William »). */
 function applyGreet(){
   const el=document.getElementById("greet"); if(!el) return;
   const me=(window.getMe&&getMe())||"";
@@ -209,6 +237,7 @@ function openIdMenu(anchor){
        <button disabled style="cursor:default;opacity:1"><span class="av">${esc(initial(IDENT.person||IDENT.email||"?"))}</span>${esc(IDENT.person||IDENT.email||"")} — ${esc(ROLE_LBL[IDENT.role]||IDENT.role)}</button>`;
   menu.innerHTML=`${viewAs}
     <div class="hd" style="border-top:1px solid var(--border);margin-top:6px;padding-top:8px">Mon compte</div>
+    <button data-goto="profil.html"><span class="av">🔑</span>Mon mot de passe</button>
     <button data-goto="/logout"><span class="av">⎋</span>Se déconnecter</button>`;
   document.body.appendChild(menu);
   const r=anchor.getBoundingClientRect();
@@ -236,25 +265,30 @@ function mountBar(host){
   const byKey = k => NAV.find(n=>n.key===k);
   const primary = NAV_PRIMARY.map(byKey).filter(Boolean);
   const moreItems = NAV_MORE_KEYS.map(byKey).filter(Boolean).concat(NAV_SECONDARY);
+  const ticket = byKey("ticket");
   const inMore = moreItems.some(n=>n.key===page);
   const links = primary.map(n=>`<a href="${n.href}" class="${n.key===page?'active':''}" title="${esc(n.label)}">
       <i data-lucide="${n.icon}" style="width:16px;height:16px"></i>${esc(n.label)}</a>`).join("");
   const moreLinks = moreItems.map(n=>`<button data-goto="${n.href}" class="${n.key===page?'sel':''}">
       <span class="ic"><i data-lucide="${n.icon||'circle'}" style="width:15px;height:15px"></i></span>${esc(n.label)}</button>`).join("");
-  const moreBtn = moreItems.length ? `<button class="mtg-more${inMore?' active':''}" id="mtg-more" type="button" aria-haspopup="true" title="Plus de vues">Plus<i data-lucide="chevron-down" style="width:14px;height:14px"></i></button>` : "";
   host.innerHTML = `<header class="mtg-bar">
     <a class="mtg-brand" href="radar.html">
-      <svg class="mtg-logo-svg" viewBox="0 0 120 40" width="120" height="40" aria-label="Radar">
-        <text x="0" y="26" font-size="16" font-weight="900" textLength="120" lengthAdjust="spacing" class="l3">RADAR</text>
+      <svg class="mtg-logo-svg" viewBox="0 0 120 40" width="120" height="40" aria-label="LE RADAR D'Alexandre MATANGA">
+        <text x="0" y="11" font-size="12" font-weight="900" textLength="120" lengthAdjust="spacing" class="l1-2">LE RADAR</text>
+        <text x="0" y="24" font-size="12" font-weight="900" textLength="120" lengthAdjust="spacing" class="l1-2">D'Alexandre</text>
+        <text x="0" y="38" font-size="14" font-weight="900" textLength="120" lengthAdjust="spacing" class="l3">MATANGA</text>
       </svg>
       ${sub ? `<span class="mtg-sub">${esc(sub)}</span>` : ""}
     </a>
-    <nav class="mtg-nav" aria-label="Navigation principale">${links}${moreBtn}</nav>
+    <nav class="mtg-nav" aria-label="Navigation principale">${links}
+      <button class="mtg-more${inMore?' active':''}" id="mtg-more" type="button" aria-haspopup="true" title="Plus de vues">Plus<i data-lucide="chevron-down" style="width:14px;height:14px"></i></button>
+    </nav>
     <div class="mtg-right">
+      ${ticket?`<a class="mtg-ticket${page==='ticket'?' active':''}" href="${ticket.href}" title="Nouveau ticket"><i data-lucide="plus" style="width:16px;height:16px"></i><span class="lbl">Ticket</span></a>`:""}
       ${bellBtnHTML()}${idChipHTML()}${themeBtnHTML()}
     </div>
   </header>
-  ${moreItems.length ? `<div class="mtg-more-menu" id="mtg-more-menu" hidden role="menu">${moreLinks}</div>` : ""}`;
+  <div class="mtg-more-menu" id="mtg-more-menu" hidden role="menu">${moreLinks}</div>`;
   wire();
   if(window.lucide) window.lucide.createIcons();
 }
@@ -276,7 +310,7 @@ function mountFab(){
    opt-in (API Notifications) pour les nouveautés tant qu'un onglet est ouvert.
    Membre : ne voit/notifie que les événements le concernant (scope d'autorité).
    ============================================================ */
-const N_SEEN="radar:notif:seen", N_PUSH="radar:notif:push";
+const N_SEEN="matanga:notif:seen", N_PUSH="matanga:notif:push";
 const N_LAB={created:["🆕","Nouvelle entrée"],status:["🔁","Statut modifié"],reassigned:["👤","Réattribution"],
   deadline:["📅","Échéance modifiée"],frozen:["❄️","Gelé"],unfrozen:["♻️","Réactivé"],
   closed:["📦","Clôturé / livrable"],reopened:["🔓","Rouvert"],deleted:["🗑️","Supprimé"]};
@@ -317,7 +351,7 @@ function nPush(list){
   if(!on||!("Notification"in window)||Notification.permission!=="granted") return;
   const head=list.length===1 ? (nLabel(list[0])[1]+" — "+(list[0].client||list[0].projet||"")) : (list.length+" mouvements sur le pipe");
   const body=list.slice(0,4).map(e=>nLabel(e)[0]+" "+(e.summary||e.projet||"")).join("\n");
-  try{ new Notification("Radar — activité", {body:head+"\n"+body, tag:"radar-activity", renotify:true}); }catch(e){}
+  try{ new Notification("Matanga RADAR — activité", {body:head+"\n"+body, tag:"matanga-activity", renotify:true}); }catch(e){}
 }
 async function notifPoll(initial){
   const prevTop=NOTIFS[0] && NOTIFS[0].at;
@@ -331,7 +365,7 @@ async function enablePush(){
   let perm=Notification.permission;
   if(perm!=="granted") perm=await Notification.requestPermission();
   try{ localStorage.setItem(N_PUSH, perm==="granted"?"1":"0"); }catch(e){}
-  if(perm==="granted"){ try{ new Notification("Radar", {body:"Notifications activées ✓"}); }catch(e){} }
+  if(perm==="granted"){ try{ new Notification("Matanga RADAR", {body:"Notifications activées ✓"}); }catch(e){} }
 }
 function openNotifMenu(anchor){
   closeMenus();
@@ -371,8 +405,10 @@ function mountFooter(){
   if(document.getElementById("mtg-foot")) return;
   const f=document.createElement("footer"); f.className="mtg-foot"; f.id="mtg-foot";
   f.innerHTML=`<div class="brand">
-      <svg class="mtg-logo-svg" viewBox="0 0 120 40" width="120" height="40" aria-label="Radar">
-        <text x="0" y="26" font-size="16" font-weight="900" textLength="120" lengthAdjust="spacing" class="l3">RADAR</text>
+      <svg class="mtg-logo-svg" viewBox="0 0 120 40" width="120" height="40" aria-label="LE RADAR D'Alexandre MATANGA">
+        <text x="0" y="11" font-size="12" font-weight="900" textLength="120" lengthAdjust="spacing" class="l1-2">LE RADAR</text>
+        <text x="0" y="24" font-size="12" font-weight="900" textLength="120" lengthAdjust="spacing" class="l1-2">D'Alexandre</text>
+        <text x="0" y="38" font-size="14" font-weight="900" textLength="120" lengthAdjust="spacing" class="l3">MATANGA</text>
       </svg>
     </div>
     <nav class="feeds" aria-label="Flux d'activité">

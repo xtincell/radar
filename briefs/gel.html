@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<script>try{if(localStorage.getItem("matanga:theme")==="dark")document.documentElement.dataset.theme="dark";}catch(e){}</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Matanga — Tâches gelées (Frozen)</title>
+<link rel="stylesheet" href="colors_and_type.css?v=20260622">
+<style>
+  :root{
+    --c-cad:#FF6A14;--c-frc:#2D6BD4;--c-eco:#1F9D63;--c-bel:#E23D2E;--c-nsi:#9A3F57;
+    --c-sof:#8F3208;--c-dan:#3E8FA8;--c-dlf:#C2440A;--c-trx:#5E6B30;--c-flo:#B07A1E;
+    --c-fok:#7C5026;--c-other:#9A8F80;
+    --st-cours:#2D6BD4;--st-attente:#FF8A3D;--st-recu:#9A8F80;--st-bloque:#E23D2E;
+    --st-livre:#1F9D63;--st-boucle:#A89C8B;--st-archive:#C2B8A9;--st-frozen:#6FA1B8;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg-app,#F7F2EA);color:var(--fg1,#241E17);
+    font-family:var(--font-sans,system-ui);-webkit-font-smoothing:antialiased;min-height:100vh}
+  .wrap{max-width:1080px;margin:0 auto;padding:16px 18px 60px}
+  .head{margin:18px 0 6px}
+  .head h1{font-family:var(--font-display,Georgia);font-weight:600;font-size:30px;margin:0 0 4px}
+  .head h1 em{color:var(--st-frozen);font-style:normal}
+  .head .sub{color:var(--fg2,#5A5046);font-size:14px}
+  .stats{display:flex;gap:12px;flex-wrap:wrap;margin:14px 0}
+  .stat{background:var(--surface,#fff);border:1px solid var(--border,#E7DFD3);border-radius:14px;padding:11px 15px;min-width:120px}
+  .stat .v{font-family:var(--font-display,Georgia);font-size:24px;font-weight:600}
+  .stat .l{font-family:var(--font-mono,monospace);font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--fg3,#857B6E)}
+  .bar{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin:10px 0 18px}
+  .bar input,.bar select{font:inherit;font-size:13px;padding:8px 11px;border:1px solid var(--border,#E7DFD3);
+    border-radius:999px;background:var(--surface,#fff);color:var(--fg1)}
+  .bar input{flex:1;min-width:180px}
+  .grp{margin:18px 0 6px;display:flex;align-items:center;gap:9px}
+  .grp .cdot{width:11px;height:11px;border-radius:3px}
+  .grp h2{font-family:var(--font-display,Georgia);font-weight:600;font-size:17px;margin:0}
+  .grp .n{font-family:var(--font-mono,monospace);font-size:11px;color:var(--fg3)}
+  .rows{display:flex;flex-direction:column;gap:7px}
+  .row{display:flex;gap:12px;align-items:flex-start;background:var(--surface,#fff);
+    border:1px solid var(--border,#E7DFD3);border-left:3px solid var(--st-frozen);
+    border-radius:12px;padding:11px 13px;cursor:pointer;transition:.12s}
+  .row:hover{border-color:var(--st-frozen);box-shadow:0 2px 10px rgba(0,0,0,.05)}
+  .row .info{flex:1;min-width:0}
+  .row .pt{font-weight:600;font-size:14.5px;line-height:1.25}
+  .row .ps{font-family:var(--font-mono,monospace);font-size:11px;color:var(--fg3);margin-top:2px}
+  .row .why{font-size:12.5px;color:var(--fg2);margin-top:5px;line-height:1.35}
+  .row .meta{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex:0 0 auto}
+  .resp{font-size:12px;color:var(--fg2);white-space:nowrap}
+  .resp.none{color:var(--fg4,#A89C8B);font-style:italic}
+  .act{border:1px solid var(--border,#E7DFD3);background:transparent;color:var(--st-cours);
+    font:inherit;font-size:12px;font-weight:600;padding:6px 10px;border-radius:999px;cursor:pointer;white-space:nowrap}
+  .act:hover{border-color:var(--st-cours);background:color-mix(in srgb,var(--st-cours) 8%,transparent)}
+  .empty{text-align:center;color:var(--fg3);padding:50px 0;font-size:15px}
+  .src{margin-top:26px;font-family:var(--font-mono,monospace);font-size:11px;color:var(--fg4,#A89C8B)}
+  .note{background:color-mix(in srgb,var(--st-frozen) 9%,var(--surface,#fff));border:1px solid color-mix(in srgb,var(--st-frozen) 30%,var(--border,#E7DFD3));
+    border-radius:12px;padding:12px 15px;font-size:13px;color:var(--fg2);margin:6px 0 4px;line-height:1.45}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink-950,#241E17);color:#F7F2EA;
+    padding:11px 18px;border-radius:999px;font-size:13px;box-shadow:0 6px 24px rgba(0,0,0,.2);opacity:0;transition:.2s;pointer-events:none;z-index:200}
+  .toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="mtg-top" data-page="gel" data-sub="tâches gelées"></div>
+
+  <div class="head">
+    <h1>Tâches <em>gelées</em></h1>
+    <div class="sub">Dossiers sans nouvelle ni preuve d'avancement, mis de côté pour ne pas polluer le « à faire ». La vérité reste tracée : ils ne sont ni faits, ni perdus — juste en pause.</div>
+  </div>
+
+  <div class="note" id="note"></div>
+  <div class="stats" id="stats"></div>
+
+  <div class="bar">
+    <input id="search" type="search" placeholder="Rechercher (code, projet, responsable…)">
+    <select id="f-client"></select>
+    <select id="f-resp"></select>
+  </div>
+
+  <div id="list"></div>
+  <div class="src" id="src"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://unpkg.com/lucide@1.21.0"></script>
+<script src="supa.js?v=20260639"></script>
+<script src="ui.js?v=20260639"></script>
+<script src="chrome.js?v=20260637"></script>
+<script>
+"use strict";
+const $ = s => document.querySelector(s);
+const esc = s => (s==null?"":String(s)).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const clientCol = window.clientVar;
+const normResp = r => (r||"").replace(/Dérick/g,"Derick").trim();
+const isFrozen = m => m.statut==="Frozen" || m.statut==="Gelé";
+
+let ROWS = [], BYNDEG = {};
+const state = { q:"", client:"", resp:"" };
+
+function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("show"); setTimeout(()=>t.classList.remove("show"),2600); }
+
+// motif du gel : on extrait la raison utile du commentaire
+function why(m){
+  const c = (m.comm||"").trim();
+  if(!c) return "";
+  // garde le 1er segment lisible (avant les notes d'audit techniques)
+  let s = c.split("·")[0].split("|")[0].trim();
+  if(/^\[/.test(s) && c.indexOf("·")>0) s = c.split("·").map(x=>x.trim()).find(x=>x && !/^\[Clôture|^\[responsable/.test(x)) || s;
+  return s.length>160 ? s.slice(0,158)+"…" : s;
+}
+
+function pass(m){
+  if(state.client && m.client!==state.client) return false;
+  if(state.resp && !ownsTask(m.responsable, state.resp)) return false;
+  if(state.q){ const hay=(m.ndeg+" "+m.projet+" "+m.marque+" "+m.client+" "+m.responsable+" "+m.comm).toLowerCase();
+    if(!hay.includes(state.q.toLowerCase())) return false; }
+  return true;
+}
+
+function rowHtml(m){
+  const resp = normResp(m.responsable);
+  const parent = m.parent ? BYNDEG[m.parent] : null;
+  const w = why(m);
+  return `<div class="row" data-nd="${esc(m.ndeg)}">
+    <div class="info">
+      <div class="pt">${esc(m.projet)||"<i>sans titre</i>"}</div>
+      <div class="ps">${esc(m.ndeg)}${m.entree&&m.entree!=="Maître"?" · "+esc(m.entree):""}${parent?" · projet "+esc(parent.ndeg):""}${m.date?" · "+esc(m.date):""}</div>
+      ${w?`<div class="why">❄ ${esc(w)}</div>`:""}
+    </div>
+    <div class="meta">
+      <span class="resp${resp?'':' none'}">${resp?esc(resp):"non assigné"}</span>
+      <button class="act" data-reactivate="${esc(m.ndeg)}" title="Remettre la tâche dans le flux actif (statut → En cours)">Réactiver</button>
+    </div>
+  </div>`;
+}
+
+function render(){
+  const frozen = ROWS.filter(isFrozen);
+  const vis = frozen.filter(pass);
+  // stats
+  const byClient = {};
+  frozen.forEach(m=>{ byClient[m.client]=(byClient[m.client]||0)+1; });
+  const noResp = frozen.filter(m=>!normResp(m.responsable)).length;
+  $("#stats").innerHTML =
+    `<div class="stat"><div class="v">${frozen.length}</div><div class="l">Tâches gelées</div></div>`+
+    `<div class="stat"><div class="v">${Object.keys(byClient).length}</div><div class="l">Clients concernés</div></div>`+
+    `<div class="stat"><div class="v">${noResp}</div><div class="l">Sans responsable</div></div>`;
+
+  if(!vis.length){
+    $("#list").innerHTML = frozen.length
+      ? `<div class="empty">Aucune tâche gelée ne correspond aux filtres.</div>`
+      : `<div class="empty">Rien de gelé. ✓<br><span style="font-size:13px;color:var(--fg4)">Quand un dossier reste sans nouvelle ni preuve d'avancement, passe-le en statut « Frozen » : il atterrira ici.</span></div>`;
+    return;
+  }
+  const groups = {};
+  vis.forEach(m=>{ (groups[m.client]=groups[m.client]||[]).push(m); });
+  const order = Object.entries(groups).sort((a,b)=>b[1].length-a[1].length);
+  $("#list").innerHTML = order.map(([cl,arr])=>{
+    arr.sort((a,b)=>(a.ndeg||"").localeCompare(b.ndeg||"",undefined,{numeric:true}));
+    return `<div class="grp"><span class="cdot" style="background:${clientCol(cl)}"></span><h2>${esc(cl||"—")}</h2><span class="n">${arr.length}</span></div>
+      <div class="rows">${arr.map(rowHtml).join("")}</div>`;
+  }).join("");
+}
+
+function fillFilters(){
+  const frozen = ROWS.filter(isFrozen);
+  const clients=[...new Set(frozen.map(m=>m.client).filter(Boolean))].sort();
+  $("#f-client").innerHTML = `<option value="">Tous les clients</option>`+clients.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join("");
+  const resps=[...new Set(frozen.flatMap(m=>splitOwners(m.responsable)))].filter(Boolean).sort((a,b)=>a.localeCompare(b,"fr"));
+  $("#f-resp").innerHTML = `<option value="">Tous les responsables</option>`+resps.map(r=>`<option value="${esc(r)}">${esc(r)}</option>`).join("");
+}
+
+async function reactivate(nd){
+  const m = BYNDEG[nd]; if(!m) return;
+  const live = window.SUPA_SOURCE==="supabase" && m.id;
+  if(!live){ toast("Hors-ligne : réactivation non enregistrée"); return; }
+  try{
+    await updateBrief(m.id, {statut:"En cours", closed_at:null});
+    m.statut="En cours"; fillFilters(); render();
+    toast(nd+" réactivée → En cours");
+  }catch(e){ toast("Échec : "+(e.message||e)); }
+}
+
+function bind(){
+  $("#search").addEventListener("input", e=>{ state.q=e.target.value; render(); });
+  $("#f-client").addEventListener("change", e=>{ state.client=e.target.value; render(); });
+  $("#f-resp").addEventListener("change", e=>{ state.resp=e.target.value; render(); });
+  document.addEventListener("click", e=>{
+    const ra = e.target.closest("[data-reactivate]");
+    if(ra){ e.stopPropagation(); reactivate(ra.getAttribute("data-reactivate")); return; }
+    const row = e.target.closest(".row");
+    if(row){ location.href="tache.html?code="+encodeURIComponent(row.getAttribute("data-nd")); }
+  });
+}
+
+async function boot(){
+  try{ ROWS = await loadBriefsLive(); }catch(e){ ROWS = []; }
+  BYNDEG = Object.fromEntries(ROWS.map(r=>[r.ndeg,r]));
+  const frozen = ROWS.filter(isFrozen).length;
+  $("#note").innerHTML = frozen
+    ? `<b>Pourquoi cette page ?</b> Les tâches gelées sont sorties du « à faire » et du « fait cette semaine » — elles n'apparaissent que sur cette page. Réactive-les dès qu'une source confirme leur reprise.`
+    : `<b>Comment geler une tâche ?</b> Sur sa fiche, passe le statut à <b>Frozen</b>. Utile pour les dossiers anciens, sans nouvelle ni preuve d'avancement : ils quittent le bruit du quotidien sans être marqués « faits » à tort.`;
+  fillFilters(); bind(); render();
+  $("#src").textContent = (window.SUPA_SOURCE==="supabase") ? "Source : Supabase (live)"
+    : (window.SUPA_SOURCE==="csv") ? "Source : INDEX.csv (hors-ligne — réactivation désactivée)" : "Source : —";
+  if(window.sourceBanner) sourceBanner();
+  if(window.lucide) window.lucide.createIcons();
+}
+document.addEventListener("DOMContentLoaded", boot);
+</script>
+</body>
+</html>

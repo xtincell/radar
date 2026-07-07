@@ -1,0 +1,1517 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<script>try{if(localStorage.getItem("matanga:theme")==="dark")document.documentElement.dataset.theme="dark";}catch(e){}</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Matanga — Tâche</title>
+<link rel="stylesheet" href="colors_and_type.css?v=20260622">
+<link rel="stylesheet" href="radar.css?v=20260619">
+<style>
+  /* page dédiée à UNE tâche — réutilise les classes dossier de radar.css (.kv, .dr-sect, .dossier, .doc-chip, .dr-doc, .dbadge, .dr-sel, .dr-btn, .dr-mini) */
+  body{background-image:radial-gradient(1100px 650px at 88% -8%, var(--bg-app-warm) 0%, transparent 60%),var(--bg-app);background-attachment:fixed}
+  .wrap{max-width:880px;margin:0 auto;padding:22px 26px 90px}
+  /* topbar (aligné sur entrees/todo) */
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;background:var(--surface);border:1px solid var(--border);
+    border-radius:var(--radius-pill);padding:10px 12px 10px 16px;box-shadow:var(--shadow-md);position:sticky;top:14px;z-index:30}
+  .brand{display:flex;align-items:center;gap:12px}
+  .brand .mark{width:34px;height:34px;border-radius:10px;background:var(--ink-950);color:var(--paper-0);display:grid;place-items:center;
+    font-family:var(--font-display);font-weight:600;font-size:18px;position:relative}
+  .brand .mark::after{content:"";position:absolute;right:-3px;bottom:-3px;width:9px;height:9px;border-radius:3px;background:var(--orange-500)}
+  .brand .bt{font-family:var(--font-display);font-weight:500;font-size:15px;line-height:1.05}.brand .bt b{color:var(--orange-600);font-weight:700}
+  .brand .bs{font-family:var(--font-mono);font-size:10.5px;color:var(--fg3);text-transform:uppercase;letter-spacing:.08em}
+  .nav{display:flex;gap:3px;align-items:center;flex-wrap:wrap}
+  .nav a{display:inline-flex;align-items:center;gap:7px;text-decoration:none;color:var(--fg2);font-size:13.5px;font-weight:600;
+    padding:9px 13px;border-radius:var(--radius-pill);transition:.13s;white-space:nowrap;border:0;background:transparent;cursor:pointer;font-family:inherit}
+  .nav a:hover{background:var(--paper-100);color:var(--fg1)}
+
+  .backbar{display:flex;align-items:center;gap:12px;margin:22px 2px 6px}
+  .backbtn{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--border);background:var(--surface);color:var(--fg2);
+    font:inherit;font-size:13px;font-weight:600;padding:8px 14px;border-radius:var(--radius-pill);cursor:pointer;text-decoration:none;transition:.13s}
+  .backbtn:hover{border-color:var(--orange-400);color:var(--orange-600)}
+
+  .tache{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-xl);box-shadow:var(--shadow-md);overflow:hidden;margin-top:10px}
+  .t-head{padding:26px 30px 20px;border-bottom:1px solid var(--border)}
+  .t-head .dn{font-family:var(--font-mono);font-size:12.5px;color:var(--orange-600);font-weight:600;letter-spacing:.05em}
+  .t-head h1{font-family:var(--font-display);font-weight:600;font-size:clamp(24px,3vw,34px);line-height:1.12;letter-spacing:var(--tracking-snug);margin:9px 0 14px}
+  .t-body{padding:8px 30px 50px}
+  /* dépendances */
+  .deps{display:flex;flex-direction:column;gap:10px;margin:4px 0 8px}
+  .deps-row{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap}
+  .deps-lbl{font-family:var(--font-mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--fg3);font-weight:700;min-width:80px;padding-top:5px}
+  .deps-list{display:flex;flex-wrap:wrap;gap:7px;flex:1}
+  .dep-chip{display:inline-flex;align-items:center;gap:6px;text-decoration:none;font-size:12.5px;font-weight:600;padding:5px 11px;border-radius:var(--radius-pill);border:1px solid var(--border);background:var(--paper-50);color:var(--fg2);max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .dep-chip:hover{border-color:var(--orange-400);color:var(--orange-700)}
+  .dep-chip.open{border-color:color-mix(in srgb,var(--orange-500) 40%,var(--border));color:var(--orange-700);background:color-mix(in srgb,var(--orange-500) 8%,#fff)}
+  .dep-chip.done{color:var(--success)}
+  .dep-chip.blocking{border-color:color-mix(in srgb,var(--danger) 35%,var(--border));color:var(--danger);background:color-mix(in srgb,var(--danger) 7%,#fff)}
+  .dep-warn{font-size:12.5px;color:var(--danger);font-weight:600;margin-top:2px}
+  /* deux porteurs en exergue */
+  .whorow{display:flex;flex-wrap:wrap;gap:10px;margin:18px 0 4px}
+  .whochip{display:flex;align-items:center;gap:9px;background:var(--paper-100);border:1px solid var(--border);border-radius:var(--radius-pill);padding:7px 14px 7px 8px}
+  .whochip .av{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:700;text-transform:uppercase}
+  .whochip.dem .av{background:var(--paper-200);color:var(--fg2)} .whochip.resp .av{background:var(--orange-200);color:var(--ink-900)}
+  .whochip .wl{line-height:1.15} .whochip .wlbl{font-family:var(--font-mono);font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:var(--fg3)}
+  .whochip .wnm{font-size:13.5px;font-weight:600}
+  .loadbox{padding:70px 20px;text-align:center;color:var(--fg3);font-family:var(--font-display);font-size:16px}
+  /* formulaire d'édition complète */
+  .edit-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px 16px;margin:12px 0 8px}
+  .edit-grid label{display:flex;flex-direction:column;gap:5px;font-family:var(--font-mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--fg3)}
+  .edit-grid label.full{grid-column:1/-1}
+  .edit-grid input,.edit-grid select,.edit-grid textarea{font:inherit;font-size:14px;color:var(--fg1);background:var(--surface);
+    border:1px solid var(--border);border-radius:9px;padding:9px 11px;text-transform:none;letter-spacing:0;width:100%;box-sizing:border-box}
+  .edit-grid textarea{min-height:74px;resize:vertical;line-height:1.42}
+  .edit-grid input:focus,.edit-grid select:focus,.edit-grid textarea:focus{outline:2px solid var(--orange-400);outline-offset:0;border-color:transparent}
+  .edit-dirty{font-family:var(--font-mono);font-size:11px;color:var(--orange-600);margin:2px 2px 0;min-height:14px}
+  @media(max-width:680px){.wrap{padding:16px 14px 70px}.t-head,.t-body{padding-left:18px;padding-right:18px}.nav{order:5;width:100%;overflow-x:auto}.topbar{flex-wrap:wrap;border-radius:var(--radius-xl)}.edit-grid{grid-template-columns:1fr}}
+  /* ── suivi & sources des mises à jour ── */
+  .upd-log{display:flex;flex-direction:column;gap:8px;margin:6px 0 4px}
+  .upd-empty{color:var(--fg3);font-size:13.5px;font-style:italic;padding:4px 2px}
+  .upd-item{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:start;background:var(--paper-50);border:1px solid var(--border);border-radius:11px;padding:10px 13px}
+  .upd-meta{display:flex;flex-direction:column;gap:5px;align-items:flex-start;min-width:96px}
+  .upd-date{font-family:var(--font-mono);font-size:11px;color:var(--fg3);font-weight:600;white-space:nowrap}
+  .upd-badge{font-family:var(--font-mono);font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:2px 8px;border-radius:var(--radius-pill);white-space:nowrap;background:var(--paper-200);color:var(--fg2)}
+  .upd-badge.wa{background:#dcf6e3;color:#137a3a} .upd-badge.sl{background:#efe3f3;color:#7a2e86}
+  .upd-badge.mail{background:#e3edfb;color:#1f5fb0} .upd-badge.ppt{background:#fde3d6;color:#c2440a}
+  .upd-badge.meet{background:#fdeccb;color:#9a6a12} .upd-badge.drive{background:#e6f0e6;color:#1f7a4d}
+  .upd-badge.auto{background:var(--paper-200);color:var(--fg3)}
+  .upd-txt{font-size:13.5px;line-height:1.45;color:var(--fg1);word-break:break-word}
+  .upd-txt a{color:var(--orange-600);font-weight:600}
+  .upd-add{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 15px;margin-top:12px}
+  .upd-srcs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+  .upd-src{font:inherit;font-size:12.5px;font-weight:600;color:var(--fg2);background:var(--paper-50);border:1px solid var(--border);border-radius:var(--radius-pill);padding:6px 12px;cursor:pointer;transition:.12s}
+  .upd-src:hover{border-color:var(--orange-300)}
+  .upd-src.on{background:var(--ink-950);color:#F7F2EA;border-color:transparent}
+  .upd-add textarea{width:100%;min-height:64px;resize:vertical;font:inherit;font-size:14px;line-height:1.45;color:var(--fg1);background:var(--paper-50);border:1px solid var(--border);border-radius:10px;padding:10px 12px;box-sizing:border-box}
+  .upd-add input{width:100%;margin-top:8px;font:inherit;font-size:13.5px;color:var(--fg1);background:var(--paper-50);border:1px solid var(--border);border-radius:10px;padding:9px 12px;box-sizing:border-box}
+  .upd-add textarea:focus,.upd-add input:focus{outline:2px solid var(--orange-400);border-color:transparent}
+  .upd-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:11px;flex-wrap:wrap}
+  .upd-hint{font-size:12px;color:var(--fg3)}
+  /* ── contexte marché & validation (depuis client_markets/client_contacts) ── */
+  .mkt-empty{color:var(--fg3);font-size:13px;font-style:italic;padding:6px 2px}
+  .mkt-card{background:var(--paper-50);border:1px solid var(--border);border-radius:12px;padding:13px 15px;margin-bottom:9px}
+  .mkt-card .mh{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+  .mkt-card .mh .pill{font-family:var(--font-mono);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:3px 9px;border-radius:999px;background:var(--accent-soft);color:var(--orange-700)}
+  .mkt-card .mh .pays{font-family:var(--font-display);font-weight:600;font-size:14.5px;color:var(--fg1)}
+  .mkt-card .mh .best{font-family:var(--font-mono);font-size:9.5px;color:var(--success);font-weight:700}
+  .mkt-row{display:grid;grid-template-columns:104px 1fr;gap:6px 12px;margin:4px 0;align-items:start}
+  .mkt-row .lbl{font-family:var(--font-mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--fg3);font-weight:700;padding-top:3px}
+  .mkt-row .val{font-size:13px;color:var(--fg1);line-height:1.45}
+  .mkt-chip{display:inline-block;font-size:11.5px;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:2px 8px;margin:2px 4px 2px 0;color:var(--fg2)}
+  .mkt-rule{font-size:12.5px;color:var(--fg1);line-height:1.45;padding-left:14px;position:relative;margin:3px 0}
+  .mkt-rule::before{content:"›";position:absolute;left:2px;color:var(--orange-500);font-weight:700}
+  .mkt-contact{border-top:1px solid var(--border);padding-top:9px;margin-top:9px}
+  .mkt-contact .cn{font-weight:700;font-size:13.5px;color:var(--fg1)} .mkt-contact .cr{font-size:12px;color:var(--fg3);margin-left:6px}
+  .mkt-more{font-size:12px;color:var(--orange-600);font-weight:600;cursor:pointer;background:0;border:0;padding:7px 2px;font-family:inherit}
+  .mkt-more:hover{text-decoration:underline}
+  @media(max-width:680px){.mkt-row{grid-template-columns:1fr}.mkt-row .lbl{padding-top:0}}
+  /* ── commentaires & observations (table public.comments) ── */
+  .cmt-list{display:flex;flex-direction:column;gap:10px;margin:6px 0 4px}
+  .cmt-empty{color:var(--fg3);font-size:13.5px;font-style:italic;padding:4px 2px}
+  .cmt{display:grid;grid-template-columns:auto 1fr;gap:11px;align-items:start;background:var(--paper-50);border:1px solid var(--border);border-radius:12px;padding:11px 13px}
+  .cmt.obs{background:color-mix(in srgb,var(--orange-500) 7%,var(--surface));border-color:color-mix(in srgb,var(--orange-500) 28%,var(--border))}
+  .cmt .cav{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-size:11.5px;font-weight:700;background:var(--ink-900);color:#fff;flex:0 0 auto}
+  .cmt.obs .cav{background:var(--orange-500)}
+  .cmt-main{min-width:0}
+  .cmt-hd{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:3px}
+  .cmt-who{font-weight:700;font-size:13.5px;color:var(--fg1)}
+  .cmt-kind{font-family:var(--font-mono);font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:2px 7px;border-radius:999px;background:var(--paper-200);color:var(--fg2)}
+  .cmt-kind.obs{background:color-mix(in srgb,var(--orange-500) 16%,#fff);color:var(--orange-700)}
+  .cmt-when{font-family:var(--font-mono);font-size:10.5px;color:var(--fg3)}
+  .cmt-del{margin-left:auto;border:0;background:transparent;color:var(--fg4);cursor:pointer;font-size:11.5px;font-weight:600;padding:2px 7px;border-radius:6px}
+  .cmt-del:hover{color:var(--danger);background:var(--paper-200)}
+  .cmt-body{font-size:13.5px;line-height:1.5;color:var(--fg1);word-break:break-word;white-space:pre-wrap}
+  .cmt-body a{color:var(--orange-600);font-weight:600}
+  .cmt-add{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:13px 14px;margin-top:11px}
+  .cmt-kinds{display:flex;gap:6px;margin-bottom:9px}
+  .cmt-kbtn{font:inherit;font-size:12.5px;font-weight:600;color:var(--fg2);background:var(--paper-50);border:1px solid var(--border);border-radius:999px;padding:5px 13px;cursor:pointer;transition:.12s}
+  .cmt-kbtn.on{background:var(--ink-950);color:#F7F2EA;border-color:transparent}
+  .cmt-add textarea{width:100%;min-height:62px;resize:vertical;font:inherit;font-size:14px;line-height:1.45;color:var(--fg1);background:var(--paper-50);border:1px solid var(--border);border-radius:10px;padding:10px 12px;box-sizing:border-box}
+  .cmt-add textarea:focus{outline:2px solid var(--orange-400);border-color:transparent}
+  .cmt-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:10px;flex-wrap:wrap}
+  .cmt-as{font-size:12px;color:var(--fg3)} .cmt-as b{color:var(--fg1)}
+  /* personnes impliquées */
+  .cmt-inv-lbl{font-family:var(--font-mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--fg3);margin:10px 0 6px}
+  .cmt-inv{display:flex;flex-wrap:wrap;gap:6px}
+  .cmt-ichip{font:inherit;font-size:12px;font-weight:600;color:var(--fg2);background:var(--paper-50);border:1px solid var(--border);border-radius:999px;padding:4px 11px;cursor:pointer;transition:.12s}
+  .cmt-ichip:hover{border-color:var(--orange-300)}
+  .cmt-ichip.on{background:var(--orange-500);color:var(--fg-on-orange,#fff);border-color:transparent}
+  .cmt-itags{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}
+  .cmt-itag{display:inline-flex;align-items:center;gap:4px;text-decoration:none;font-size:11px;font-weight:700;color:var(--orange-700);
+    background:color-mix(in srgb,var(--orange-500) 12%,#fff);border:1px solid color-mix(in srgb,var(--orange-500) 26%,var(--border));border-radius:999px;padding:2px 9px}
+  .cmt-itag:hover{background:color-mix(in srgb,var(--orange-500) 20%,#fff)}
+  a.cmt-who{text-decoration:none} a.cmt-who:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="mtg-top" data-page="" data-sub="dossier"></div>
+
+  <div class="backbar">
+    <a class="backbtn" href="#" id="back"><i data-lucide="arrow-left" style="width:15px;height:15px"></i>Retour</a>
+    <a class="backbtn" href="gabarits.html" id="present" title="Ouvrir le dossier en gabarits de présentation (deck 16:9, prêt à projeter)"
+       style="margin-left:auto;border-color:var(--orange-300);color:var(--orange-700)"><i data-lucide="presentation" style="width:15px;height:15px"></i>Vue présentation</a>
+  </div>
+
+  <div class="tache" id="tache"><div class="loadbox">Chargement de la tâche…</div></div>
+</div>
+
+<script src="https://unpkg.com/lucide@1.21.0"></script>
+<script src="supa.js?v=20260641"></script>
+<script src="ui.js?v=20260640"></script>
+<script src="chrome.js?v=20260637"></script>
+<script>
+"use strict";
+/* ============================================================
+   Tâche — page dédiée à UN dossier. URL : tache.html?code=<CODE>
+   ============================================================ */
+const clientCol = window.clientVar;
+const STATUT_COL = window.STATUT_COL;
+const TEAM=["Alexandre","Loïc Papin","William K. Mandengue","Serge","Vanelle","Lydienne","Ariel","Auriol","Derick","Nelson","Stephane Ondoua","Luther"];
+const STATUT_OPTS=["Reçu","En cours","En attente client","Bloqué","Envoyé dans Slack","Livré","Validé","Bouclé","Frozen","Archivé"];
+const DONE_STATUS=new Set(["Envoyé dans Slack","Livré","Livré (cycle)","Validé","Bouclé","Archivé"]);
+const $=s=>document.querySelector(s);
+const esc=s=>(s==null?"":String(s)).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const normResp=r=>(r||"").replace(/Dérick/g,"Derick").trim();
+const SOURCES=[{k:"Message",ic:"💬"},{k:"WhatsApp",ic:"🟢"},{k:"PowerPoint",ic:"📊"},{k:"Réunion",ic:"📅"},{k:"Mail",ic:"✉️"},{k:"Slack",ic:"#"},{k:"Drive",ic:"📁"},{k:"Autre",ic:"📎"}];
+
+function srcClass(s){ s=(s||"").toLowerCase();
+  if(/whats/.test(s))return"wa"; if(/slack/.test(s))return"sl"; if(/mail|e-?mail/.test(s))return"mail";
+  if(/power|ppt/.test(s))return"ppt"; if(/r[ée]uni|meet/.test(s))return"meet"; if(/drive/.test(s))return"drive";
+  if(/auto|backfill/.test(s))return"auto"; return""; }
+
+function commTimeline(comm){
+  if(!comm||!String(comm).trim()) return `<div class="upd-empty">Aucune mise à jour consignée. Ajoute la première ci-dessous.</div>`;
+  const parts=String(comm).split(/\s·\s+/).map(s=>s.trim()).filter(Boolean);
+  return parts.map(p=>{
+    const dm=p.match(/(\d{4}-\d{2}-\d{2})/); const date=dm?dm[1]:"";
+    let src=""; const sb=p.match(/\[([^\]]+)\]/);
+    if(sb) src=sb[1];
+    else { const m2=p.match(/\b(WhatsApp|Slack|Mail|Drive|PowerPoint|R[ée]union|backfill)\b/i); if(m2) src=m2[1]; }
+    let text=p.replace(/^MAJ\s+\d{4}-\d{2}-\d{2}\s*/i,"").replace(/^\[[^\]]+\]\s*/,"").replace(/^[:：]\s*/,"").trim();
+    if(!text) text=p;
+    const linked=esc(text).replace(/(https?:\/\/[^\s)]+)/g,'<a href="$1" target="_blank" rel="noopener">lien ↗</a>');
+    return `<div class="upd-item"><div class="upd-meta">${date?`<span class="upd-date">${esc(date)}</span>`:""}${src?`<span class="upd-badge ${srcClass(src)}">${esc(String(src).slice(0,12))}</span>`:""}</div><div class="upd-txt">${linked}</div></div>`;
+  }).join("");
+}
+
+const initials=n=>{const p=(n||"").trim().split(/\s+/);if(!p[0])return"";return((p[0][0]||"")+(p.length>1?(p[1][0]||""):"")).toUpperCase();};
+const todayISO=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;};
+const docStat=s=>{const x=(s||"").toLowerCase();if(/valid|complet|présent|presente|finalis/.test(x))return"done";if(/brouillon|cours|infér|infer|dimensionn/.test(x))return"draft";return"todo";};
+const DRIVE_ROOT=(window.SUPA&&window.SUPA.drive)||"";
+
+function driveUrl(m){const code=(m.entree==="Maître")?m.ndeg:(m.parent||m.ndeg);if(DRIVE_ROOT)return DRIVE_ROOT.replace(/\{code\}/g,encodeURIComponent(code));return"https://drive.google.com/drive/search?q="+encodeURIComponent(code+" "+(m.projet||""));}
+
+async function fetchText(p){const r=await fetch(p,{cache:"no-store"});if(!r.ok)throw new Error("HTTP "+r.status);const t=await r.text();
+  const ct=(r.headers.get("content-type")||"").toLowerCase();
+  if(ct.includes("text/html")||/^\s*(<!doctype html|<html[\s>])/i.test(t))throw new Error("HTTP 404");
+  return t;}
+
+const stripFM=md=>md.replace(/^﻿?---[\s\S]*?\n---\s*/,"");
+
+function mdToHtml(s){if(!s)return"";const lines=String(s).split("\n");let out=[],inUl=false,tbl=null;
+  const inline=t=>esc(t).replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>').replace(/\*\frac{.+?}\*\*/g,"<strong>$1</strong>").replace(/`([^`]+)`/g,"<code>$1</code>");
+  const isSep=c=>c.length&&c.every(x=>/^:?-{2,}:?$/.test(x.trim()));const closeUl=()=>{if(inUl){out.push("</ul>");inUl=false;}};
+  const closeTbl=()=>{if(!tbl)return;let head=null,body=[];tbl.forEach((r,i)=>{if(isSep(r))return;if(head===null&&tbl[i+1]&&isSep(tbl[i+1]))head=r;else body.push(r);});
+    const h=head?("<thead><tr>"+head.map(c=>"<th>"+inline(c.trim())+"</th>").join("")+"</tr></thead>"):"";out.push("<table class='md-tbl'>"+h+"<tbody>"+body.map(r=>"<tr>"+r.map(c=>"<td>"+inline(c.trim())+"</td>").join("")+"</tr>").join("")+"</tbody></table>");tbl=null;};
+  for(const ln of lines){const t=ln.trim();
+    if(t.startsWith("|")&&t.indexOf("|",1)>0){closeUl();(tbl=tbl||[]).push(t.replace(/^\|/,"").replace(/\|$/,"").split("|"));continue;}
+    closeTbl();const h=t.match(/^(#{1,6})\s+(.*)$/);
+    if(h){closeUl();const lv=Math.min(6,h[1].length+3);out.push("<h"+lv+" class='md-h'>"+inline(h[2])+"</h"+lv+">");continue;}
+    if(/^[-•]\s+/.test(t)){if(!inUl){out.push("<ul>");inUl=true;}out.push("<li>"+inline(t.replace(/^[-•]\s+/,""))+"</li>");continue;}
+    closeUl();if(/^>\s?/.test(t)){out.push("<blockquote>"+inline(t.replace(/^>\s?/,""))+"</blockquote>");continue;}
+    if(t==="")continue;out.push("<p>"+inline(t)+"</p>");}
+  closeUl();closeTbl();return out.join("");}
+
+let ROWS=[], byNdeg={}, CODE="";
+let _MKT=null, _CTC=null;
+
+async function loadMarketCtx(m){
+  const host=document.getElementById("market-ctx"); if(!host) return;
+  if(!m || !m.client){ host.innerHTML='<div class="mkt-empty">Pas de client renseigné.</div>'; return; }
+  host.innerHTML='<div class="mkt-empty">Chargement du contexte marché…</div>';
+  try{ if(_MKT===null) _MKT=await loadMarkets(); if(_CTC===null) _CTC=await loadContacts(); }
+  catch(e){ host.innerHTML='<div class="mkt-empty">Contexte marché indisponible (base).</div>'; return; }
+  const markets=_MKT.filter(x=>x.client===m.client), contacts=_CTC.filter(x=>x.client===m.client);
+  if(!markets.length && !contacts.length){ host.innerHTML=`<div class="mkt-empty">Aucun savoir marché en base pour ${esc(m.client)} — à enrichir depuis les chats.</div>`; return; }
+  const txt=((m.projet||"")+" "+(m.marque||"")+" "+(m.pays||"")+" "+(m.cluster||"")).toLowerCase();
+  const score=mk=>{ let s=0;
+    if(mk.pays) mk.pays.toLowerCase().split(/[\/(),]/).map(w=>w.trim()).filter(w=>w.length>=4).forEach(w=>{ if(txt.includes(w.slice(0,5))) s+=3; });
+    if(mk.marque){ const mm=mk.marque.toLowerCase(), tq=(m.marque||"").toLowerCase();
+      if(tq.length>=3 && (mm.includes(tq.slice(0,5))||txt.includes(mm.split(/[\s(\/]/)[0]))) s+=4;
+      if(/ombrelle|transverse|holding|group/.test(mm)) s+=1; }
+    return s; };
+  const ranked=markets.map(mk=>({mk,s:score(mk)})).sort((a,b)=>b.s-a.s);
+  const arr=a=>Array.isArray(a)?a:[];
+  const chips=(label,items)=> items&&items.length?`<div class="mkt-row"><span class="lbl">${label}</span><div class="val">${items.map(x=>`<span class="mkt-chip">${esc(x)}</span>`).join("")}</div></div>`:"";
+  const rules=(label,items)=> items&&items.length?`<div class="mkt-row"><span class="lbl">${label}</span><div class="val">${items.map(x=>`<div class="mkt-rule">${esc(x)}</div>`).join("")}</div></div>`:"";
+  const line=(label,v)=> v?`<div class="mkt-row"><span class="lbl">${label}</span><div class="val">${esc(v)}</div></div>`:"";
+  const card=(r,relevant)=>{ const mk=r.mk; return `<div class="mkt-card">
+    <div class="mh"><span class="pill">${esc(mk.marque||m.client)}</span>${mk.pays?`<span class="pays">${esc(mk.pays)}</span>`:""}${relevant?`<span class="best">● pertinent ici</span>`:""}</div>
+    ${chips("Dimensions",arr(mk.dimensions))}${chips("SKU / offres",arr(mk.skus))}
+    ${line("Signature",mk.signature)}${line("Langue",mk.langue)}${chips("Claims",arr(mk.claims))}
+    ${rules("Spécificités",arr(mk.specificites))}</div>`; };
+  const contactsHTML=()=> contacts.length?`<div class="dr-sect" style="margin-top:14px">Interlocuteurs — comment faire valider</div>`+
+    contacts.map(c=>`<div class="mkt-contact"><div><span class="cn">${esc(c.nom)}</span><span class="cr">${esc(c.role||"")}</span></div>${arr(c.conditions_validation).slice(0,7).map(x=>`<div class="mkt-rule">${esc(x)}</div>`).join("")}</div>`).join(""):"";
+  function paint(n){
+    let h=ranked.slice(0,n).map((r,i)=>card(r, r.s>0 && i<2)).join("")+contactsHTML();
+    if(ranked.length>n) h+=`<button class="mkt-more" id="mkt-more">+ voir les ${ranked.length-n} autre(s) marché(s) ${esc(m.client)}</button>`;
+    host.innerHTML=h;
+    const mr=document.getElementById("mkt-more"); if(mr) mr.onclick=()=>paint(ranked.length);
+    if(window.lucide) window.lucide.createIcons();
+  }
+  paint(Math.max(1, ranked.filter(r=>r.s>0).slice(0,2).length));
+}
+
+/* ===== Commentaires & observations (table public.comments) =====
+   Chacun commente avec son compte (currentActor : compte authentifié, sinon
+   l'identité « qui es-tu » du bandeau). Observation = note mise en avant. */
+let _CMT_KIND="comment";
+const _CMT_INVOLVED=new Set();   // personnes impliquées sélectionnées pour le prochain commentaire
+function isOwnerActor(){ const id=window.MTG_IDENTITY; return !id || id.role==="owner"; }
+function cmtAgo(iso){
+  const d=new Date(iso); if(isNaN(d)) return "";
+  const s=Math.floor((Date.now()-d.getTime())/1000);
+  if(s<60) return "à l'instant";
+  const mn=Math.floor(s/60); if(mn<60) return "il y a "+mn+" min";
+  const h=Math.floor(mn/60);  if(h<24) return "il y a "+h+" h";
+  const j=Math.floor(h/24);   if(j<7)  return "il y a "+j+" j";
+  return d.toLocaleDateString("fr-FR",{day:"numeric",month:"short",year:"numeric"});
+}
+function ficheLink(name){ return "personne.html?nom="+encodeURIComponent(name); }
+function cmtItem(c, actor){
+  const obs=c.kind==="observation";
+  const body=esc(c.body||"").replace(/(https?:\/\/[^\s)]+)/g,'<a href="$1" target="_blank" rel="noopener">lien ↗</a>');
+  const canDel = !!actor && (c.author===actor || isOwnerActor());
+  const inv=Array.isArray(c.involved)?c.involved.filter(Boolean):[];
+  const who=c.author?`<a class="cmt-who" href="${esc(ficheLink(c.author))}" title="Voir la fiche de ${esc(c.author)}">${esc(c.author)}</a>`:`<span class="cmt-who">—</span>`;
+  return `<div class="cmt${obs?' obs':''}">
+    <div class="cav">${esc(initials(c.author)||"?")}</div>
+    <div class="cmt-main">
+      <div class="cmt-hd">
+        ${who}
+        ${obs?'<span class="cmt-kind obs">observation</span>':''}
+        <span class="cmt-when">${esc(cmtAgo(c.created_at))}</span>
+        ${canDel?`<button class="cmt-del" data-del="${esc(String(c.id))}" title="Supprimer ce commentaire">supprimer</button>`:""}
+      </div>
+      <div class="cmt-body">${body}</div>
+      ${inv.length?`<div class="cmt-itags">${inv.map(n=>`<a class="cmt-itag" href="${esc(ficheLink(n))}" title="Voir la fiche de ${esc(n)}">👤 ${esc(n)}</a>`).join("")}</div>`:""}
+    </div>
+  </div>`;
+}
+async function renderComments(ndeg){
+  const box=document.getElementById("comments-box"); if(!box) return;
+  if(window.SUPA_SOURCE!=="supabase" || !window.loadComments){
+    box.innerHTML='<div class="cmt-empty">Commentaires disponibles uniquement en ligne (base live).</div>'; return;
+  }
+  const actor=(window.currentActor&&currentActor())||"";
+  let list=[];
+  try{ list=await loadComments(ndeg); }
+  catch(e){ box.innerHTML='<div class="cmt-empty">Commentaires indisponibles (base).</div>'; return; }
+  const listHTML = list.length
+    ? `<div class="cmt-list">${list.map(c=>cmtItem(c,actor)).join("")}</div>`
+    : `<div class="cmt-empty">Aucun commentaire pour l'instant. Ouvre la discussion ci-dessous.</div>`;
+  const team=(window.teamFrom?teamFrom(ROWS):[]);
+  const involvedChips=team.map(n=>`<button type="button" class="cmt-ichip${_CMT_INVOLVED.has(n)?' on':''}" data-inv="${esc(n)}">${esc(n)}</button>`).join("");
+  const composer = `<div class="cmt-add">
+    <div class="cmt-kinds">
+      <button type="button" class="cmt-kbtn${_CMT_KIND==='comment'?' on':''}" data-kind="comment">💬 Commentaire</button>
+      <button type="button" class="cmt-kbtn${_CMT_KIND==='observation'?' on':''}" data-kind="observation">👁 Observation</button>
+    </div>
+    <textarea id="cmt-text" placeholder="Ton commentaire ou ton observation sur cette tâche…"></textarea>
+    <div class="cmt-inv-lbl">Personnes impliquées <span style="text-transform:none;font-weight:400">— traçables sur leur fiche</span></div>
+    <div class="cmt-inv" id="cmt-inv">${involvedChips}</div>
+    <div class="cmt-foot">
+      <span class="cmt-as">${actor?`Tu publies en tant que <b>${esc(actor)}</b>`:`<span style="color:var(--danger)">Choisis ton nom (bouton en haut à droite) pour commenter.</span>`}</span>
+      <button class="dr-btn primary" id="cmt-send"${actor?"":" disabled"}><i data-lucide="send" style="width:14px;height:14px"></i>Publier</button>
+    </div></div>`;
+  box.innerHTML=listHTML+composer;
+  if(window.lucide) window.lucide.createIcons();
+  box.querySelectorAll(".cmt-kbtn").forEach(b=>b.onclick=()=>{ _CMT_KIND=b.dataset.kind; box.querySelectorAll(".cmt-kbtn").forEach(x=>x.classList.toggle("on",x===b)); });
+  box.querySelectorAll(".cmt-ichip").forEach(b=>b.onclick=()=>{ const n=b.dataset.inv; if(_CMT_INVOLVED.has(n)) _CMT_INVOLVED.delete(n); else _CMT_INVOLVED.add(n); b.classList.toggle("on"); });
+  box.querySelectorAll("[data-del]").forEach(b=>b.onclick=async()=>{
+    if(!confirm("Supprimer ce commentaire ?")) return;
+    try{ await deleteComment(b.dataset.del); renderComments(ndeg); }
+    catch(e){ flash("Échec de la suppression","err"); }
+  });
+  const send=document.getElementById("cmt-send");
+  if(send) send.onclick=async()=>{
+    const body=(document.getElementById("cmt-text").value||"").trim();
+    if(!body){ flash("Écris un commentaire d'abord","warn"); return; }
+    if(!actor){ flash("Choisis ton nom (bouton en haut à droite) pour commenter","warn"); return; }
+    send.disabled=true;
+    const involved=Array.from(_CMT_INVOLVED);
+    try{ await addComment({ndeg, author:actor, body, kind:_CMT_KIND, involved}); _CMT_INVOLVED.clear(); flash("✓ Publié","ok"); renderComments(ndeg); }
+    catch(e){ send.disabled=false; flash("Échec : "+((e&&e.message)||e),"err"); }
+  };
+}
+
+function getCode(){const p=new URLSearchParams(location.search);return p.get("code")||decodeURIComponent((location.hash||"").replace(/^#/,""))||"";}
+function badge(txt,col,bg){return `<span class="dbadge" style="background:${bg};color:${col}">${col!==''?'<span class="dt" style="background:'+col+'"></span>':''}${esc(txt)}</span>`;}
+
+function render(){
+  CODE=getCode();
+  const m=byNdeg[CODE];
+  const host=$("#tache");
+  if(!m){ host.innerHTML=`<div class="loadbox">Tâche <b>${esc(CODE||"?")}</b> introuvable.<br><span style="font-size:13px">Vérifie le code, ou reviens à la <a href="entrees.html">liste des entrées</a>.</span></div>`; document.title="Matanga — Tâche introuvable"; return; }
+  document.title="Matanga — "+m.ndeg+" · "+(m.projet||"");
+  
+  // Injecter les styles spécifiques à l'éditeur tache.html
+  (function injectTacheStyles(){
+    if(document.getElementById("mtg-tache-styles")) return;
+    const css=`
+    .t-tabs { display: flex; gap: 8px; border-bottom: 2px solid var(--border); padding: 10px 30px 0; background: var(--surface); flex-wrap: wrap; }
+    .t-tab { border: 0; background: transparent; padding: 12px 18px; font-family: var(--font-display); font-size: 13.5px; font-weight: 600; color: var(--fg3); cursor: pointer; border-bottom: 3px solid transparent; transition: all .15s ease; display: inline-flex; align-items: center; gap: 6px; }
+    .t-tab:hover { color: var(--fg1); }
+    .t-tab.on { color: var(--orange-500); border-bottom-color: var(--orange-500); }
+    .tab-panel { display: none; padding: 22px 30px 30px; }
+    .tab-panel.on { display: block; }
+    .tab-score { font-family: var(--font-mono); font-size: 10px; background: var(--paper-200); color: var(--fg2); padding: 2px 5px; border-radius: 4px; font-weight: 700; }
+    .t-tab.on .tab-score { background: var(--orange-100); color: var(--orange-700); }
+    .form-sec { margin-top: 24px; border-top: 1px solid var(--border); padding-top: 16px; }
+    .form-sec:first-of-type { border-top: 0; padding-top: 0; margin-top: 0; }
+    .form-sec-title { font-family: var(--font-display); font-weight: 600; font-size: 14px; color: var(--fg1); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .form-sec-title::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 18px; margin-bottom: 14px; }
+    .form-grid label { display: flex; flex-direction: column; gap: 5px; font-family: var(--font-mono); font-size: 9.5px; text-transform: uppercase; letter-spacing: .05em; color: var(--fg3); }
+    .form-grid label.full { grid-column: 1 / -1; }
+    .form-grid input, .form-grid select, .form-grid textarea { font: inherit; font-size: 13.5px; color: var(--fg1); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; box-sizing: border-box; width: 100%; }
+    .form-grid textarea { min-height: 64px; resize: vertical; line-height: 1.4; }
+    .form-grid input:focus, .form-grid select:focus, .form-grid textarea:focus { outline: 2px solid var(--orange-400); border-color: transparent; }
+    .form-grid input:disabled, .form-grid select:disabled, .form-grid textarea:disabled { background: var(--paper-100); color: var(--fg3); cursor: not-allowed; border-color: var(--border-soft); }
+    .inherited-lbl { font-family: var(--font-mono); font-size: 9px; color: var(--orange-600); text-transform: none; font-weight: normal; margin-left: 6px; letter-spacing: 0; }
+    .locked-info { background: var(--success-bg); border: 1px solid color-mix(in srgb, var(--success) 20%, transparent); color: var(--success); padding: 10px 14px; border-radius: 10px; font-size: 13px; font-weight: 600; margin-bottom: 18px; display: flex; align-items: center; gap: 8px; }
+    .locked-info.crea { background: var(--info-bg); border-color: color-mix(in srgb, var(--info) 20%, transparent); color: var(--info); }
+    .locked-info.prod { background: var(--warning-bg); border-color: color-mix(in srgb, var(--warning) 30%, transparent); color: var(--orange-700); }
+    .locked-info.case { background: var(--paper-200); border-color: var(--border); color: var(--fg2); }
+
+    /* Banner inspiration */
+    .inspiration-banner { display: flex; align-items: center; justify-content: space-between; background: color-mix(in srgb, var(--orange-500) 8%, var(--surface)); border: 1px solid color-mix(in srgb, var(--orange-500) 30%, var(--border)); border-radius: 12px; padding: 14px 18px; margin-bottom: 22px; gap: 14px; box-shadow: var(--shadow-sm); }
+    .inspiration-banner-left { display: flex; align-items: center; gap: 12px; text-align: left; }
+    .inspiration-banner-icon { font-size: 24px; flex: 0 0 auto; }
+    .inspiration-banner-title { font-weight: 700; font-size: 14px; color: var(--orange-700); }
+    .inspiration-banner-desc { font-size: 12.5px; color: var(--fg2); margin-top: 1px; }
+
+    /* Modal Overlay (Glassmorphism & Frosted Glass) */
+    .mtg-modal-overlay { position: fixed; inset: 0; z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 24px; background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); opacity: 0; pointer-events: none; transition: opacity 0.22s ease-out; }
+    .mtg-modal-overlay.show { opacity: 1; pointer-events: auto; }
+
+    /* Modal Card */
+    .mtg-modal { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; max-width: 760px; width: 100%; max-height: 85vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.4); transform: scale(0.94); transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1); }
+    .mtg-modal-overlay.show .mtg-modal { transform: scale(1); }
+
+    /* Modal Header */
+    .mtg-modal-header { padding: 18px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; background: var(--paper-50); }
+    .mtg-modal-title { font-family: var(--font-display); font-weight: 600; font-size: 18px; color: var(--fg1); display: flex; align-items: center; gap: 8px; margin: 0; }
+    .mtg-modal-close { border: 0; background: transparent; color: var(--fg3); cursor: pointer; padding: 6px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: background 0.15s, color 0.15s; }
+    .mtg-modal-close:hover { background: var(--paper-200); color: var(--fg1); }
+
+    /* Modal Body */
+    .mtg-modal-body { padding: 24px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 20px; }
+
+    /* Custom visual card layouts for concept variables */
+    .mtg-ideabox { background: linear-gradient(135deg, color-mix(in srgb, var(--orange-500) 8%, var(--surface)) 0%, color-mix(in srgb, var(--orange-500) 2%, var(--surface)) 100%); border-left: 4px solid var(--orange-500); border-radius: 12px; padding: 18px; position: relative; text-align: left; }
+    .mtg-ideabox-title { font-family: var(--font-mono); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--orange-700); margin-bottom: 6px; }
+    .mtg-ideabox-content { font-family: var(--font-display); font-style: italic; font-weight: 500; font-size: 17px; line-height: 1.45; color: var(--fg1); }
+    
+    .mtg-grid-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 640px) { .mtg-grid-2col { grid-template-columns: 1fr; } }
+    
+    .mtg-info-card { background: var(--paper-50); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; text-align: left; }
+    .mtg-info-card-title { font-family: var(--font-mono); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--fg3); margin-bottom: 6px; }
+    .mtg-info-card-text { font-size: 13.5px; line-height: 1.45; color: var(--fg1); white-space: pre-line; }
+
+    .mtg-axecard { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px; text-align: left; }
+    .mtg-axecard-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .mtg-axecard-badge { font-family: var(--font-mono); font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; background: var(--paper-200); color: var(--fg2); padding: 3px 9px; border-radius: 999px; }
+    .mtg-axecard-title { font-family: var(--font-display); font-weight: 600; font-size: 15px; color: var(--fg1); }
+    
+    .mtg-axecard-item { margin-top: 10px; border-top: 1px solid var(--border-soft); padding-top: 8px; }
+    .mtg-axecard-item:first-of-type { border-top: 0; padding-top: 0; margin-top: 0; }
+    .mtg-axecard-lbl { font-family: var(--font-mono); font-size: 9px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--fg3); font-weight: 600; margin-bottom: 2px; }
+    .mtg-axecard-val { font-size: 13px; line-height: 1.4; color: var(--fg1); }
+    .mtg-axecard-copy { font-size: 13.5px; font-weight: 600; color: var(--orange-600); line-height: 1.35; }
+
+    /* Modal Footer */
+    .mtg-modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 12px; background: var(--paper-50); }
+    .mtg-modal-overlay p { margin: 0; }
+    .mtg-modal-overlay blockquote { margin: 0; }
+    `;
+    const st=document.createElement("style"); st.id="mtg-tache-styles"; st.textContent=css; document.head.appendChild(st);
+  })();
+
+  const pcode=(m.entree==="Maître")?m.ndeg:(m.parent||m.ndeg);
+  const pm=byNdeg[pcode]||m;
+  const folder="projets/"+encodeURIComponent(pcode)+"/";
+  const docs=[["Brief",pm.docBrief,"BRIEF.md"],["Propal",pm.docPropal,"PROPAL.md"],["Livrables",pm.docLivr,"LIVRABLES.md"]];
+  const dossierAmorce=docs.filter(d=>docStat(d[1])!=="todo").length;
+  const dem=(m.entrePar||"").trim(), resp=normResp(m.responsable);
+  const kids=ROWS.filter(x=>x.parent===m.ndeg);
+
+  // Dépendances
+  const allDeps=parseDeps(m.dependsOn);
+  const openBlockers=depBlockers(m,byNdeg);
+  const blocking=depBlocking(m,ROWS);
+  const depChip=code=>{ const d=byNdeg[code]; const done=d&&isDoneBrief(d);
+    return `<a class="dep-chip ${d?(done?'done':'open'):''}" href="tache.html?code=${encodeURIComponent(code)}">${done?'✓':d?'⏳':'?'} ${esc(code)}${d?' · '+esc((d.projet||'').slice(0,40)):' (inconnu)'}</a>`; };
+  
+  const depsBlock=(allDeps.length||blocking.length)?`
+      <div class="dr-sect">Dépendances</div>
+      ${openBlockers.length?`<div class="dep-warn">🔒 Bloquée : ${openBlockers.length} dépendance${openBlockers.length>1?'s':''} pas encore terminée${openBlockers.length>1?'s':''}.</div>`:""}
+      <div class="deps">
+        ${allDeps.length?`<div class="deps-row"><span class="deps-lbl">Dépend de</span><div class="deps-list">${allDeps.map(depChip).join("")}</div></div>`:""}
+        ${blocking.length?`<div class="deps-row"><span class="deps-lbl">Bloque</span><div class="deps-list">${blocking.map(b=>`<a class="dep-chip blocking" href="tache.html?code=${encodeURIComponent(b.ndeg)}">${esc(b.ndeg)} · ${esc((b.projet||'').slice(0,40))}</a>`).join("")}</div></div>`:""}
+      </div>`:"";
+
+  const badges=[
+    badge(m.client, clientCol(m.client), `color-mix(in srgb, ${clientCol(m.client)} 14%, white)`),
+    m.statut?badge(m.statut, STATUT_COL[m.statut], `color-mix(in srgb, ${STATUT_COL[m.statut]} 16%, white)`):"",
+    m.prio?badge(m.prio,"var(--fg2)","var(--paper-100)"):"",
+    m.type?badge(m.type,"var(--fg2)","var(--paper-100)"):"",
+    m.classifInferee?badge("⚠ niveau inféré — à valider","var(--orange-700)","color-mix(in srgb, var(--orange-500) 15%, white)"):"",
+  ].filter(Boolean).join("");
+
+  const respOpts=(cur=>{const opts=TEAM.slice();if(cur&&!opts.includes(cur))opts.unshift(cur);return `<option value=""${cur?'':' selected'}>—</option>`+opts.map(n=>`<option ${n===cur?'selected':''}>${esc(n)}</option>`).join("");})(resp);
+  const clientsOpts=[...new Set(ROWS.map(r=>r.client).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"fr")).map(c=>`<option value="${esc(c)}">`).join("");
+  const codesOpts=ROWS.filter(r=>r.ndeg&&r.ndeg!==m.ndeg).map(r=>`<option value="${esc(r.ndeg)}">${esc((r.projet||'').slice(0,50))}</option>`).join("");
+  const demOpts=(cur=>{ const all=teamFrom(ROWS); if(!all.includes("Client (direct)"))all.push("Client (direct)"); if(cur&&!all.includes(cur))all.unshift(cur);
+    return `<option value="">—</option>`+all.map(n=>`<option ${n===cur?'selected':''}>${esc(n)}</option>`).join(""); })(dem);
+  const typeOpts=(cur=>{
+    const stdTypes = ["Packaging", "Création KV", "DA Campaign", "Production vidéo", "Stratégie", "Pitch", "Modification", "Coordination", "Autre"];
+    const opts = stdTypes.slice();
+    if(cur && !opts.includes(cur)) opts.push(cur);
+    return opts.map(t=>`<option value="${esc(t)}"${t===cur?' selected':''}>${esc(t)}</option>`).join("");
+  })(m.type);
+
+  const dlISO=/^\d{4}-\d{2}-\d{2}$/.test(m.deadline||"")?m.deadline:"";
+  const clISO=/^\d{4}-\d{2}-\d{2}/.test(m.closedAt||"")?String(m.closedAt).slice(0,10):"";
+  const BENCH=(window.leadBenchmark?leadBenchmark(ROWS):{byType:{},overall:7});
+  const realISO=(window.realisticDeadlineISO?realisticDeadlineISO(m,BENCH):"");
+  const TENS=(window.deadlineTension?deadlineTension(m,BENCH):"none");
+  const canonicalDays = (BENCH && BENCH.byType && BENCH.byType[m.type] != null) ? BENCH.byType[m.type] : (BENCH && BENCH.overall != null) ? BENCH.overall : 7;
+  const slackDelivery = (m.briefProduction && m.briefProduction.deadline_prod) || "";
+
+  // Définir l'onglet actif (sauvegardé d'un rendu à l'autre)
+  const activeTab = window.ACTIVE_TAB || new URLSearchParams(location.search).get("tab") || "general";
+
+  // Récupérer les structures de données des documents
+  const parent = (m.parent && byNdeg) ? byNdeg[m.parent] : null;
+  const scores = window.calcBriefScores(m, parent);
+
+  const bc = m.briefClient || {}, dc = m.briefCreatif || {}, bp = m.briefProduction || {}, cs = m.caseStudy || {}, su = m.suivi || {};
+  const bcP = parent ? (parent.briefClient || {}) : {}, dcP = parent ? (parent.briefCreatif || {}) : {}, bpP = parent ? (parent.briefProduction || {}) : {}, csP = parent ? (parent.caseStudy || {}) : {}, suP = parent ? (parent.suivi || {}) : {};
+
+  // Formulaire Brief Client
+  const panelBriefClient = `
+    <div class="tab-panel${activeTab==='brief-client'?' on':''}" id="panel-brief-client">
+      <div class="locked-info" id="bc-locked-banner" style="display:none">
+        <i data-lucide="lock" style="width:16px;height:16px"></i> Brief Client validé. Les modifications sont verrouillées.
+      </div>
+      <div class="form-sec">
+        <div class="form-sec-title">A. Identification & Contexte</div>
+        <div class="form-grid">
+          <label class="full">Contexte Business <span class="inherited-lbl" id="h-bc-contexte_business"></span>
+            <textarea id="e-bc-contexte_business" placeholder="Pourquoi communiquons-nous maintenant ? Lancement, notoriété..."></textarea>
+          </label>
+          <label class="full">Contexte Marque <span class="inherited-lbl" id="h-bc-contexte_marque"></span>
+            <textarea id="e-bc-contexte_marque" placeholder="Positionnement actuel, codes graphiques..."></textarea>
+          </label>
+          <label class="full">Contexte Marché <span class="inherited-lbl" id="h-bc-contexte_market"></span>
+            <textarea id="e-bc-contexte_market" placeholder="Concurrents, tension, saisonnalité..."></textarea>
+          </label>
+          <label class="full">Contexte Communication <span class="inherited-lbl" id="h-bc-contexte_com"></span>
+            <textarea id="e-bc-contexte_com" placeholder="Ce qui a déjà été fait, ce qui marche..."></textarea>
+          </label>
+        </div>
+      </div>
+      <div class="form-sec">
+        <div class="form-sec-title">B. Problème & Objectifs</div>
+        <div class="form-grid">
+          <label class="full">Problème Marketing <span class="inherited-lbl" id="h-bc-probleme_marketing"></span>
+            <textarea id="e-bc-probleme_marketing" placeholder="Aujourd'hui, la marque fait face à [problème] auprès de [cible]... L'enjeu est de faire passer la cible de [perception actuelle] à [perception désirée]"></textarea>
+          </label>
+          <label>Objectif Business <span class="inherited-lbl" id="h-bc-obj_business"></span>
+            <input id="e-bc-obj_business" type="text" placeholder="Leads, souscriptions, visites...">
+          </label>
+          <label>Objectif Marketing <span class="inherited-lbl" id="h-bc-obj_marketing"></span>
+            <input id="e-bc-obj_marketing" type="text" placeholder="Notoriété, préférence, éducation...">
+          </label>
+          <label class="full">Objectif Communication <span class="inherited-lbl" id="h-bc-obj_communication"></span>
+            <input id="e-bc-obj_communication" type="text" placeholder="Faire comprendre une offre, héroïser une cible...">
+          </label>
+        </div>
+      </div>
+      <div class="form-sec">
+        <div class="form-sec-title">C. Cibles & Insight</div>
+        <div class="form-grid">
+          <label>Cible Principale <span class="inherited-lbl" id="h-bc-cible_principale"></span>
+            <input id="e-bc-cible_principale" type="text" placeholder="Qui doit agir ?">
+          </label>
+          <label>Cible Secondaire <span class="inherited-lbl" id="h-bc-cible_secondaire"></span>
+            <input id="e-bc-cible_secondaire" type="text" placeholder="Qui influence ?">
+          </label>
+          <label>Profil Socio-économique <span class="inherited-lbl" id="h-bc-cible_socio_eco"></span>
+            <input id="e-bc-cible_socio_eco" type="text" placeholder="Revenus, métier, environnement...">
+          </label>
+          <label>Situation de vie <span class="inherited-lbl" id="h-bc-cible_situation"></span>
+            <input id="e-bc-cible_situation" type="text" placeholder="Besoin, moment, tension...">
+          </label>
+          <label>Frein principal <span class="inherited-lbl" id="h-bc-cible_frein"></span>
+            <input id="e-bc-cible_frein" type="text" placeholder="Pourquoi elle n'agit pas ?">
+          </label>
+          <label>Motivation principale <span class="inherited-lbl" id="h-bc-cible_motivation"></span>
+            <input id="e-bc-cible_motivation" type="text" placeholder="Ce qui déclenche son intérêt...">
+          </label>
+          <label class="full">Langage / codes <span class="inherited-lbl" id="h-bc-cible_langage"></span>
+            <input id="e-bc-cible_langage" type="text" placeholder="Ton populaire, premium, communautaire...">
+          </label>
+          <label class="full">Insight Client <span class="inherited-lbl" id="h-bc-insight_client"></span>
+            <textarea id="e-bc-insight_client" placeholder="Vérité humaine profonde (ex. 'Dans beaucoup de communautés, la présidente de tontine n'est pas seulement...')"></textarea>
+          </label>
+        </div>
+      </div>
+      <div class="form-sec">
+        <div class="form-sec-title">D. Big Idea & Axes</div>
+        <div class="form-grid">
+          <label class="full">Big Idea Marketing <span class="inherited-lbl" id="h-bc-big_idea"></span>
+            <textarea id="e-bc-big_idea" placeholder="Faire de [sujet] le symbole de [bénéfice / transformation]"></textarea>
+          </label>
+          
+          <label class="full" style="color:var(--orange-600);font-weight:bold;margin-top:8px">Axe marketing 1</label>
+          <label>Nom de l'axe 1 <span class="inherited-lbl" id="h-bc-axe1_nom"></span>
+            <input id="e-bc-axe1_nom" type="text" placeholder="Court et mémorisable">
+          </label>
+          <label>Intention <span class="inherited-lbl" id="h-bc-axe1_intention"></span>
+            <input id="e-bc-axe1_intention" type="text" placeholder="Ce que l'axe veut prouver">
+          </label>
+          <label>Promesse <span class="inherited-lbl" id="h-bc-axe1_promesse"></span>
+            <input id="e-bc-axe1_promesse" type="text" placeholder="Ce que la cible doit retenir">
+          </label>
+          <label>Ton <span class="inherited-lbl" id="h-bc-axe1_ton"></span>
+            <input id="e-bc-axe1_ton" type="text" placeholder="Fier, complice, populaire, aspirationnel...">
+          </label>
+          <label class="full">Copy principale <span class="inherited-lbl" id="h-bc-axe1_copy_p"></span>
+            <input id="e-bc-axe1_copy_p" type="text" placeholder="Phrase principale de campagne">
+          </label>
+          <label class="full">Copies secondaires <span class="inherited-lbl" id="h-bc-axe1_copy_s"></span>
+            <textarea id="e-bc-axe1_copy_s" placeholder="Variantes possibles"></textarea>
+          </label>
+          <label class="full">Preuve / bénéfice <span class="inherited-lbl" id="h-bc-axe1_preuve"></span>
+            <input id="e-bc-axe1_preuve" type="text" placeholder="Ce qui rend l'axe crédible">
+          </label>
+
+          <label class="full" style="color:var(--orange-600);font-weight:bold;margin-top:8px">Axe marketing 2</label>
+          <label>Nom de l'axe 2 <span class="inherited-lbl" id="h-bc-axe2_nom"></span>
+            <input id="e-bc-axe2_nom" type="text" placeholder="Court et mémorisable">
+          </label>
+          <label>Intention <span class="inherited-lbl" id="h-bc-axe2_intention"></span>
+            <input id="e-bc-axe2_intention" type="text" placeholder="Ce que l'axe veut prouver">
+          </label>
+          <label>Promesse <span class="inherited-lbl" id="h-bc-axe2_promesse"></span>
+            <input id="e-bc-axe2_promesse" type="text" placeholder="Ce que la cible doit retenir">
+          </label>
+          <label>Ton <span class="inherited-lbl" id="h-bc-axe2_ton"></span>
+            <input id="e-bc-axe2_ton" type="text" placeholder="Fier, complice, populaire, aspirationnel...">
+          </label>
+          <label class="full">Copy principale <span class="inherited-lbl" id="h-bc-axe2_copy_p"></span>
+            <input id="e-bc-axe2_copy_p" type="text" placeholder="Phrase principale de campagne">
+          </label>
+          <label class="full">Copies secondaires <span class="inherited-lbl" id="h-bc-axe2_copy_s"></span>
+            <textarea id="e-bc-axe2_copy_s" placeholder="Variantes possibles"></textarea>
+          </label>
+          <label class="full">Preuve / bénéfice <span class="inherited-lbl" id="h-bc-axe2_preuve"></span>
+            <input id="e-bc-axe2_preuve" type="text" placeholder="Ce qui rend l'axe crédible">
+          </label>
+        </div>
+      </div>
+      <div class="form-sec">
+        <div class="form-sec-title">E. Contraintes client</div>
+        <div class="form-grid">
+          <label>Contraintes de Marque <span class="inherited-lbl" id="h-bc-contrainte_marque"></span>
+            <input id="e-bc-contrainte_marque" type="text" placeholder="Logo, couleurs, charte...">
+          </label>
+          <label>Contraintes Légales <span class="inherited-lbl" id="h-bc-contrainte_legale"></span>
+            <input id="e-bc-contrainte_legale" type="text" placeholder="Mentions, validation juridique...">
+          </label>
+          <label>Contraintes Culturelles <span class="inherited-lbl" id="h-bc-contrainte_culturelle"></span>
+            <input id="e-bc-contrainte_culturelle" type="text" placeholder="Éviter caricatures, clichés...">
+          </label>
+          <label>Contraintes Produit <span class="inherited-lbl" id="h-bc-contrainte_produit"></span>
+            <input id="e-bc-contrainte_produit" type="text" placeholder="Fonctionnalités exactes...">
+          </label>
+          <label>Contraintes de Format <span class="inherited-lbl" id="h-bc-contrainte_format"></span>
+            <input id="e-bc-contrainte_format" type="text" placeholder="Nombre de slides, ratios...">
+          </label>
+          <label>Contraintes de Délai <span class="inherited-lbl" id="h-bc-contrainte_delai"></span>
+            <input id="e-bc-contrainte_delai" type="text" placeholder="Date de validation, livraison...">
+          </label>
+        </div>
+      </div>
+    </div>`;
+
+  // Formulaire DA / Créa
+  const panelDaCrea = `
+    <div class="tab-panel${activeTab==='da-crea'?' on':''}" id="panel-da-crea">
+      <div class="locked-info crea" id="dc-locked-banner" style="display:none">
+        <i data-lucide="lock" style="width:16px;height:16px"></i> Concept validé par la Direction Créative. Les champs sont verrouillés.
+      </div>
+      <div class="inspiration-banner">
+        <div class="inspiration-banner-left">
+          <span class="inspiration-banner-icon">💡</span>
+          <div>
+            <div class="inspiration-banner-title">Concept & Rationale Rédacteur</div>
+            <div class="inspiration-banner-desc">Consulte la Big Idea, l'insight client et les axes stratégiques du Concepteur Rédacteur avant de créer tes concepts graphiques.</div>
+          </div>
+        </div>
+        <button type="button" class="dr-btn primary" id="open-inspiration-btn" style="white-space:nowrap"><i data-lucide="eye" style="width:15px;height:15px;vertical-align:middle;margin-right:4px"></i>Voir le Concept CR</button>
+      </div>
+      <div class="form-sec">
+        <div class="form-sec-title">A. Synthèse & Problème Créatif</div>
+        <div class="form-grid">
+          <label>Statut Validation Créative
+            <select id="e-dc-status_validation">
+              <option value="Exploration">Exploration</option>
+              <option value="Concepts proposés">Concepts proposés</option>
+              <option value="Reco agence">Reco agence</option>
+              <option value="Concept validé">Concept validé</option>
+            </select>
+          </label>
+          <label>Message / Claim Principal <span class="inherited-lbl" id="h-dc-message_claim"></span>
+            <input id="e-dc-message_claim" type="text" placeholder="Claim principal (ex: LA PRESI DU MOIS)">
+          </label>
+          <label class="full">Challenge Créatif <span class="inherited-lbl" id="h-dc-challenge_creatif"></span>
+            <textarea id="e-dc-challenge_creatif" placeholder="Traduire le problème marketing en challenge créatif..."></textarea>
+          </label>
+          <label class="full">Principe Créatif <span class="inherited-lbl" id="h-dc-principe_creatif"></span>
+            <textarea id="e-dc-principe_creatif" placeholder="Règle d'or de la création (ex: Chaque présidente traitée comme une personnalité...)"></textarea>
+          </label>
+        </div>
+      </div>
+      <div class="form-sec">
+        <div class="form-sec-title">B. Concepts Créatifs</div>
+        <div class="form-grid">
+          <label class="full" style="color:var(--orange-600);font-weight:bold;margin-top:8px">Concept 1</label>
+          <label>Nom du Concept 1 <span class="inherited-lbl" id="h-dc-concept1_nom"></span>
+            <input id="e-dc-concept1_nom" type="text" placeholder="Nom du concept 1">
+          </label>
+          <label>Axe marketing associé <span class="inherited-lbl" id="h-dc-concept1_axe"></span>
+            <input id="e-dc-concept1_axe" type="text" placeholder="Lien avec l'axe marketing">
+          </label>
+          <label class="full">Piste Créative <span class="inherited-lbl" id="h-dc-concept1_piste"></span>
+            <textarea id="e-dc-concept1_piste" placeholder="Description de la piste..."></textarea>
+          </label>
+          <label class="full">Croisement Créatif <span class="inherited-lbl" id="h-dc-concept1_croisement"></span>
+            <input id="e-dc-concept1_croisement" type="text" placeholder="[Axe marketing] x [Piste créative] x [Univers visuel]">
+          </label>
+          <label class="full">Univers visuels possibles <span class="inherited-lbl" id="h-dc-concept1_univers"></span>
+            <input id="e-dc-concept1_univers" type="text" placeholder="Univers visuels suggérés...">
+          </label>
+          <label class="full">Niveau 1 — Safe <span class="inherited-lbl" id="h-dc-concept1_safe"></span>
+            <textarea id="e-dc-concept1_safe" placeholder="Exécutable vite, peu risqué, budget réduit..."></textarea>
+          </label>
+          <label class="full">Niveau 2 — Piste Agence (Reco) <span class="inherited-lbl" id="h-dc-concept1_reco"></span>
+            <textarea id="e-dc-concept1_reco" placeholder="Meilleure balance qualité, faisabilité et différenciation..."></textarea>
+          </label>
+          <label class="full">Niveau 3 — Piste Créa / Big Money <span class="inherited-lbl" id="h-dc-concept1_money"></span>
+            <textarea id="e-dc-concept1_money" placeholder="Idée spectaculaire, image de marque forte, gros budget..."></textarea>
+          </label>
+
+          <label class="full" style="color:var(--orange-600);font-weight:bold;margin-top:8px">Concept 2</label>
+          <label>Nom du Concept 2 <span class="inherited-lbl" id="h-dc-concept2_nom"></span>
+            <input id="e-dc-concept2_nom" type="text" placeholder="Nom du concept 2">
+          </label>
+          <label>Axe marketing associé <span class="inherited-lbl" id="h-dc-concept2_axe"></span>
+            <input id="e-dc-concept2_axe" type="text" placeholder="Lien avec l'axe marketing">
+          </label>
+          <label class="full">Piste Créative <span class="inherited-lbl" id="h-dc-concept2_piste"></span>
+            <textarea id="e-dc-concept2_piste" placeholder="Description de la piste..."></textarea>
+          </label>
+          <label class="full">Croisement Créatif <span class="inherited-lbl" id="h-dc-concept2_croisement"></span>
+            <input id="e-dc-concept2_croisement" type="text" placeholder="[Axe marketing] x [Piste créative] x [Univers visuel]">
+          </label>
+          <label class="full">Univers visuels possibles <span class="inherited-lbl" id="h-dc-concept2_univers"></span>
+            <input id="e-dc-concept2_univers" type="text" placeholder="Univers visuels suggérés...">
+          </label>
+          <label class="full">Niveau 1 — Safe <span class="inherited-lbl" id="h-dc-concept2_safe"></span>
+            <textarea id="e-dc-concept2_safe" placeholder="Exécutable vite, peu risqué, budget réduit..."></textarea>
+          </label>
+          <label class="full">Niveau 2 — Piste Agence (Reco) <span class="inherited-lbl" id="h-dc-concept2_reco"></span>
+            <textarea id="e-dc-concept2_reco" placeholder="Meilleure balance qualité, faisabilité et différenciation..."></textarea>
+          </label>
+          <label class="full">Niveau 3 — Piste Créa / Big Money <span class="inherited-lbl" id="h-dc-concept2_money"></span>
+            <textarea id="e-dc-concept2_money" placeholder="Idée spectaculaire, image de marque forte, gros budget..."></textarea>
+          </label>
+        </div>
+      </div>
+      <div class="form-sec">
+        <div class="form-sec-title">C. Direction Artistique</div>
+        <div class="form-grid">
+          <label>Style d'image <span class="inherited-lbl" id="h-dc-da_style_image"></span>
+            <input id="e-dc-da_style_image" type="text" placeholder="Photo réaliste, éditorial, lifestyle...">
+          </label>
+          <label>Lumière <span class="inherited-lbl" id="h-dc-da_lumiere"></span>
+            <input id="e-dc-da_lumiere" type="text" placeholder="Naturelle, studio, cinématique...">
+          </label>
+          <label>Cadrage <span class="inherited-lbl" id="h-dc-da_cadrage"></span>
+            <input id="e-dc-da_cadrage" type="text" placeholder="Portrait serré, plan américain...">
+          </label>
+          <label>Décor <span class="inherited-lbl" id="h-dc-da_decor"></span>
+            <input id="e-dc-da_decor" type="text" placeholder="Bureau, marché, maison, studio...">
+          </label>
+          <label>Styling <span class="inherited-lbl" id="h-dc-da_styling"></span>
+            <input id="e-dc-da_styling" type="text" placeholder="Tenue traditionnelle moderne, business casual...">
+          </label>
+          <label>Attitude <span class="inherited-lbl" id="h-dc-da_attitude"></span>
+            <input id="e-dc-da_attitude" type="text" placeholder="Fière, leader, accessible, souriante...">
+          </label>
+          <label>Palette <span class="inherited-lbl" id="h-dc-da_palette"></span>
+            <input id="e-dc-da_palette" type="text" placeholder="Couleurs de marque, tons humains...">
+          </label>
+          <label>Typographie <span class="inherited-lbl" id="h-dc-da_typo"></span>
+            <input id="e-dc-da_typo" type="text" placeholder="Corporate, éditoriale, moderne, sociale...">
+          </label>
+          <label class="full">Niveau de retouche <span class="inherited-lbl" id="h-dc-da_retouche"></span>
+            <input id="e-dc-da_retouche" type="text" placeholder="Naturel, premium, institutionnel...">
+          </label>
+        </div>
+      </div>
+      <div class="form-sec">
+        <div class="form-sec-title">D. Copywriting Créatif & Recommandation</div>
+        <div class="form-grid">
+          <label>Claim Principal <span class="inherited-lbl" id="h-dc-copy_claim"></span>
+            <input id="e-dc-copy_claim" type="text" placeholder="Accrocher (ex: LA PRÉSI DU MOIS)">
+          </label>
+          <label>Accroche Slide / Scène <span class="inherited-lbl" id="h-dc-copy_accroche"></span>
+            <input id="e-dc-copy_accroche" type="text" placeholder="Attirer (ex: Elle rassemble, elle organise...)">
+          </label>
+          <label>Texte explicatif <span class="inherited-lbl" id="h-dc-copy_explication"></span>
+            <input id="e-dc-copy_explication" type="text" placeholder="Expliquer (ex: Chaque mois, NSIA Tontines...)">
+          </label>
+          <label>CTA <span class="inherited-lbl" id="h-dc-copy_cta"></span>
+            <input id="e-dc-copy_cta" type="text" placeholder="Convertir (ex: Découvrez son histoire)">
+          </label>
+          <label class="full">Recommandation Officielle Agence <span class="inherited-lbl" id="h-dc-reco_agence"></span>
+            <textarea id="e-dc-reco_agence" placeholder="L'agence recommande le Concept X car il valorise..."></textarea>
+          </label>
+        </div>
+      </div>
+    </div>`;
+
+  // Formulaire Production
+  const panelProduction = `
+    <div class="tab-panel${activeTab==='production'?' on':''}" id="panel-production">
+      <div class="locked-info prod" id="bp-locked-banner" style="display:none">
+        <i data-lucide="lock" style="width:16px;height:16px"></i> Production validée ou clôturée. Les modifications techniques sont verrouillées.
+      </div>
+      <div class="form-sec">
+        <div class="form-sec-title">A. Identification Production</div>
+        <div class="form-grid">
+          <label>Statut Production
+            <select id="e-bp-status_production">
+              <option value="Reçu">Reçu</option>
+              <option value="En production">En production</option>
+              <option value="En correction">En correction</option>
+              <option value="Validé">Validé</option>
+              <option value="Livré">Livré</option>
+            </select>
+          </label>
+          <label>Livrable Principal <span class="inherited-lbl" id="h-bp-livrable_principal"></span>
+            <input id="e-bp-livrable_principal" type="text" placeholder="Carrousel, KV, Story, Film...">
+          </label>
+          <label>Nombre de slides / pièces <span class="inherited-lbl" id="h-bp-nb_slides"></span>
+            <input id="e-bp-nb_slides" type="number" placeholder="Ex: 5">
+          </label>
+          <label>Ratio attendu <span class="inherited-lbl" id="h-bp-ratio"></span>
+            <input id="e-bp-ratio" type="text" placeholder="4:5, 1:1, 9:16...">
+          </label>
+          <label>Plateformes cibles <span class="inherited-lbl" id="h-bp-plateformes"></span>
+            <input id="e-bp-plateformes" type="text" placeholder="Facebook, Instagram, LinkedIn, WhatsApp...">
+          </label>
+          <label>Responsable Production <span class="inherited-lbl" id="h-bp-responsable_prod"></span>
+            <input id="e-bp-responsable_prod" type="text" placeholder="Graphiste, motion designer, photographe...">
+          </label>
+          <label class="full">Échéance Production <span class="inherited-lbl" id="h-bp-deadline_prod"></span>
+            <input id="e-bp-deadline_prod" type="date">
+          </label>
+        </div>
+      </div>
+      <div class="form-sec">
+        <div class="form-sec-title">B. Spécifications techniques</div>
+        <div class="form-grid">
+          <label>Format Social Portrait <span class="inherited-lbl" id="h-bp-spec_social_portrait"></span>
+            <input id="e-bp-spec_social_portrait" type="text" placeholder="1080x1350 px">
+          </label>
+          <label>Format Carré optionnel <span class="inherited-lbl" id="h-bp-spec_carre"></span>
+            <input id="e-bp-spec_carre" type="text" placeholder="1080x1080 px">
+          </label>
+          <label>Format Story optionnel <span class="inherited-lbl" id="h-bp-spec_story"></span>
+            <input id="e-bp-spec_story" type="text" placeholder="1080x1920 px">
+          </label>
+          <label>Format Export <span class="inherited-lbl" id="h-bp-spec_export"></span>
+            <input id="e-bp-spec_export" type="text" placeholder="PNG master, JPG optimisé...">
+          </label>
+          <label>Zone de sécurité <span class="inherited-lbl" id="h-bp-spec_safety_zone"></span>
+            <input id="e-bp-spec_safety_zone" type="text" placeholder="Marges haut/bas 120px minimum">
+          </label>
+          <label>Poids de fichier max <span class="inherited-lbl" id="h-bp-spec_file_weight"></span>
+            <input id="e-bp-spec_file_weight" type="text" placeholder="Optimisé web (ex: < 1MB)">
+          </label>
+          <label class="full">Nomenclature (Naming) <span class="inherited-lbl" id="h-bp-spec_naming"></span>
+            <input id="e-bp-spec_naming" type="text" placeholder="CLIENT_PROJET_TACHE_SLIDE_VERSION_DATE.png">
+          </label>
+        </div>
+      </div>
+    </div>`;
+
+  // Formulaire Case Study
+  const panelCaseStudy = `
+    <div class="tab-panel${activeTab==='case-study'?' on':''}" id="panel-case-study">
+      <div class="locked-info case" id="cs-locked-banner" style="display:none">
+        <i data-lucide="lock" style="width:16px;height:16px"></i> Case Study finalisé ou archivé. Les modifications sont verrouillées.
+      </div>
+      <div class="form-sec">
+        <div class="form-sec-title">A. Valorisation Stratégique</div>
+        <div class="form-grid">
+          <label>Statut Validation Case Study
+            <select id="e-cs-status_validation">
+              <option value="À documenter">À documenter</option>
+              <option value="Données manquantes">Données manquantes</option>
+              <option value="Case study interne">Case study interne</option>
+              <option value="Version client">Version client</option>
+              <option value="Version portfolio">Version portfolio</option>
+              <option value="Version award">Version award</option>
+            </select>
+          </label>
+          <label class="full">Challenge client <span class="inherited-lbl" id="h-cs-challenge"></span>
+            <textarea id="e-cs-challenge" placeholder="Comment valoriser... tout en rendant la marque plus proche..."></textarea>
+          </label>
+          <label class="full">Insight stratégique <span class="inherited-lbl" id="h-cs-insight"></span>
+            <textarea id="e-cs-insight" placeholder="La vérité humaine ou marché exploitée..."></textarea>
+          </label>
+          <label class="full">Stratégie déployée <span class="inherited-lbl" id="h-cs-strategie"></span>
+            <textarea id="e-cs-strategie" placeholder="La route stratégique choisie pour répondre au challenge..."></textarea>
+          </label>
+          <label class="full">Big Idea de campagne <span class="inherited-lbl" id="h-cs-big_idea"></span>
+            <input id="e-cs-big_idea" type="text" placeholder="La Big Idea finale validée">
+          </label>
+          <label class="full">Concept retenu & idée créative <span class="inherited-lbl" id="h-cs-concept_retenu"></span>
+            <textarea id="e-cs-concept_retenu" placeholder="Comment le concept se décline en visuels/vidéos..."></textarea>
+          </label>
+          <label class="full">Exécution & Livrables produits <span class="inherited-lbl" id="h-cs-execution"></span>
+            <textarea id="e-cs-execution" placeholder="L'ensemble du dispositif produit (masters TV, KV, posts...)"></textarea>
+          </label>
+          <label class="full">Direction Artistique (Case study) <span class="inherited-lbl" id="h-cs-da"></span>
+            <textarea id="e-cs-da" placeholder="Choix de DA, tonalités, palette, mise en page..."></textarea>
+          </label>
+        </div>
+      </div>
+      <div class="form-sec">
+        <div class="form-sec-title">B. Résultats & KPIs</div>
+        <div class="form-grid">
+          <label>Portée (Reach) <span class="inherited-lbl" id="h-cs-kpi_portee"></span>
+            <input id="e-cs-kpi_portee" type="text" placeholder="Nb de personnes touchées">
+          </label>
+          <label>Impressions <span class="inherited-lbl" id="h-cs-kpi_impressions"></span>
+            <input id="e-cs-kpi_impressions" type="text" placeholder="Impressions générées">
+          </label>
+          <label>Engagement <span class="inherited-lbl" id="h-cs-kpi_engagement"></span>
+            <input id="e-cs-kpi_engagement" type="text" placeholder="Likes, comments, shares...">
+          </label>
+          <label>Taux d'engagement <span class="inherited-lbl" id="h-cs-kpi_taux_eng"></span>
+            <input id="e-cs-kpi_taux_eng" type="text" placeholder="Engagement / portée %">
+          </label>
+          <label>Clics CTA <span class="inherited-lbl" id="h-cs-kpi_clics"></span>
+            <input id="e-cs-kpi_clics" type="text" placeholder="Clics sur le lien / WhatsApp">
+          </label>
+          <label>Leads générés <span class="inherited-lbl" id="h-cs-kpi_leads"></span>
+            <input id="e-cs-kpi_leads" type="text" placeholder="Nombre de leads ou prospects">
+          </label>
+          <label>Sentiment global <span class="inherited-lbl" id="h-cs-kpi_sentiment"></span>
+            <input id="e-cs-kpi_sentiment" type="text" placeholder="Positif, neutre, négatif">
+          </label>
+          <label>Commentaires significatifs (Verbatims) <span class="inherited-lbl" id="h-cs-kpi_verbatims"></span>
+            <input id="e-cs-kpi_verbatims" type="text" placeholder="Commentaires clients clés">
+          </label>
+          <label class="full">Potentiel de réutilisabilité / déclinaison <span class="inherited-lbl" id="h-cs-kpi_reutilisabilite"></span>
+            <input id="e-cs-kpi_reutilisabilite" type="text" placeholder="Déclinaison sur d'autres formats...">
+          </label>
+        </div>
+      </div>
+      <div class="form-sec">
+        <div class="form-sec-title">C. Apprentissages (Learnings agence)</div>
+        <div class="form-grid">
+          <label class="full">Qu'est-ce qui a bien fonctionné ? <span class="inherited-lbl" id="h-cs-learning_ok"></span>
+            <textarea id="e-cs-learning_ok" placeholder="Format, ton, CTA, portrait..."></textarea>
+          </label>
+          <label class="full">Qu'est-ce qui doit être amélioré ? <span class="inherited-lbl" id="h-cs-learning_improve"></span>
+            <textarea id="e-cs-learning_improve" placeholder="Délai, validations, qualité assets..."></textarea>
+          </label>
+          <label class="full">Quelle piste peut devenir une plateforme à long terme ? <span class="inherited-lbl" id="h-cs-learning_platform"></span>
+            <input id="e-cs-learning_platform" type="text" placeholder="Campagne récurrente, concept annuel...">
+          </label>
+          <label class="full">Peut-on industrialiser ? <span class="inherited-lbl" id="h-cs-learning_industrial"></span>
+            <input id="e-cs-learning_industrial" type="text" placeholder="Kit de shooting, templates mensuels...">
+          </label>
+          <label class="full">Peut-on revendre ce modèle à d'autres clients ? <span class="inherited-lbl" id="h-cs-learning_sell"></span>
+            <input id="e-cs-learning_sell" type="text" placeholder="FMCG, microfinance, assurances, banques...">
+          </label>
+        </div>
+      </div>
+    </div>`;
+
+  // Onglet Général & Suivi (original t-body)
+  const panelGeneral = `
+    <div class="tab-panel${activeTab==='general'?' on':''}" id="panel-general">
+      <div class="dr-sect">Fiche</div>
+      <div class="kv">
+        ${m.marque?`<div class="k">Marque</div><div class="v">${esc(m.marque)}</div>`:""}
+        ${(m.cluster||m.pays)?`<div class="k">Zone</div><div class="v">${esc([m.cluster,m.pays].filter(Boolean).join(" · "))}</div>`:""}
+        ${m.niveau?`<div class="k">Niveau</div><div class="v">${esc(m.niveau)}</div>`:""}
+        ${m.type?`<div class="k">Type</div><div class="v">${esc(m.type)}</div>`:""}
+        ${m.livrables?`<div class="k">Livrables</div><div class="v">${esc(m.livrables)}</div>`:""}
+        ${m.date?`<div class="k">Réception</div><div class="v">${esc(m.date)}</div>`:""}
+        <div class="k">Durée étalon</div><div class="v">${canonicalDays} jours <span style="font-size:11px;color:var(--fg3)">(standard de l'industrie pour ${esc(m.type||"ce type")})</span></div>
+        ${realISO?`<div class="k">Délai réaliste agence</div><div class="v">${esc(realISO)} <span style="font-size:11px;color:var(--fg3)">(durée étalon + 5 j ouvrés de marge agence)</span></div>`:""}
+        ${m.deadline?`<div class="k">Deadline demandeur</div><div class="v">${esc(m.deadline)}${m.deadlineHard?` <span style="font-size:11px;color:var(--orange-700);font-weight:700">⚑ hard-deadline (exigée client)</span>`:""}${(TENS!=="fair"&&TENS!=="none"&&!DONE_STATUS.has(m.statut))?` <span style="font-size:11.5px;font-weight:700;color:${TENS==="unfair"?"var(--danger)":"var(--orange-600)"}">· ${TENS==="unfair"?"⚠ délai injuste (trop court)":"⏳ serré"}</span>`:""}</div>`:""}
+        <div class="k">Cible de livraison Slack</div><div class="v">${slackDelivery ? esc(slackDelivery) : `<i style="color:var(--fg4)">Non planifiée (jalon dynamique)</i>`}</div>
+        ${m.avancement?`<div class="k">Avancement</div><div class="v">${esc(m.avancement)}</div>`:""}
+        ${m.closedAt?`<div class="k">Fermé le</div><div class="v">${esc(m.closedAt)}</div>`:""}
+      </div>
+      <div class="dr-sect">Contexte marché & conditions de validation</div>
+      <div id="market-ctx" class="mkt-ctx"><div class="mkt-empty">…</div></div>
+      <div class="dr-sect">Suivi & sources des mises à jour</div>
+      <div class="upd-log">${commTimeline(m.comm)}</div>
+      ${m.id?`<div class="upd-add">
+        <div class="upd-srcs" id="upd-srcs">${SOURCES.map((s,i)=>`<button type="button" class="upd-src${i===0?' on':''}" data-src="${esc(s.k)}">${s.ic} ${esc(s.k)}</button>`).join("")}</div>
+        <textarea id="upd-text" placeholder="Colle le message, le retour client, les notes de réunion…"></textarea>
+        <input id="upd-link" type="text" placeholder="Lien / référence (Drive du screen, PPTX, permalink Slack…) — optionnel">
+        <div class="upd-foot"><span class="upd-hint">Consigné daté dans le suivi, avec la source choisie.</span><button class="dr-btn primary" id="upd-save"><i data-lucide="plus" style="width:15px;height:15px"></i>Consigner</button></div>
+      </div>`:""}
+      <div class="dr-sect">Commentaires & observations</div>
+      <div id="comments-box"><div class="cmt-empty">Chargement…</div></div>
+      ${depsBlock}
+      <div class="dr-sect">Dossier projet${pcode!==m.ndeg?` · maître ${esc(pcode)}`:""} · ${dossierAmorce}/3 amorcés</div>
+      <div class="dossier">${docs.map(([lbl,st,fn])=>`<button class="doc-chip s-${docStat(st)}" data-file="${fn}" data-lbl="${esc(lbl)}"><b>${esc(lbl)}</b><span>${esc(st||'à créer')}</span></button>`).join("")}</div>
+      <div class="dr-docbar">
+        <a class="dr-mini" href="${esc(driveUrl(m))}" target="_blank" rel="noopener"><i data-lucide="folder-open" style="width:14px;height:14px"></i>Drive — fichiers produits</a>
+        <a class="dr-mini" href="dashboard.html"><i data-lucide="layout-grid" style="width:14px;height:14px"></i>Voir dans le dashboard</a>
+      </div>
+      <div class="dr-doc" id="docrender"><span class="dr-doc-load">Chargement du brief…</span></div>
+      ${kids.length?`<div class="dr-sect">${m.entree==="Maître"?"Tâches":"Révisions"} & liées (${kids.length})</div><div class="kv">${kids.map(k=>`<div class="k"><a href="tache.html?code=${encodeURIComponent(k.ndeg)}">${esc(k.ndeg)}</a>${k.entree&&k.entree!=="Maître"?` <span style="font-size:10px;color:var(--fg3)">${esc(k.entree)}</span>`:""}</div><div class="v">${esc(k.projet)}${k.responsable?` <span style="color:var(--fg3)">· ${esc(normResp(k.responsable))}</span>`:""}</div>`).join("")}</div>`:""}
+      
+      ${m.id?`<div class="dr-sect">Gestion — édition générale</div>
+      <datalist id="clients-dl">${clientsOpts}</datalist>
+      <datalist id="codes-dl">${codesOpts}</datalist>
+      <div class="edit-grid">
+        <label class="full">Intitulé du projet<input id="e-projet" type="text" value="${esc(m.projet)}"></label>
+        <label>Client<input id="e-client" type="text" list="clients-dl" value="${esc(m.client)}"></label>
+        <label>Marque<input id="e-marque" type="text" value="${esc(m.marque)}"></label>
+        <label>Type<select id="e-type">${typeOpts}</select></label>
+        <label>Niveau<input id="e-niveau" type="text" value="${esc(m.niveau)}"></label>
+        <label>Priorité<input id="e-prio" type="text" value="${esc(m.prio)}" placeholder="P0, P1…"></label>
+        <label>Échéance<input id="e-deadline" type="date" value="${esc(dlISO)}"></label>
+        <label>Date de livraison <span style="text-transform:none;font-weight:400;color:var(--fg3)">→ antidatable (réalité, pas déduction)</span><input id="e-closedat" type="date" value="${esc(clISO)}"></label>
+        <label class="full" style="flex-direction:row;align-items:center;gap:9px;text-transform:none;letter-spacing:0;color:var(--fg1);font-size:13.5px;font-weight:600"><input type="checkbox" id="e-hard" ${m.deadlineHard?'checked':''} style="width:auto;flex:0 0 auto;accent-color:var(--orange-500)"> Hard deadline — date exigée par le client / Derick / Vanelle (engagement ferme)</label>
+        <label>Avancement<input id="e-avancement" type="text" value="${esc(m.avancement)}"></label>
+        <label>Responsable<select id="e-resp">${respOptions(resp, ROWS)}</select></label>
+        <label>Demandé par<select id="e-entrepar">${demOpts}</select></label>
+        <label>Statut<select id="e-statut">${statutOptions(m.statut)}</select></label>
+        <label>Niveau hiérarchique<select id="e-entree">${entreeOptions(m.entree||'Maître')}</select></label>
+        <label>Rattaché à (projet parent)<input id="e-parent" type="text" list="codes-dl" value="${esc(m.parent)}" placeholder="vide = projet ; sinon code (ex. CAD-014)"></label>
+        ${(m.entree||'Maître')==='Maître'?`<label>Brief client<select id="e-briefetat">${['absent','déduit','validé'].map(s=>`<option value="${s}"${(m.briefEtat||'déduit')===s?' selected':''}>${s==='déduit'?'déduit · à valider (Derick)':s}</option>`).join('')}</select></label>`:''}
+        <label class="full">Dépend de — codes séparés par des virgules (cette tâche attend que ces tâches soient finies)<input id="e-depends" type="text" list="codes-dl" value="${esc(m.dependsOn)}" placeholder="ex. FRC-049, NSI-002"></label>
+        <label class="full">Livrables<textarea id="e-livrables">${esc(m.livrables)}</textarea></label>
+        <label class="full">Commentaire <span style="text-transform:none;font-weight:400;color:var(--fg3)">→ journal timeline d'historique (modifier directement ici rompt le formatage du suivi)</span><textarea id="e-comm">${esc(m.comm)}</textarea></label>
+      </div>
+      <div class="dr-sect">Présentation — onglet 0 <span style="text-transform:none;font-weight:400;color:var(--fg3)">→ alimente le deck <a href="gabarits.html?code=${encodeURIComponent(m.ndeg)}" style="color:var(--orange-600);font-weight:600">Gabarits</a> (Général &amp; Suivi)</span></div>
+      <div class="edit-grid">
+        <label class="full">Accroche projet (pitch, cover)<textarea id="e-su-pitch" placeholder="Ex. « recruter des souscriptrices en héroïsant les présidentes de tontine. »"></textarea></label>
+        <label>Origine du brief<input id="e-su-brief_source" type="text" placeholder="Ex. Slack · #canal, réunion de cadrage…"></label>
+        <label>Langue de production<input id="e-su-langue" type="text" placeholder="Ex. Français"></label>
+        <label>Durée étalon<input id="e-su-duree_etalon" type="text" placeholder="Ex. 10 jours"></label>
+        <label>Date étalon<input id="e-su-date_etalon" type="text" placeholder="Ex. 2025-06-04 ou 04.06"></label>
+        <label>Marge agence<input id="e-su-marge" type="text" placeholder="Ex. +5 j"></label>
+        <label>Délai réaliste<input id="e-su-delai_realiste" type="text" placeholder="Ex. 2025-06-11 ou 11.06"></label>
+        <label>Claim retenu<input id="e-su-claim_retenu" type="text" placeholder="Ex. « La Prési du Mois »"></label>
+        <label>Dimensions / formats<input id="e-su-dimensions" type="text" placeholder="Ex. Carrousel 4:5 · KV maître · Story 9:16"></label>
+        <label class="full">Lecture planning <span style="text-transform:none;font-weight:400;color:var(--fg3)">→ narration (slide Planning)</span><textarea id="e-su-lecture" placeholder="Ex. La durée étalon plus 5 j de marge donne le délai réaliste…"></textarea></label>
+        <label class="full">Spécificités / obligations<textarea id="e-su-specificites" placeholder="Ex. mentions légales produit financier obligatoires ; représenter dignement…"></textarea></label>
+        <label class="full">Tension marché<textarea id="e-su-tension_marche" placeholder="Ex. Le marché des tontines est très ancré culturellement…"></textarea></label>
+        <label>Interlocuteur (validation)<input id="e-su-interlocuteur" type="text" placeholder="Ex. Direction Marketing NSIA"></label>
+        <label>Rôle interlocuteur<input id="e-su-interlocuteur_role" type="text" placeholder="Ex. décideur validation"></label>
+        <label class="full">Conditions de validation<textarea id="e-su-conditions" placeholder="Ex. Validation en 2 temps : concept puis exécution ; portraits soumis avant production…"></textarea></label>
+        <label class="full">Point de vigilance<textarea id="e-su-vigilance" placeholder="Ex. La validation des portraits est le maillon le plus lent…"></textarea></label>
+      </div>`:`<div class="dr-comm empty">Édition impossible : base hors-ligne (mode CSV). Recharge quand la base live est de retour.</div>`}
+    </div>`;
+
+  host.innerHTML=`
+    <div class="t-head">
+      <div class="dn">${esc(m.ndeg)}${m.entree&&m.entree!=="Maître"?" · "+esc(m.entree)+(m.parent?" de "+esc(m.parent):""):""}</div>
+      <h1>${esc(m.projet)||"<i>sans titre</i>"}</h1>
+      <div class="dr-badges">${badges}</div>
+      <div class="whorow">
+        <span class="whochip dem"><span class="av">${dem?esc(initials(dem)):'—'}</span><span class="wl"><span class="wlbl">demandé par</span><span class="wnm">${dem?esc(dem):'non renseigné'}</span></span></span>
+        <span class="whochip resp"><span class="av">${resp?esc(initials(resp)):'—'}</span><span class="wl"><span class="wlbl">traité par</span><span class="wnm">${resp?esc(resp):'non assigné'}</span></span></span>
+      </div>
+    </div>
+    
+    <div class="t-tabs" id="t-tabs">
+      <button class="t-tab${activeTab==='general'?' on':''}" data-tab="general">Général & Suivi</button>
+      <button class="t-tab${activeTab==='brief-client'?' on':''}" data-tab="brief-client">1. Brief Client <span class="tab-score" id="score-brief-client">${scores.client}%</span></button>
+      <button class="t-tab${activeTab==='da-crea'?' on':''}" data-tab="da-crea">2. DA / Créa <span class="tab-score" id="score-da-crea">${scores.crea}%</span></button>
+      <button class="t-tab${activeTab==='production'?' on':''}" data-tab="production">3. Production <span class="tab-score" id="score-production">${scores.prod}%</span></button>
+      <button class="t-tab${activeTab==='case-study'?' on':''}" data-tab="case-study">4. Case Study <span class="tab-score" id="score-case-study">${scores.caseStudy}%</span></button>
+    </div>
+
+    <div class="t-body" style="padding:0">
+      ${panelGeneral}
+      ${panelBriefClient}
+      ${panelDaCrea}
+      ${panelProduction}
+      ${panelCaseStudy}
+
+      <!-- Modal d'inspiration Concepteur Rédacteur (Vue allégée / très graphique) -->
+      <div class="mtg-modal-overlay" id="inspiration-modal">
+        <div class="mtg-modal">
+          <div class="mtg-modal-header">
+            <h3 class="mtg-modal-title">💡 Inspiration & Concept Concepteur Rédacteur</h3>
+            <button type="button" class="mtg-modal-close" id="close-inspiration-modal" aria-label="Fermer">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+          </div>
+          <div class="mtg-modal-body">
+            
+            <!-- Big Idea -->
+            <div class="mtg-ideabox">
+              <div class="mtg-ideabox-title">Big Idea Marketing / Concept</div>
+              <div class="mtg-ideabox-content">« ${esc(bc.big_idea || "Non spécifié") } »</div>
+            </div>
+
+            <!-- Insight Client -->
+            <div class="mtg-info-card" style="border-left: 4px solid var(--info)">
+              <div class="mtg-info-card-title" style="color: var(--info)">Insight Client / Vérité Humaine</div>
+              <div class="mtg-info-card-text">« ${esc(bc.insight_client || "Non spécifié") } »</div>
+            </div>
+
+            <!-- Contexte Résumé -->
+            <div class="mtg-grid-2col">
+              <div class="mtg-info-card">
+                <div class="mtg-info-card-title">Problème Marketing</div>
+                <div class="mtg-info-card-text">${esc(bc.probleme_marketing || "Non spécifié")}</div>
+              </div>
+              <div class="mtg-info-card">
+                <div class="mtg-info-card-title">Cibles & Motivations</div>
+                <div class="mtg-info-card-text"><b>Principale :</b> ${esc(bc.cible_principale || "Non spécifié")}
+<b>Situation :</b> ${esc(bc.cible_situation || "—")}
+<b>Motivation :</b> ${esc(bc.cible_motivation || "—")}</div>
+              </div>
+            </div>
+
+            <!-- Axes créatifs et Copywriting -->
+            <div class="mtg-grid-2col">
+              <!-- Axe 1 -->
+              <div class="mtg-axecard">
+                <div class="mtg-axecard-header">
+                  <span class="mtg-axecard-badge" style="background:#e0f2fe;color:#0369a1">Axe 1</span>
+                  <span class="mtg-axecard-title">${esc(bc.axe1_nom || "Axe 1")}</span>
+                </div>
+                <div class="mtg-axecard-item">
+                  <div class="mtg-axecard-lbl">Intention</div>
+                  <div class="mtg-axecard-val">${esc(bc.axe1_intention || "—")}</div>
+                </div>
+                <div class="mtg-axecard-item">
+                  <div class="mtg-axecard-lbl">Promesse cible</div>
+                  <div class="mtg-axecard-val">${esc(bc.axe1_promesse || "—")}</div>
+                </div>
+                <div class="mtg-axecard-item">
+                  <div class="mtg-axecard-lbl">Copy Principale</div>
+                  <div class="mtg-axecard-copy">« ${esc(bc.axe1_copy_p || "Non spécifiée")} »</div>
+                </div>
+              </div>
+
+              <!-- Axe 2 -->
+              <div class="mtg-axecard">
+                <div class="mtg-axecard-header">
+                  <span class="mtg-axecard-badge" style="background:#fef3c7;color:#b45309">Axe 2</span>
+                  <span class="mtg-axecard-title">${esc(bc.axe2_nom || "Axe 2")}</span>
+                </div>
+                <div class="mtg-axecard-item">
+                  <div class="mtg-axecard-lbl">Intention</div>
+                  <div class="mtg-axecard-val">${esc(bc.axe2_intention || "—")}</div>
+                </div>
+                <div class="mtg-axecard-item">
+                  <div class="mtg-axecard-lbl">Promesse cible</div>
+                  <div class="mtg-axecard-val">${esc(bc.axe2_promesse || "—")}</div>
+                </div>
+                <div class="mtg-axecard-item">
+                  <div class="mtg-axecard-lbl">Copy Principale</div>
+                  <div class="mtg-axecard-copy">« ${esc(bc.axe2_copy_p || "Non spécifiée")} »</div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+          <div class="mtg-modal-footer">
+            <button type="button" class="dr-btn" id="close-inspiration-footer-btn" style="border: 1px solid var(--border)">Fermer</button>
+            <button type="button" class="dr-btn primary" id="cta-write-creabrief-btn"><i data-lucide="edit-3" style="width:15px;height:15px;vertical-align:middle;margin-right:4px"></i>Rédiger le brief créatif</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions communes à tous les onglets -->
+      ${m.id ? `
+      <div style="padding:0 30px 40px; margin-top:20px; border-top:1px solid var(--border); padding-top:24px">
+        <div class="edit-dirty" id="e-dirty"></div>
+        <div class="dr-actions">
+          <button class="dr-btn primary" id="g-save"><i data-lucide="save" style="width:16px;height:16px"></i>Enregistrer les modifications</button>
+          ${DONE_STATUS.has(m.statut)
+            ? `<button class="dr-btn" id="g-reopen"><i data-lucide="rotate-ccw" style="width:15px;height:15px"></i>Rouvrir la tâche</button>`
+            : `<button class="dr-btn" id="g-cloturer"><i data-lucide="check" style="width:16px;height:16px"></i>Clôturer la tâche</button>`}
+          ${(m.entree||'Maître')==='Maître' && m.briefEtat!=='validé'
+            ? `<button class="dr-btn" id="g-valbrief" title="Le brief client est validé par Derick (sort de la file « Briefs à valider »)"><i data-lucide="badge-check" style="width:15px;height:15px"></i>Valider le brief client</button>`:''}
+          ${m.classifInferee
+            ? `<button class="dr-btn" id="g-confclassif" title="Confirmer ce niveau hiérarchique (retire le marqueur « inféré »)"><i data-lucide="check-check" style="width:15px;height:15px"></i>Confirmer le niveau</button>`:''}
+          <button class="dr-btn danger" id="g-del"><i data-lucide="trash-2" style="width:15px;height:15px"></i>Supprimer…</button>
+        </div>
+      </div>` : ''}
+    </div>`;
+
+  if(window.lucide)window.lucide.createIcons();
+
+  // ----- Alimenter les champs des 4 documents avec gestion de l'héritage -----
+  const bcKeys = [
+    "contexte_business", "contexte_marque", "contexte_market", "contexte_com",
+    "probleme_marketing", "obj_business", "obj_marketing", "obj_communication",
+    "cible_principale", "cible_secondaire", "cible_socio_eco", "cible_situation",
+    "cible_frein", "cible_motivation", "cible_langage", "insight_client", "big_idea",
+    "axe1_nom", "axe1_intention", "axe1_promesse", "axe1_ton", "axe1_copy_p", "axe1_copy_s", "axe1_preuve",
+    "axe2_nom", "axe2_intention", "axe2_promesse", "axe2_ton", "axe2_copy_p", "axe2_copy_s", "axe2_preuve",
+    "contrainte_marque", "contrainte_legale", "contrainte_culturelle", "contrainte_produit", "contrainte_format", "contrainte_delai"
+  ];
+  const dcKeys = [
+    "message_claim", "challenge_creatif", "principe_creatif",
+    "concept1_nom", "concept1_axe", "concept1_piste", "concept1_croisement", "concept1_univers", "concept1_safe", "concept1_reco", "concept1_money",
+    "concept2_nom", "concept2_axe", "concept2_piste", "concept2_croisement", "concept2_univers", "concept2_safe", "concept2_reco", "concept2_money",
+    "da_style_image", "da_lumiere", "da_cadrage", "da_decor", "da_styling", "da_attitude", "da_palette", "da_typo", "da_retouche",
+    "copy_claim", "copy_accroche", "copy_explication", "copy_cta", "reco_agence", "status_validation"
+  ];
+  const prodKeys = [
+    "livrable_principal", "nb_slides", "ratio", "plateformes", "deadline_prod", "responsable_prod",
+    "spec_social_portrait", "spec_carre", "spec_story", "spec_export", "spec_safety_zone", "spec_file_weight", "spec_naming", "status_production"
+  ];
+  const csKeys = [
+    "challenge", "insight", "strategie", "big_idea", "concept_retenu", "execution", "da",
+    "kpi_portee", "kpi_impressions", "kpi_engagement", "kpi_taux_eng", "kpi_clics", "kpi_leads", "kpi_sentiment", "kpi_verbatims", "kpi_reutilisabilite",
+    "learning_ok", "learning_improve", "learning_platform", "learning_industrial", "learning_sell", "status_validation"
+  ];
+  // Onglet 0 · présentation (deck gabarits.html) — blob `suivi`
+  const suKeys = [
+    "pitch", "brief_source", "duree_etalon", "date_etalon", "marge", "delai_realiste",
+    "lecture", "langue", "claim_retenu", "dimensions", "specificites",
+    "tension_marche", "interlocuteur", "interlocuteur_role", "conditions", "vigilance"
+  ];
+
+  const fillForm = (keys, obj, pObj, pfx) => {
+    keys.forEach(k => {
+      const el = $("#e-" + pfx + "-" + k);
+      if(!el) return;
+      const val = obj[k] || "";
+      el.value = val;
+      
+      const hSpan = $("#h-" + pfx + "-" + k);
+      if(!val && pObj[k] != null && String(pObj[k]).trim() !== "") {
+        el.placeholder = pObj[k];
+        if(hSpan) hSpan.textContent = "(Hérité du maître)";
+      } else {
+        el.placeholder = "";
+        if(hSpan) hSpan.textContent = "";
+      }
+    });
+  };
+
+  fillForm(bcKeys, bc, bcP, "bc");
+  fillForm(dcKeys, dc, dcP, "dc");
+  fillForm(prodKeys, bp, bpP, "bp");
+  fillForm(csKeys, cs, csP, "cs");
+  fillForm(suKeys, su, suP, "su");
+
+  // ----- Appliquer le verrouillage après validation -----
+  const bcLocked = m.briefEtat === "validé";
+  $("#bc-locked-banner").style.display = bcLocked ? "flex" : "none";
+  bcKeys.forEach(k => { const el = $("#e-bc-" + k); if(el) el.disabled = bcLocked; });
+
+  const dcLocked = dc.status_validation === "Concept validé";
+  $("#dc-locked-banner").style.display = dcLocked ? "flex" : "none";
+  dcKeys.forEach(k => { const el = $("#e-dc-" + k); if(el) el.disabled = dcLocked; });
+
+  const prodLocked = bp.status_production === "Validé" || bp.status_production === "Livré" || DONE_STATUS.has(m.statut);
+  $("#bp-locked-banner").style.display = prodLocked ? "flex" : "none";
+  prodKeys.forEach(k => { const el = $("#e-bp-" + k); if(el) el.disabled = prodLocked; });
+
+  const csLocked = cs.status_validation === "Version client" || cs.status_validation === "Version portfolio" || cs.status_validation === "Version award" || DONE_STATUS.has(m.statut);
+  $("#cs-locked-banner").style.display = csLocked ? "flex" : "none";
+  csKeys.forEach(k => { const el = $("#e-cs-" + k); if(el) el.disabled = csLocked; });
+
+  // ----- Cabler les sélections d'onglets -----
+  document.querySelectorAll(".t-tab").forEach(tab => {
+    tab.onclick = () => {
+      const target = tab.dataset.tab;
+      window.ACTIVE_TAB = target;
+      document.querySelectorAll(".t-tab").forEach(x => x.classList.toggle("on", x === tab));
+      document.querySelectorAll(".tab-panel").forEach(panel => {
+        panel.classList.toggle("on", panel.id === "panel-" + target);
+      });
+      // Scroll vers le haut du body de la tâche pour confort
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+  });
+
+  // Helper pour basculer d'onglet programmatiquement
+  window.switchTab = (target) => {
+    window.ACTIVE_TAB = target;
+    document.querySelectorAll(".t-tab").forEach(x => x.classList.toggle("on", x.dataset.tab === target));
+    document.querySelectorAll(".tab-panel").forEach(panel => {
+      panel.classList.toggle("on", panel.id === "panel-" + target);
+    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  // ----- Cabler la modale d'inspiration -----
+  const openInspBtn = $("#open-inspiration-btn");
+  const inspModal = $("#inspiration-modal");
+  const closeInspModal = $("#close-inspiration-modal");
+  const closeInspFooter = $("#close-inspiration-footer-btn");
+  const ctaWriteCrea = $("#cta-write-creabrief-btn");
+
+  if(openInspBtn && inspModal) {
+    openInspBtn.onclick = () => inspModal.classList.add("show");
+  }
+  const hideInspModal = () => { if(inspModal) inspModal.classList.remove("show"); };
+  if(closeInspModal) closeInspModal.onclick = hideInspModal;
+  if(closeInspFooter) closeInspFooter.onclick = hideInspModal;
+  if(inspModal) {
+    inspModal.onclick = (e) => { if(e.target === inspModal) hideInspModal(); };
+  }
+
+  if(ctaWriteCrea) {
+    ctaWriteCrea.onclick = () => {
+      hideInspModal();
+      // On s'assure d'être sur l'onglet DA / Créa
+      window.switchTab("da-crea");
+      // Focus sur le premier champ (Message / Claim)
+      setTimeout(() => {
+        const claimInput = $("#e-dc-message_claim");
+        if(claimInput) {
+          claimInput.focus();
+          claimInput.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      }, 100);
+    };
+  }
+
+  // ----- Gestion (édition complète & enregistrement) -----
+  if(m.id){
+    const humanErr=e=>{ const s=(e&&e.message)||String(e);
+      if(/401|403|JWT|apikey/i.test(s))return"connexion expirée — recharge la page (Cmd+R)";
+      if(/Failed to fetch|NetworkError|ERR_/i.test(s))return"pas de connexion réseau";
+      if(/409|duplicate|unique/i.test(s))return"conflit (code déjà pris ?)";
+      return s.slice(0,140); };
+
+    // champs simples : [colonne DB, id input, champ local sur m]
+    const SIMPLE=[["projet","e-projet","projet"],["client","e-client","client"],["marque","e-marque","marque"],
+      ["type","e-type","type"],["niveau","e-niveau","niveau"],["prio","e-prio","prio"],
+      ["avancement","e-avancement","avancement"],["livrables","e-livrables","livrables"],["comm","e-comm","comm"],
+      ["depends_on","e-depends","dependsOn"]];
+
+    function collectPatch(){
+      const patch={};
+      // 0. Champs généraux
+      SIMPLE.forEach(([col,id,fld])=>{ const el=$("#"+id); if(!el)return; const v=el.value.trim(); if(v!==(m[fld]||"").trim()) patch[col]=v; });
+      const rp=$("#e-resp").value;     if(rp!==(m.responsable||"")) patch.responsable=rp;
+      const ep=$("#e-entrepar").value; if(ep!==(m.entrePar||""))    patch.entre_par=ep;
+      const en=$("#e-entree").value;   if(en!==(m.entree||"")){     patch.entree=en; if(m.classifInferee) patch.classif_inferee=false; }
+      const pa=$("#e-parent");         if(pa && pa.value.trim()!==(m.parent||"").trim()) patch.parent=pa.value.trim();
+      const be=$("#e-briefetat");      if(be && be.value!==(m.briefEtat||""))            patch.brief_etat=be.value;
+      const dl=$("#e-deadline").value; if(dl!==dlISO)               patch.deadline=dl;
+      const st=$("#e-statut").value;   if(st!==(m.statut||"")){ patch.statut=st; patch.closed_at=DONE_STATUS.has(st)?todayISO():null; }
+      const cl=$("#e-closedat");       if(cl && (cl.value||"")!==clISO) patch.closed_at = cl.value || null;
+      const hd=$("#e-hard");           if(hd && hd.checked!==!!m.deadlineHard) patch.deadline_hard = hd.checked;
+
+      // 1. Brief Client JSON + Historique des versions
+      const newBc = Object.assign({}, m.briefClient || {});
+      let bcChg = false;
+      bcKeys.forEach(k => {
+        const el = $("#e-bc-" + k);
+        if(el && !el.disabled) {
+          const v = el.value.trim();
+          if(v !== (bc[k] || "").trim()) { newBc[k] = v; bcChg = true; }
+        }
+      });
+      if(bcChg) {
+        newBc.versions = newBc.versions || [];
+        const snap = Object.assign({}, bc); delete snap.versions;
+        if(Object.keys(snap).some(k=>snap[k])) {
+          newBc.versions.push({ version: newBc.versions.length + 1, updated_at: new Date().toISOString(), updated_by: window.getMe() || "Utilisateur", data: snap });
+          if(newBc.versions.length > 5) newBc.versions.shift();
+        }
+        patch.brief_client = newBc;
+      }
+
+      // 2. DA / Créa JSON + Historique des versions
+      const newDc = Object.assign({}, m.briefCreatif || {});
+      let dcChg = false;
+      dcKeys.forEach(k => {
+        const el = $("#e-dc-" + k);
+        if(el && !el.disabled) {
+          const v = el.value.trim();
+          if(v !== (dc[k] || "").trim()) { newDc[k] = v; dcChg = true; }
+        }
+      });
+      if(dcChg) {
+        newDc.versions = newDc.versions || [];
+        const snap = Object.assign({}, dc); delete snap.versions;
+        if(Object.keys(snap).some(k=>snap[k])) {
+          newDc.versions.push({ version: newDc.versions.length + 1, updated_at: new Date().toISOString(), updated_by: window.getMe() || "Utilisateur", data: snap });
+          if(newDc.versions.length > 5) newDc.versions.shift();
+        }
+        patch.brief_creatif = newDc;
+      }
+
+      // 3. Production JSON + Historique des versions
+      const newBp = Object.assign({}, m.briefProduction || {});
+      let bpChg = false;
+      prodKeys.forEach(k => {
+        const el = $("#e-bp-" + k);
+        if(el && !el.disabled) {
+          const v = el.value.trim();
+          if(v !== (bp[k] || "").trim()) { newBp[k] = v; bpChg = true; }
+        }
+      });
+      if(bpChg) {
+        newBp.versions = newBp.versions || [];
+        const snap = Object.assign({}, bp); delete snap.versions;
+        if(Object.keys(snap).some(k=>snap[k])) {
+          newBp.versions.push({ version: newBp.versions.length + 1, updated_at: new Date().toISOString(), updated_by: window.getMe() || "Utilisateur", data: snap });
+          if(newBp.versions.length > 5) newBp.versions.shift();
+        }
+        patch.brief_production = newBp;
+      }
+
+      // 4. Case Study JSON + Historique des versions
+      const newCs = Object.assign({}, m.caseStudy || {});
+      let csChg = false;
+      csKeys.forEach(k => {
+        const el = $("#e-cs-" + k);
+        if(el && !el.disabled) {
+          const v = el.value.trim();
+          if(v !== (cs[k] || "").trim()) { newCs[k] = v; csChg = true; }
+        }
+      });
+      if(csChg) {
+        newCs.versions = newCs.versions || [];
+        const snap = Object.assign({}, cs); delete snap.versions;
+        if(Object.keys(snap).some(k=>snap[k])) {
+          newCs.versions.push({ version: newCs.versions.length + 1, updated_at: new Date().toISOString(), updated_by: window.getMe() || "Utilisateur", data: snap });
+          if(newCs.versions.length > 5) newCs.versions.shift();
+        }
+        patch.case_study = newCs;
+      }
+
+      // 5. Suivi (présentation onglet 0 · deck gabarits)
+      const newSu = Object.assign({}, m.suivi || {});
+      let suChg = false;
+      suKeys.forEach(k => {
+        const el = $("#e-su-" + k);
+        if(el && !el.disabled) {
+          const v = el.value.trim();
+          if(v !== (su[k] || "").trim()) { newSu[k] = v; suChg = true; }
+        }
+      });
+      if(suChg) patch.suivi = newSu;
+
+      return patch;
+    }
+
+    function applyLocal(patch){
+      const back={"projet":"projet","client":"client","marque":"marque","type":"type","niveau":"niveau",
+        "prio":"prio","avancement":"avancement","livrables":"livrables","comm":"comm","responsable":"responsable",
+        "entre_par":"entrePar","entree":"entree","parent":"parent","brief_etat":"briefEtat","classif_inferee":"classifInferee","deadline":"deadline","depends_on":"dependsOn","deadline_hard":"deadlineHard"};
+      Object.keys(patch).forEach(col=>{
+        if(col==="closed_at"){ m.closedAt=patch.closed_at||""; }
+        else if(col==="brief_client"){ m.briefClient=patch.brief_client; }
+        else if(col==="brief_creatif"){ m.briefCreatif=patch.brief_creatif; }
+        else if(col==="brief_production"){ m.briefProduction=patch.brief_production; }
+        else if(col==="case_study"){ m.caseStudy=patch.case_study; }
+        else if(col==="suivi"){ m.suivi=patch.suivi; }
+        else if(back[col]){ m[back[col]]=patch[col]; }
+      });
+      if("statut"in patch) m.statut=patch.statut;
+    }
+
+    $("#g-save").onclick=async()=>{
+      const patch=collectPatch();
+      if(!Object.keys(patch).length){ flash("Rien à enregistrer","warn"); return; }
+      const btn=$("#g-save"); btn.disabled=true;
+      try{ await updateBrief(m.id,patch); applyLocal(patch); flash("✓ Modifications enregistrées","ok"); render(); }
+      catch(err){ btn.disabled=false; flash("Échec : "+humanErr(err),"err"); }
+    };
+
+    const cl=$("#g-cloturer"); if(cl) cl.onclick=async()=>{ try{ await closeTask(m.id,m.ndeg); m.statut=STATUT_CLOTURE; m.closedAt=todayISO(); render(); }catch(err){ flash("Échec : "+humanErr(err),"err"); } };
+    const ro=$("#g-reopen"); if(ro) ro.onclick=async()=>{ try{ await reopenTask(m.id,m.ndeg); m.statut="En cours"; m.closedAt=""; render(); }catch(err){ flash("Échec : "+humanErr(err),"err"); } };
+    const vb=$("#g-valbrief"); if(vb) vb.onclick=async()=>{ vb.disabled=true; try{ await updateBrief(m.id,{brief_etat:"validé"}); m.briefEtat="validé"; flash("✓ Brief client validé","ok"); render(); }catch(err){ vb.disabled=false; flash("Échec : "+humanErr(err),"err"); } };
+    const cc=$("#g-confclassif"); if(cc) cc.onclick=async()=>{ cc.disabled=true; try{ await updateBrief(m.id,{classif_inferee:false}); m.classifInferee=false; flash("✓ Niveau confirmé","ok"); render(); }catch(err){ cc.disabled=false; flash("Échec : "+humanErr(err),"err"); } };
+    $("#g-del").onclick=async()=>{
+      const typed=prompt(`Suppression DÉFINITIVE de ${m.ndeg}.\nPour confirmer, retape le code « ${m.ndeg} » :`);
+      if(typed===null) return;
+      if(typed.trim()!==m.ndeg){ flash("Code incorrect — suppression annulée","warn"); return; }
+      try{ await deleteBrief(m.id); flash("Supprimé","ok"); setTimeout(()=>location.href="entrees.html",450); }
+      catch(err){ flash("Échec : "+humanErr(err),"err"); }
+    };
+
+    // ----- Ajout rapide d'une mise à jour sourcée -----
+    let UPDSRC=SOURCES[0].k;
+    document.querySelectorAll(".upd-src").forEach(b=>b.onclick=()=>{ UPDSRC=b.dataset.src; document.querySelectorAll(".upd-src").forEach(x=>x.classList.toggle("on",x===b)); });
+    const usave=$("#upd-save");
+    if(usave) usave.onclick=async()=>{
+      const txt=($("#upd-text").value||"").trim(); const link=($("#upd-link").value||"").trim();
+      if(!txt && !link){ flash("Rien à consigner","warn"); return; }
+      const entry=`· MAJ ${todayISO()} [${UPDSRC}] : ${txt}${link?` — ${link}`:""}`;
+      const newComm=(m.comm? m.comm.trim()+" " : "")+entry;
+      usave.disabled=true;
+      try{ await updateBrief(m.id,{comm:newComm}); m.comm=newComm; flash("✓ Mise à jour consignée","ok"); render(); }
+      catch(err){ usave.disabled=false; flash("Échec : "+humanErr(err),"err"); }
+    };
+
+    // Alerte modifications non enregistrées
+    const onInputChg = () => { const d=$("#e-dirty"); if(d) d.textContent="● modifications non enregistrées — clique « Enregistrer les modifications »"; };
+    const ef=document.querySelector(".wrap");
+    if(ef) ef.addEventListener("input", onInputChg);
+  }
+
+  // doc viewer
+  async function loadDoc(file){
+    document.querySelectorAll(".doc-chip").forEach(c=>c.classList.toggle("active",c.dataset.file===file));
+    const tgt=$("#docrender"); if(!tgt)return; tgt.innerHTML='<span class="dr-doc-load">Chargement…</span>';
+    try{ const md=await fetchText(folder+file); tgt.innerHTML=mdToHtml(stripFM(md))||'<span class="dr-doc-load">Document vide.</span>'; tgt.scrollTop=0; if(window.lucide)window.lucide.createIcons(); }
+    catch(err){ tgt.innerHTML='<span class="dr-doc-load">'+(/HTTP 404/.test(err.message||"")?'Brief / Propal / Livrables pas encore créé pour cette tâche.':'Document momentanément indisponible — réessaie.')+'</span>'; }
+  }
+  document.querySelectorAll(".doc-chip").forEach(c=>c.onclick=()=>loadDoc(c.dataset.file));
+  loadDoc("BRIEF.md");
+  loadMarketCtx(m);
+  renderComments(m.ndeg);
+}
+
+async function boot(){
+  try{ ROWS=await loadBriefsLive(); }catch(e){ ROWS=[]; }
+  byNdeg={}; ROWS.forEach(m=>byNdeg[m.ndeg]=m);
+  render();
+  if(window.sourceBanner) sourceBanner();
+  $("#back").onclick=e=>{ e.preventDefault(); if(history.length>1) history.back(); else location.href="entrees.html"; };
+  { const pr=$("#present"), c=getCode(); if(pr&&c) pr.href="gabarits.html?code="+encodeURIComponent(c); }
+  window.addEventListener("hashchange",render);
+  if(window.lucide)window.lucide.createIcons();
+}
+document.addEventListener("DOMContentLoaded",boot);
+</script>
+</body>
+</html>

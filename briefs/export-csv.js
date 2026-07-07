@@ -31,7 +31,7 @@
       const blob=new Blob([lines.join("\n")+"\n"],{type:"text/csv;charset=utf-8"});
       const a=document.createElement("a");
       a.href=URL.createObjectURL(blob);
-      a.download="radar-briefs-"+stamp()+".csv";
+      a.download="matanga-briefs-"+stamp()+".csv";
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(()=>URL.revokeObjectURL(a.href),2000);
       if(btn){ btn.innerHTML="✓ "+rows.length+" lignes"; setTimeout(()=>{ btn.innerHTML=old; },1800); }

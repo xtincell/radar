@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Matanga — Todo du jour</title>
+<!--
+  Page PUBLIQUE (affichage sans connexion) : todo du jour du département créatif.
+  100% autonome — n'importe quel asset derrière le mur Basic Auth (supa.js, chrome.js,
+  colors_and_type.css, fonts) serait bloqué pour un visiteur non connecté. On inline donc
+  tout : styles, polices système, et la lecture Supabase via la clé publishable (publique).
+  Le mur laisse passer /jour.html (voir functions/_middleware.js).
+-->
+<style>
+  :root{
+    --bg:#FCFAF6;--surf:#FFFFFF;--cream:#F7F2EA;--sunk:#F0E9DD;--fg1:#161310;--fg2:#564D42;--fg3:#756A5C;
+    --border:#E6DCCB;--orange:#FF6A14;--orange-d:#C2440A;--red:#E23D2E;--green:#1F9D63;
+    --shadow:0 8px 24px rgba(40,30,18,.06);
+    --sans:'Hanken Grotesk',system-ui,-apple-system,"Segoe UI",sans-serif;
+    --mono:ui-monospace,"SF Mono",Menlo,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{--bg:#14110C;--surf:#24201A;--cream:#1F1A13;--sunk:#2A2319;--fg1:#F5EFE5;--fg2:#C9BFAE;--fg3:#A99B86;
+      --border:#383127;--orange:#FF6A14;--orange-d:#FF8A3D;--shadow:0 8px 24px rgba(0,0,0,.44)}
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg1);font-family:var(--sans);-webkit-font-smoothing:antialiased;min-height:100vh}
+  .wrap{max-width:960px;margin:0 auto;padding:22px 18px 70px}
+  .top{display:flex;align-items:center;gap:13px;padding-bottom:16px;border-bottom:2px solid var(--fg1);margin-bottom:6px}
+  .mark{width:40px;height:40px;border-radius:11px;background:var(--fg1);color:var(--bg);display:grid;place-items:center;font-weight:800;font-size:20px;position:relative;flex:0 0 auto}
+  .mark::after{content:"";position:absolute;right:-3px;bottom:-3px;width:10px;height:10px;border-radius:3px;background:var(--orange)}
+  .top h1{margin:0;font-size:21px;font-weight:800;letter-spacing:-.01em}
+  .top .d{margin-left:auto;text-align:right;font-family:var(--mono);font-size:12px;color:var(--fg3)}
+  .top .d b{display:block;font-size:15px;color:var(--orange-d);text-transform:capitalize}
+  h2{font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--orange-d);margin:26px 0 10px;display:flex;align-items:center;gap:9px}
+  h2 .n{background:var(--orange);color:#2A1505;border-radius:999px;font-size:11px;padding:1px 8px;font-weight:700}
+  h2::after{content:"";flex:1;height:1px;background:var(--border)}
+  .who{margin:14px 0 4px;font-weight:700;font-size:14.5px;color:var(--fg1);display:flex;align-items:center;gap:8px}
+  .who .av{width:22px;height:22px;border-radius:50%;background:var(--orange);color:#2A1505;display:inline-grid;place-items:center;font-size:11px;font-weight:800}
+  .row{display:flex;gap:11px;align-items:flex-start;padding:9px 12px;background:var(--surf);border:1px solid var(--border);border-radius:12px;margin:7px 0;box-shadow:var(--shadow)}
+  .row .nd{font-family:var(--mono);font-size:11px;color:var(--orange-d);white-space:nowrap;padding-top:2px}
+  .row .b{flex:1;min-width:0}
+  .row .t{font-weight:600;font-size:14.5px;line-height:1.25}
+  .row .m{font-size:12px;color:var(--fg3);margin-top:2px}
+  .tag{font-family:var(--mono);font-size:10px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--sunk);color:var(--fg2);white-space:nowrap}
+  .tag.late{background:#FCEAE7;color:var(--red)}
+  @media (prefers-color-scheme:dark){.tag.late{background:#2E1714}}
+  .empty{color:var(--fg3);font-style:italic;padding:18px 2px}
+  .foot{margin-top:40px;padding-top:16px;border-top:1px solid var(--border);font-family:var(--mono);font-size:11px;color:var(--fg3);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+  .reload{border:1px solid var(--border);background:transparent;color:var(--fg2);font:inherit;font-family:var(--mono);font-size:11px;padding:5px 11px;border-radius:999px;cursor:pointer}
+  .reload:hover{border-color:var(--orange);color:var(--orange-d)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="mark">M</div>
+    <h1>Todo du jour — Département créa</h1>
+    <div class="d"><b id="today">…</b><span>Matanga · tableau public</span></div>
+  </div>
+
+  <div id="content"><div class="empty">Chargement…</div></div>
+
+  <div class="foot">
+    <span>Tableau public — mis à jour en direct depuis le radar.</span>
+    <button class="reload" id="reload">↻ Rafraîchir</button>
+  </div>
+</div>
+
+<script>
+"use strict";
+var DEAD={"Envoyé dans Slack":1,"Livré":1,"Livré (cycle)":1,"Validé":1,"Bouclé":1,"Archivé":1,"Frozen":1,"Gelé":1};
+var esc=function(s){return (s==null?"":String(s)).replace(/[&<>"]/g,function(c){return({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]);});};
+function todayISO(){var d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
+function isoOf(s){var m=String(s||"").match(/^\d{4}-\d{2}-\d{2}/);return m?m[0]:"";}
+function initial(s){return ((s||"").trim().charAt(0)||"?").toUpperCase();}
+
+function rowHTML(r,late){
+  var titre=r.projet||r.livrables||"(sans titre)";
+  var meta=[r.client,r.marque].filter(Boolean).join(" · ");
+  return '<div class="row"><span class="nd">'+esc(r.ndeg||"")+'</span><div class="b"><div class="t">'+esc(titre)+
+    '</div><div class="m">'+esc(meta)+'</div></div><span class="tag'+(late?" late":"")+'">'+esc(late?("⚠ "+isoOf(r.deadline)):(r.statut||"—"))+'</span></div>';
+}
+function groupByOwner(list){
+  var g={};list.forEach(function(r){var o=(r.responsable||"—").replace(/Dérick/g,"Derick").trim()||"—";(g[o]=g[o]||[]).push(r);});
+  return Object.keys(g).sort(function(a,b){return a.localeCompare(b,"fr");}).map(function(o){
+    return '<div class="who"><span class="av">'+esc(initial(o))+'</span>'+esc(o)+'</div>'+g[o].map(function(r){return rowHTML(r,false);}).join("");
+  }).join("");
+}
+function render(rows){
+  var t=todayISO();
+  var open=rows.filter(function(r){return !DEAD[r.statut];});
+  var today=open.filter(function(r){return isoOf(r.deadline)===t;});
+  var late=open.filter(function(r){var d=isoOf(r.deadline);return d&&d<t;}).sort(function(a,b){return isoOf(a.deadline).localeCompare(isoOf(b.deadline));});
+  var html='<h2>À faire aujourd’hui <span class="n">'+today.length+'</span></h2>';
+  html+= today.length?groupByOwner(today):'<div class="empty">Rien de daté pour aujourd’hui. 🎉</div>';
+  if(late.length){
+    html+='<h2>En retard (encore ouvert) <span class="n">'+late.length+'</span></h2>';
+    html+=late.map(function(r){return rowHTML(r,true);}).join("");
+  }
+  document.getElementById("content").innerHTML=html;
+}
+function load(){
+  document.getElementById("content").innerHTML='<div class="empty">Chargement…</div>';
+  // Source same-origin PUBLIQUE servie par le backend maison (colonnes limitées, non-private).
+  fetch("/jour.json",{cache:"no-store"})
+   .then(function(r){if(!r.ok)throw new Error("HTTP "+r.status);return r.json();})
+   .then(render)
+   .catch(function(e){document.getElementById("content").innerHTML='<div class="empty">Indisponible ('+esc(e.message)+').</div>';});
+}
+(function(){
+  var d=new Date();
+  document.getElementById("today").textContent=d.toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"});
+  document.getElementById("reload").onclick=load;
+  load();
+})();
+</script>
+</body>
+</html>

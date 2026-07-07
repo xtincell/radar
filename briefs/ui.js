@@ -1,6 +1,6 @@
 "use strict";
 /* ============================================================
-   Radar — helpers partagés (ui.js)
+   Matanga RADAR — helpers partagés (ui.js)
    Garantit la cohérence entre toutes les pages :
    - statuts / entrées canoniques (tirés de la base réelle)
    - équipe dynamique (jamais de liste figée qui oublie un responsable)
@@ -29,7 +29,9 @@ window.isTaskLevel     = e => e==="Tâche" || e==="Révision";
 /* ---- SOURCE UNIQUE : mapping client→couleur, types (défauts, surchargés par app_config) ----
    Fini les `const CLIENT_VAR={…}` recopiés sur chaque page. Les pages appellent
    window.clientVar(client). loadConfig() (supa.js) remplace ces valeurs par la base. */
-window.CLIENT_VAR = {};
+window.CLIENT_VAR = {"Cadyst/Panzani":"--c-cad","FrieslandCampina":"--c-frc","Ecobank":"--c-eco","Bel Group":"--c-bel",
+  "NSIA":"--c-nsi","Sofavin/Cap Esterias":"--c-sof","Danone":"--c-dan","Delifood":"--c-dlf","TRADEX SA":"--c-trx",
+  "Florida":"--c-flo","Fokou Gabon":"--c-fok"};
 window.clientVar = name => `var(${(window.CLIENT_VAR && window.CLIENT_VAR[name]) || "--c-other"})`;
 window.TYPES = ["Création KV","Packaging","DA Campaign","Production vidéo","Stratégie","Modification","Pitch","Autre"];
 window.STATUT_COL = {"En cours":"var(--st-cours)","En attente client":"var(--st-attente)","Reçu":"var(--st-recu)",
@@ -37,16 +39,17 @@ window.STATUT_COL = {"En cours":"var(--st-cours)","En attente client":"var(--st-
   "Validé":"var(--st-livre)","Bouclé":"var(--st-boucle)","Frozen":"var(--st-frozen)","Archivé":"var(--st-archive)","":"var(--st-recu)"};
 window.statutColor = s => (window.STATUT_COL && window.STATUT_COL[s]) || "var(--st-recu)";
 
-/* Équipe de base — vide par défaut (surchargée par app_config, cf. loadConfig() dans supa.js),
-   fusionnée à chaud avec les responsables réellement présents en base pour ne JAMAIS
-   proposer une liste qui oublie quelqu'un. */
-window.TEAM_BASE = [];
+/* Équipe de base — fusionnée à chaud avec les responsables réellement présents
+   en base pour ne JAMAIS proposer une liste qui oublie quelqu'un. */
+window.TEAM_BASE = ["Alexandre","Loïc Papin","William K. Mandengue","Serge","Vanelle","Lydienne",
+  "Luther","Stephane Ondoua","Nelson","Derick","Ariel","Auriol","Adeline","Ralph","Gomer","Alain"];
 /* exposé hors IIFE plus bas aussi (window.TEAM_BASE) pour le chrome partagé */
 
 function teamFrom(briefs){
   const s = new Set(TEAM_BASE);
   (briefs||[]).forEach(b=>{
-    const r = (b && (b.responsable || (b.m && b.m.responsable)) || "").trim();
+    // normalise Dérick→Derick pour ne jamais proposer deux fois la même personne
+    const r = (b && (b.responsable || (b.m && b.m.responsable)) || "").replace(/Dérick/g,"Derick").trim();
     // on ignore les valeurs composées / parasites ("X & Y", "à programmer"…)
     if(r && !/[\/&;]| et |réunion|stand ?by|à programmer/i.test(r)) s.add(r);
   });
@@ -75,15 +78,17 @@ window.todayISO = todayISO;
 
 /* ---- identité « qui suis-je » (suivi perso par responsable) ----
    Une seule clé, NON versionnée : l'identité n'est pas du cache, on ne
-   reconnecte pas les gens à chaque déploiement. */
-const ME_KEY = "radar:me";
+   reconnecte pas les gens à chaque déploiement. Partagée par todo.html
+   (vue perso) et equipe.html (tableau d'équipe). */
+const ME_KEY = "matanga:me";
 window.getMe = ()=>{ try{ return localStorage.getItem(ME_KEY) || ""; }catch(e){ return ""; } };
 window.setMe = v =>{ try{ v ? localStorage.setItem(ME_KEY, v) : localStorage.removeItem(ME_KEY); }catch(e){} };
 
-/* Découpe un champ « responsable » composé (« X/Y », « X & Y », « X et Y ») en
-   personnes. Source unique de vérité du découpage, réutilisée partout. */
+/* Découpe un champ « responsable » composé (« Vanelle/Nelson », « Ralph & Ariel »,
+   « X et Y ») en personnes, après normalisation Dérick→Derick. Source unique de
+   vérité du découpage, réutilisée partout (todo, equipe, radar appliquent la même règle). */
 function splitOwners(resp){
-  const r = (resp||"").trim();
+  const r = (resp||"").replace(/Dérick/g,"Derick").trim();
   if(!r) return [];
   return r.split(/\s*[\/&;]\s*|\s+et\s+/).map(x=>x.trim()).filter(Boolean);
 }
@@ -91,7 +96,7 @@ window.splitOwners = splitOwners;
 /* Vrai si la personne `who` est responsable (seule ou co-responsable) de `resp`. */
 window.ownsTask = (resp, who)=>{
   if(!who) return false;
-  const w = who.trim();
+  const w = who.replace(/Dérick/g,"Derick").trim();
   return splitOwners(resp).includes(w);
 };
 /* Vrai si la tâche est partagée entre plusieurs responsables. */
@@ -123,7 +128,7 @@ window.isDepBlocked = (m, byNdeg) => depBlockers(m, byNdeg).length > 0;
 window.depBlocking = (m, all) => (all||[]).filter(x=> x!==m && parseDeps(x.dependsOn).includes(m&&m.ndeg) && !isDoneBrief(x));
 
 /* ---- délais réalistes (étalon agence) ----
-   Hard-deadline = date exigée par le client ou la direction (deadlineHard=true) : engagement ferme.
+   Hard-deadline = date exigée client/Derick/Vanelle (deadlineHard=true) : engagement ferme.
    Délai réaliste = étalon dérivé du délai moyen de livraison de l'agence PAR TYPE
    (closed_at − date_reception sur les livrés), + 5 JOURS OUVRÉS (règle tacite).
    Sert de référence pour repérer les deadlines intenables (hard < réaliste). */
@@ -219,7 +224,7 @@ const escAttr = s => (s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"
 
 /* ---- styles injectés une fois (toast + bandeau) ---- */
 (function injectStyles(){
-  if(document.getElementById("radar-ui-styles")) return;
+  if(document.getElementById("matanga-ui-styles")) return;
   const css = `
   .mtg-toasts{position:fixed;top:16px;right:16px;z-index:99999;display:flex;flex-direction:column;gap:8px;pointer-events:none}
   .mtg-toast{pointer-events:auto;font:600 14px/1.35 system-ui,-apple-system,"Segoe UI",sans-serif;
@@ -281,7 +286,7 @@ const escAttr = s => (s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"
   /* Modal Footer */
   .mtg-modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 12px; background: var(--paper-50); }
   `;
-  const st=document.createElement("style"); st.id="radar-ui-styles"; st.textContent=css;
+  const st=document.createElement("style"); st.id="matanga-ui-styles"; st.textContent=css;
   document.head.appendChild(st);
 })();
 
@@ -469,7 +474,7 @@ window.openBriefModal = function(m){
     document.addEventListener("keydown",e=>{ if(e.key==="Escape") bd.classList.remove("show"); }); }
   const E=escHtml, has=v=>v!=null&&String(v).trim()!=="";
   const J=arr=>[...new Set(arr.filter(Boolean).map(s=>String(s).trim()))].join(" · ");   // dédoublonne (marque===client)
-  const resp=s=>(s||"").trim();
+  const resp=s=>(s||"").replace(/Dérick/g,"Derick").trim();
   const ctx=(m.comm||"").replace(/\[[^\]]*\]/g,"").replace(/·\s*date ≈[^|·]*/g,"").replace(/\s*\|\s*/g," · ").replace(/\s+/g," ").trim();
   const tone=s=>{const x=(s||"").toLowerCase();
     if(/livr|validé|valide|terminé|termine|fait|clôtur|cloture|envoyé|envoye/.test(x))return"ok";
