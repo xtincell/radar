@@ -60,14 +60,9 @@ export async function serveStatic(context) {
   const url = new URL(request.url);
   const pathname = url.pathname;
 
-  if (pathname === "/") {
-    return new Response(null, {
-      status: 302,
-      headers: { Location: "/radar", ...securityHeaders() },
-    });
-  }
-
-  const abs = await resolveFile(pathname);
+  // "/" sert index.html (atterrissage par rôle/préférence, côté client) — le
+  // 302 historique vers /radar court-circuitait cette logique.
+  const abs = await resolveFile(pathname === "/" ? "/index.html" : pathname);
   if (!abs) {
     return new Response("404 — introuvable", {
       status: 404,

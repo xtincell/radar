@@ -1,0 +1,456 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<script>try{if(localStorage.getItem("radar:theme")==="dark")document.documentElement.dataset.theme="dark";}catch(e){}</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Radar — Direction</title>
+<!--
+  Direction — la synthèse pour les directeurs (marketing, créa, agence).
+  Trois questions, dans l'ordre : qu'est-ce qui attend une décision ?
+  qu'est-ce qu'on livre cette semaine ? le travail est-il bon ?
+  Règles typographiques de cette page (référence du lot « dé-technification ») :
+  la mono est réservée aux chiffres et aux dates, jamais un mot français ;
+  aucun code dossier en premier niveau (il vit dans la fiche) ; pas de
+  majuscules d'apparat. Données : loadBriefsLive() (le périmètre par rôle et
+  private_to s'appliquent tout seuls) + visuels récents (/rest/v1/brief_assets).
+-->
+<link rel="stylesheet" href="colors_and_type.css?v=20260710">
+<style>
+  :root{
+    --c-cad:#FF6A14;--c-frc:#2D6BD4;--c-eco:#1F9D63;--c-bel:#E23D2E;--c-nsi:#9A3F57;
+    --c-sof:#8F3208;--c-dan:#3E8FA8;--c-dlf:#C2440A;--c-trx:#5E6B30;--c-flo:#B07A1E;
+    --c-fok:#7C5026;--c-other:#9A8F80;
+    --st-bloque:#E23D2E;--st-attente:#FF8A3D;--st-livre:#1F9D63;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    font-family:var(--font-sans);
+    background:
+      radial-gradient(1200px 700px at 88% -8%, var(--bg-app-warm) 0%, transparent 60%),
+      var(--bg-app);
+    color:var(--fg1);min-height:100vh;-webkit-font-smoothing:antialiased;
+  }
+  .shell{max-width:1180px;margin:0 auto;padding:22px 30px 90px}
+
+  /* ---- masthead ---- */
+  .mast{margin:34px 2px 26px}
+  .mast .date{font-size:14px;color:var(--fg3);margin-bottom:10px}
+  .mast .date::first-letter{text-transform:uppercase}
+  .mast h1{margin:0;font-family:var(--font-display);font-weight:600;font-size:clamp(32px,4.4vw,48px);
+    line-height:var(--leading-tight);letter-spacing:var(--tracking-tight)}
+  .mast .sum{font-size:16.5px;color:var(--fg2);margin-top:12px;line-height:1.5;max-width:640px}
+  .mast .sum b{color:var(--fg1)}
+
+  /* ---- stats ---- */
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:26px}
+  .stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);
+    padding:20px 22px;box-shadow:var(--shadow-sm);cursor:pointer;transition:transform .14s var(--ease-out),box-shadow .14s;border-bottom-width:1px}
+  .stat:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}
+  .stat .v{font-family:var(--font-display);font-weight:500;font-size:44px;line-height:1;
+    letter-spacing:var(--tracking-tight);font-feature-settings:'tnum' 1}
+  .stat .k{font-size:13.5px;color:var(--fg2);margin-top:8px;line-height:1.35}
+  .stat.warn .v{color:var(--st-bloque)}
+  .stat.week .v{color:var(--orange-600)}
+  .stat.done .v{color:var(--st-livre)}
+
+  /* ---- sections ---- */
+  section{margin:34px 0}
+  .sec-h{display:flex;align-items:baseline;gap:12px;margin:0 2px 14px}
+  .sec-h h2{margin:0;font-family:var(--font-display);font-weight:600;font-size:26px;letter-spacing:var(--tracking-snug)}
+  .sec-h .n{font-family:var(--font-mono);font-size:13px;color:var(--fg3);font-feature-settings:'tnum' 1}
+  .sec-h .why{font-size:13.5px;color:var(--fg3)}
+  .sec-h .rule{flex:1;height:1px;background:var(--border);align-self:center}
+  .empty{background:var(--surface-cream);border:1px dashed var(--border-strong);border-radius:var(--radius-lg);
+    padding:26px;color:var(--fg2);font-size:15px}
+
+  /* ---- à arbitrer ---- */
+  .arb{display:flex;flex-direction:column;gap:14px}
+  .arb-client{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);
+    box-shadow:var(--shadow-sm);overflow:hidden}
+  .arb-ch{display:flex;align-items:center;gap:10px;padding:13px 20px;border-bottom:1px solid var(--border-soft)}
+  .arb-ch .dot{width:11px;height:11px;border-radius:50%;flex:0 0 auto}
+  .arb-ch b{font-size:15.5px}
+  .arb-ch .ct{font-family:var(--font-mono);font-size:12px;color:var(--fg3);font-feature-settings:'tnum' 1}
+  .arb-row{display:flex;align-items:center;gap:14px;padding:12px 20px;cursor:pointer;border-bottom:1px solid var(--border-soft);transition:background .12s}
+  .arb-row:last-child{border-bottom:0}
+  .arb-row:hover{background:var(--surface-cream)}
+  .arb-row .b{flex:1;min-width:0}
+  .arb-row .t{font-weight:600;font-size:14.5px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .arb-row .why{font-size:12.5px;color:var(--fg3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .arb-row .why q{quotes:"« " " »";font-style:italic}
+  .cause{flex:0 0 auto;font-size:11.5px;font-weight:700;padding:4px 11px;border-radius:999px;white-space:nowrap}
+  .cause.late{background:color-mix(in srgb,var(--st-bloque) 12%,var(--surface));color:var(--st-bloque)}
+  .cause.block{background:color-mix(in srgb,var(--st-bloque) 12%,var(--surface));color:var(--st-bloque)}
+  .cause.wait{background:color-mix(in srgb,var(--st-attente) 16%,var(--surface));color:color-mix(in srgb,var(--st-attente) 70%,var(--fg1))}
+  .since{flex:0 0 auto;font-family:var(--font-mono);font-size:12px;color:var(--fg3);min-width:74px;text-align:right;font-feature-settings:'tnum' 1}
+
+  /* ---- cette semaine ---- */
+  .week{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:14px}
+  .wcol{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);padding:18px 20px;min-width:0}
+  .wcol h3{margin:0 0 12px;font-family:var(--font-display);font-weight:600;font-size:17px}
+  .wday{margin:14px 0 6px;font-size:13px;font-weight:700;color:var(--orange-700)}
+  .wday:first-of-type{margin-top:2px}
+  .wday.today{color:var(--orange-600)}
+  .wday.today::after{content:" · aujourd'hui";font-weight:600;color:var(--fg3)}
+  .wrow{display:flex;align-items:center;gap:10px;padding:7px 0 7px 12px;border-left:2.5px solid var(--wc,var(--border));margin:3px 0;cursor:pointer;border-radius:2px;transition:background .12s}
+  .wrow:hover{background:var(--surface-cream)}
+  .wrow .t{flex:1;min-width:0;font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .wrow .who{flex:0 0 auto;font-size:12px;color:var(--fg3)}
+  .wrow .hard{flex:0 0 auto;font-size:10.5px;font-weight:700;color:var(--orange-700);
+    background:var(--accent-soft);border-radius:999px;padding:2px 8px}
+  .wrow .d{flex:0 0 auto;font-family:var(--font-mono);font-size:11.5px;color:var(--fg3);font-feature-settings:'tnum' 1}
+  .wempty{color:var(--fg3);font-size:13.5px;padding:8px 0}
+  .wdone .wrow .t{font-weight:500}
+  .wdone .ok{color:var(--st-livre);flex:0 0 auto;font-size:13px}
+
+  /* ---- le travail ---- */
+  .wall{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
+  .work{position:relative;border-radius:var(--radius-lg);overflow:hidden;border:1px solid var(--border);
+    box-shadow:var(--shadow-sm);cursor:pointer;background:var(--surface);transition:transform .14s var(--ease-out),box-shadow .14s}
+  .work:hover{transform:translateY(-3px);box-shadow:var(--shadow-md)}
+  .work img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover}
+  .work .cap{display:flex;align-items:center;gap:8px;padding:9px 12px;border-top:1px solid var(--border-soft)}
+  .work .cap .dot{width:8px;height:8px;border-radius:50%;flex:0 0 auto}
+  .work .cap .t{flex:1;min-width:0;font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .work .cap .c{flex:0 0 auto;font-size:11px;color:var(--fg3)}
+  /* carte typographique (pas encore de visuel) */
+  .work.typo .face{aspect-ratio:4/3;display:flex;flex-direction:column;justify-content:flex-end;padding:16px;
+    background:linear-gradient(150deg, color-mix(in srgb, var(--wc) 84%, #000 0%) 0%, color-mix(in srgb, var(--wc) 62%, #1c1712) 100%)}
+  .work.typo .face .cl{font-size:11.5px;font-weight:700;color:rgba(255,255,255,.75);margin-bottom:6px}
+  .work.typo .face .ti{font-family:var(--font-display);font-weight:600;font-size:17px;line-height:1.15;color:#fff;
+    display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+  .work .more{position:absolute;top:10px;right:10px;font-size:11px;font-weight:700;color:#fff;
+    background:rgba(20,16,10,.62);border-radius:999px;padding:3px 9px}
+  .wall-seg{display:inline-flex;border:1px solid var(--border);border-radius:var(--radius-pill);overflow:hidden;flex:0 0 auto}
+  .wall-seg button{font:inherit;font-size:12px;font-weight:600;border:0;background:transparent;color:var(--fg3);padding:6px 13px;cursor:pointer}
+  .wall-seg button.on{background:var(--surface-cream);color:var(--fg1)}
+
+  /* ---- transmettre un retour ---- */
+  .ing{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);padding:16px 18px}
+  .ing textarea{width:100%;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--paper-50);
+    color:var(--fg1);font:inherit;font-size:14px;line-height:1.5;padding:12px 14px;resize:vertical;min-height:74px}
+  .ing textarea:focus{outline:none;border-color:var(--orange-400);box-shadow:0 0 0 4px var(--accent-soft)}
+  .ing-bar{display:flex;align-items:center;gap:12px;margin-top:10px;flex-wrap:wrap}
+  .ing-bar input{border:1px solid var(--border);border-radius:var(--radius-pill);background:var(--paper-50);
+    font:inherit;font-size:13px;padding:9px 14px;width:210px}
+  .ing-bar input:focus{outline:none;border-color:var(--orange-400)}
+  .ing-hint{flex:1;font-size:12px;color:var(--fg3);min-width:200px}
+  .ing-bar button{border:0;border-radius:var(--radius-pill);background:var(--orange-500);color:#fff;
+    font:inherit;font-size:14px;font-weight:700;padding:11px 22px;cursor:pointer;box-shadow:var(--shadow-orange);transition:.13s}
+  .ing-bar button:hover{background:var(--orange-600)}
+  .ing-bar button:disabled{opacity:.55;cursor:wait;box-shadow:none}
+  .ing-out{margin-top:12px;border-top:1px solid var(--border-soft);padding-top:12px}
+  .ing-out .ok-line{font-size:13.5px;color:var(--fg2);margin-bottom:8px}
+  .ing-out .ok-line b{color:var(--st-livre)}
+  .ing-out .warn-line{font-size:13px;color:color-mix(in srgb,var(--st-attente) 70%,var(--fg1));margin-bottom:8px}
+  .ing-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius-md);margin:6px 0;text-decoration:none;color:inherit;transition:.12s}
+  .ing-item:hover{border-color:var(--orange-400);background:var(--surface-cream)}
+  .ing-item .t{flex:1;min-width:0;font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ing-item .kind{font-size:11px;font-weight:700;color:var(--orange-700);background:var(--accent-soft);border-radius:999px;padding:3px 9px;white-space:nowrap}
+  .ing-item .cd{font-family:var(--font-mono);font-size:10.5px;color:var(--fg3)}
+
+  .foot-note{margin-top:40px;font-size:12.5px;color:var(--fg3)}
+
+  @media (max-width:840px){
+    .shell{padding:14px 14px 70px}
+    .stats{grid-template-columns:1fr 1fr 1fr;gap:8px}
+    .stat{padding:14px}
+    .stat .v{font-size:30px}
+    .week{grid-template-columns:minmax(0,1fr)}
+    .wall{grid-template-columns:repeat(2,1fr);gap:8px}
+    .since{display:none}
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+  <div id="mtg-top" data-page="direction" data-sub="l'essentiel"></div>
+
+  <div class="mast">
+    <div class="date" id="d-date">…</div>
+    <h1 id="d-greet">L'essentiel</h1>
+    <div class="sum" id="d-sum"></div>
+  </div>
+
+  <div class="stats" id="d-stats"></div>
+
+  <section id="sec-ingest">
+    <div class="sec-h"><h2>Transmettre un retour client</h2><span class="why">collez le message reçu — il devient des tâches à valider</span><span class="rule"></span></div>
+    <div class="ing">
+      <textarea id="ing-text" rows="3" placeholder="Collez ici le mail, le message WhatsApp ou les notes de réunion du client…"></textarea>
+      <div class="ing-bar">
+        <input id="ing-client" list="ing-clients" placeholder="Client (optionnel)">
+        <datalist id="ing-clients"></datalist>
+        <span class="ing-hint">Rien ne part sans revue : chaque tâche créée passe par « À valider ».</span>
+        <button id="ing-send" type="button">Transmettre</button>
+      </div>
+      <div class="ing-out" id="ing-out" hidden></div>
+    </div>
+  </section>
+
+  <section id="sec-arb">
+    <div class="sec-h"><h2>À arbitrer</h2><span class="n" id="n-arb"></span><span class="why">bloqué, en attente du client, ou en retard</span><span class="rule"></span></div>
+    <div class="arb" id="d-arb"></div>
+  </section>
+
+  <section id="sec-week">
+    <div class="sec-h"><h2>Cette semaine</h2><span class="rule"></span></div>
+    <div class="week">
+      <div class="wcol"><h3>À livrer d'ici 7 jours</h3><div id="d-soon"></div></div>
+      <div class="wcol wdone"><h3>Livré ces 7 derniers jours</h3><div id="d-done"></div></div>
+    </div>
+  </section>
+
+  <section id="sec-work" hidden>
+    <div class="sec-h"><h2>Le travail</h2><span class="why">les livrables récents de l'équipe</span><span class="rule"></span>
+      <div class="wall-seg" id="wall-seg"><button data-sort="recent" class="on">Récents</button><button data-sort="client">Par client</button></div>
+    </div>
+    <div class="wall" id="d-wall"></div>
+  </section>
+
+  <div class="foot-note">Un clic sur un dossier ouvre sa fiche complète. Cette page suit votre périmètre d'accès — rien de confidentiel n'y apparaît.</div>
+</div>
+
+<script src="https://unpkg.com/lucide@1.21.0"></script>
+<script src="supa.js?v=20260710"></script>
+<script src="ui.js?v=20260710"></script>
+<script src="chrome.js?v=20260710"></script>
+<script src="visuels.js?v=20260710"></script>
+<script>
+"use strict";
+/* Direction — synthèse. Constantes locales dupliquées (même convention que bilan.html). */
+const $ = s => document.querySelector(s);
+const esc = s => (s==null?"":String(s)).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const MONTHS_S = ["janv.","févr.","mars","avr.","mai","juin","juil.","août","sept.","oct.","nov.","déc."];
+const JOURS = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
+const TODAY = new Date(new Date().toDateString());
+const DAY = 864e5;
+const DONE_STATUS = new Set(["Livré","Livré (cycle)","Validé","Bouclé","Archivé","Envoyé dans Slack"]);
+const ISO = /^\d{4}-\d{2}-\d{2}$/;
+const isoOf = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+const TODAY_ISO = isoOf(TODAY);
+
+const frozen = m => m.statut==="Frozen"||m.statut==="Gelé";
+const hasDL = m => ISO.test(m.deadline||"");
+const isDone = m => DONE_STATUS.has(m.statut) || (m.closedAt && m.closedAt.length>=4);
+const dlDate = m => new Date(m.deadline+"T00:00:00");
+const isLate = m => hasDL(m) && !isDone(m) && dlDate(m) < TODAY;
+const daysLate = m => Math.round((TODAY-dlDate(m))/DAY);
+const daysTo = m => Math.round((dlDate(m)-TODAY)/DAY);
+function doneKey(m){
+  if(m.closedAt && ISO.test(String(m.closedAt).slice(0,10))) return String(m.closedAt).slice(0,10);
+  if(DONE_STATUS.has(m.statut) && ISO.test(m.deadline||"")) return m.deadline;
+  return "";
+}
+const fmtDay = iso => { const d=new Date(iso+"T00:00:00"); return isNaN(d)?"":`${JOURS[d.getDay()]} ${d.getDate()} ${MONTHS_S[d.getMonth()]}`; };
+const plur = (n,s,p) => n<=1?s:(p||s+"s");
+
+let ROWS=[], MASTERS=[], EVENTS=[], LASTCMT={};
+
+/* cause d'arbitrage — hiérarchie : retard > bloqué > attente client */
+function cause(m){
+  if(isLate(m)) return {k:"late", label:"en retard de "+daysLate(m)+" "+plur(daysLate(m),"jour"), cls:"late", rank:0, days:daysLate(m)};
+  if(m.statut==="Bloqué") return {k:"block", label:"bloqué", cls:"block", rank:1, days:sinceStatus(m)};
+  if(m.statut==="En attente client") return {k:"wait", label:"attente client", cls:"wait", rank:2, days:sinceStatus(m)};
+  return null;
+}
+/* depuis quand un statut Bloqué / Attente est posé : dernier événement de statut
+   correspondant dans le journal ; à défaut, updated_at (proxy). */
+function sinceStatus(m){
+  const ev = EVENTS.find(e => e.ndeg===m.ndeg && e.statut_new===m.statut);
+  const ref = ev ? new Date(ev.at) : (m.updatedAt ? new Date(m.updatedAt) : null);
+  if(!ref || isNaN(ref)) return null;
+  return Math.max(0, Math.round((TODAY - new Date(ref.toDateString()))/DAY));
+}
+
+function arbitrer(){ return MASTERS.filter(m => !isDone(m) && !frozen(m) && cause(m)); }
+function aLivrer(){ return MASTERS.filter(m => !isDone(m) && !frozen(m) && hasDL(m) && daysTo(m)>=0 && daysTo(m)<=7); }
+function livres(){
+  return MASTERS
+    .map(m => ({m, k:doneKey(m)}))
+    .filter(x => x.k && x.k<=TODAY_ISO && (TODAY-new Date(x.k+"T00:00:00"))/DAY <= 7)
+    .sort((a,b)=>b.k.localeCompare(a.k));
+}
+
+function renderMast(){
+  $("#d-date").textContent = TODAY.toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
+  const arb=arbitrer().length, soon=aLivrer().length, done=livres().length;
+  const bits=[];
+  bits.push(arb ? `<b>${arb}</b> ${plur(arb,"dossier")} ${arb>1?"attendent":"attend"} une décision` : "rien n'attend de décision");
+  bits.push(`<b>${soon}</b> ${plur(soon,"livraison")} d'ici 7 jours`);
+  bits.push(`<b>${done}</b> ${plur(done,"livré")} cette semaine`);
+  $("#d-sum").innerHTML = bits.join(" · ") + ".";
+  $("#d-stats").innerHTML =
+    `<div class="stat warn" data-go="sec-arb"><div class="v">${arb}</div><div class="k">à arbitrer</div></div>`+
+    `<div class="stat week" data-go="sec-week"><div class="v">${soon}</div><div class="k">${plur(soon,"livraison")} cette semaine</div></div>`+
+    `<div class="stat done" data-go="sec-week"><div class="v">${done}</div><div class="k">${plur(done,"livré")} ces 7 derniers jours</div></div>`;
+  document.querySelectorAll(".stat[data-go]").forEach(s=>s.onclick=()=>{
+    const t=document.getElementById(s.dataset.go); if(t&&!t.hidden) t.scrollIntoView({behavior:"smooth",block:"start"});
+  });
+}
+
+function renderArb(){
+  const items=arbitrer();
+  $("#n-arb").textContent = items.length||"";
+  if(!items.length){ $("#d-arb").innerHTML = `<div class="empty">Rien à arbitrer — tout roule.</div>`; return; }
+  const byClient={};
+  items.forEach(m=>{ (byClient[m.client||"—"]=byClient[m.client||"—"]||[]).push(m); });
+  const worst = list => Math.min(...list.map(m=>cause(m).rank));
+  const maxDays = list => Math.max(...list.map(m=>cause(m).days||0));
+  const clients=Object.keys(byClient).sort((a,b)=>
+    worst(byClient[a])-worst(byClient[b]) || maxDays(byClient[b])-maxDays(byClient[a]) || byClient[b].length-byClient[a].length);
+  $("#d-arb").innerHTML = clients.map(c=>{
+    const list=byClient[c].sort((a,b)=>{ const ca=cause(a), cb=cause(b); return ca.rank-cb.rank || (cb.days||0)-(ca.days||0); });
+    return `<div class="arb-client">
+      <div class="arb-ch"><span class="dot" style="background:${clientVar(c)}"></span><b>${esc(c)}</b><span class="ct">${list.length}</span></div>
+      ${list.map(m=>{
+        const k=cause(m);
+        const cmt=LASTCMT[m.ndeg];
+        const why = cmt ? `<q>${esc(cmt)}</q>` : esc([m.marque,m.livrables].filter(Boolean).join(" · "));
+        const since = (k.k!=="late" && k.days!=null) ? `depuis ${k.days} ${plur(k.days,"jour")}` : (k.k==="late"?`dû le ${esc((m.deadline||"").slice(8,10))}/${esc((m.deadline||"").slice(5,7))}`:"");
+        return `<div class="arb-row" data-nd="${esc(m.ndeg)}">
+          <div class="b"><div class="t">${esc(m.projet||m.livrables||"Sans titre")}</div><div class="why">${why}</div></div>
+          <span class="cause ${k.cls}">${esc(k.label)}</span>
+          <span class="since">${since}</span>
+        </div>`;
+      }).join("")}
+    </div>`;
+  }).join("");
+}
+
+function renderWeek(){
+  const soon=aLivrer().sort((a,b)=>(a.deadline||"").localeCompare(b.deadline||""));
+  if(!soon.length) $("#d-soon").innerHTML=`<div class="wempty">Aucune livraison programmée sur les 7 prochains jours.</div>`;
+  else{
+    const byDay={};
+    soon.forEach(m=>{ (byDay[m.deadline]=byDay[m.deadline]||[]).push(m); });
+    $("#d-soon").innerHTML = Object.keys(byDay).sort().map(iso=>
+      `<div class="wday${iso===TODAY_ISO?" today":""}">${esc(fmtDay(iso))}</div>`+
+      byDay[iso].map(m=>`<div class="wrow" data-nd="${esc(m.ndeg)}" style="--wc:${clientVar(m.client)}">
+          <span class="t">${esc(m.projet||m.livrables||"Sans titre")}</span>
+          ${m.deadlineHard?`<span class="hard">date ferme</span>`:""}
+          <span class="who">${esc((window.splitOwners?splitOwners(m.responsable):[m.responsable||""]).join(" & "))}</span>
+        </div>`).join("")
+    ).join("");
+  }
+  const done=livres();
+  $("#d-done").innerHTML = done.length
+    ? done.map(({m,k})=>`<div class="wrow" data-nd="${esc(m.ndeg)}" style="--wc:${clientVar(m.client)}">
+        <span class="ok">✓</span><span class="t">${esc(m.projet||m.livrables||"Sans titre")}</span>
+        <span class="d">${esc(fmtDay(k).replace(/^\S+ /,""))}</span>
+      </div>`).join("")
+    : `<div class="wempty">Rien de livré sur les 7 derniers jours.</div>`;
+}
+
+let WALL_ASSETS=null, WALL_SORT="recent";
+async function renderWall(){
+  if(WALL_ASSETS===null){ try{ WALL_ASSETS=await loadVisuelsRecents(60); }catch(e){ WALL_ASSETS=[]; } }
+  const byNd={}; ROWS.forEach(r=>byNd[r.ndeg]=r);
+  // ceinture : un visuel dont le dossier n'est pas dans le périmètre visible est écarté ;
+  // une carte par DOSSIER (le visuel le plus récent devant, badge « +N » s'il y en a d'autres)
+  const groups=[];
+  const byDossier={};
+  WALL_ASSETS.filter(a=>byNd[a.ndeg]).forEach(a=>{
+    if(!byDossier[a.ndeg]){ byDossier[a.ndeg]={cover:a, count:0}; groups.push(byDossier[a.ndeg]); }
+    byDossier[a.ndeg].count++;
+  });
+  if(WALL_SORT==="client") groups.sort((g1,g2)=>
+    String(byNd[g1.cover.ndeg].client||"").localeCompare(String(byNd[g2.cover.ndeg].client||""),"fr")
+    || String(g2.cover.created_at||"").localeCompare(String(g1.cover.created_at||"")));
+  const cards = groups.slice(0,12).map(({cover:a,count})=>{
+    const m=byNd[a.ndeg];
+    return `<figure class="work" data-nd="${esc(a.ndeg)}" style="margin:0">
+      <img loading="lazy" src="${esc(visuelUrl(a))}" alt="${esc(a.caption||m.projet||'')}">
+      ${count>1?`<span class="more">+${count-1}</span>`:""}
+      <div class="cap"><span class="dot" style="background:${clientVar(m.client)}"></span>
+        <span class="t">${esc(a.caption||m.projet||"")}</span><span class="c">${esc(m.client||"")}</span></div>
+    </figure>`;
+  });
+  if(cards.length<6){
+    const covered=new Set(WALL_ASSETS.map(a=>a.ndeg));
+    livres().filter(({m})=>!covered.has(m.ndeg)).slice(0,6-cards.length).forEach(({m})=>{
+      cards.push(`<div class="work typo" data-nd="${esc(m.ndeg)}" style="--wc:${clientVar(m.client)}">
+        <div class="face"><div class="cl">${esc(m.client||"")}</div><div class="ti">${esc(m.projet||m.livrables||"")}</div></div>
+        <div class="cap"><span class="dot" style="background:${clientVar(m.client)}"></span>
+          <span class="t">livré</span><span class="c">${esc((m.marque||"").slice(0,28))}</span></div>
+      </div>`);
+    });
+  }
+  if(!cards.length){ $("#sec-work").hidden=true; return; }
+  $("#sec-work").hidden=false;
+  $("#d-wall").innerHTML=cards.join("");
+  document.querySelectorAll("#wall-seg button").forEach(b=>{
+    b.classList.toggle("on", b.dataset.sort===WALL_SORT);
+    b.onclick=()=>{ WALL_SORT=b.dataset.sort; renderWall(); };
+  });
+}
+
+function bind(){
+  document.body.addEventListener("click",e=>{
+    if(e.target.closest("#sec-ingest")) return; // la zone de saisie gère ses propres clics
+    const row=e.target.closest("[data-nd]");
+    if(row && window.byNdeg && byNdeg[row.dataset.nd] && window.openBriefModal) openBriefModal(byNdeg[row.dataset.nd]);
+  });
+  bindIngest();
+}
+
+/* ---- transmettre un retour client → /ingest (Ollama côté serveur) ---- */
+function bindIngest(){
+  $("#ing-clients").innerHTML=[...new Set(ROWS.map(r=>r.client).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"fr"))
+    .map(c=>`<option value="${esc(c)}">`).join("");
+  const btn=$("#ing-send"), out=$("#ing-out");
+  btn.onclick=async()=>{
+    const text=$("#ing-text").value.trim();
+    if(!text){ $("#ing-text").focus(); return; }
+    btn.disabled=true; btn.textContent="Analyse en cours…";
+    out.hidden=true;
+    try{
+      const r=await fetch("/ingest",{method:"POST",headers:{"content-type":"application/json"},
+        body:JSON.stringify({text, client:$("#ing-client").value.trim()})});
+      const d=await r.json().catch(()=>({}));
+      if(!r.ok) throw new Error(d.message||("HTTP "+r.status));
+      const n=(d.created||[]).length;
+      out.hidden=false;
+      out.innerHTML =
+        (d.fallback
+          ? `<div class="warn-line">L'assistant n'a pas pu structurer ce retour — il est consigné tel quel, à trier à la main.</div>`
+          : `<div class="ok-line"><b>✓</b> ${n} ${n>1?"tâches créées":"tâche créée"} — à confirmer dans <a href="valider.html">À valider</a>.</div>`)
+        + (d.created||[]).map(c=>`<a class="ing-item" href="tache.html?code=${encodeURIComponent(c.ndeg)}">
+            <span class="kind">${c.entree==="Révision"?"révision":"nouveau"}</span>
+            <span class="t">${esc(c.projet)}</span>
+            <span class="cd">${esc(c.client)}${c.parent?` · suite de ${esc(c.parent)}`:""}</span>
+          </a>`).join("");
+      $("#ing-text").value=""; $("#ing-client").value="";
+    }catch(err){
+      out.hidden=false;
+      out.innerHTML=`<div class="warn-line">Envoi impossible : ${esc(err.message||err)}. Le retour n'a pas été perdu — réessayez.</div>`;
+    }finally{ btn.disabled=false; btn.textContent="Transmettre"; }
+  };
+}
+
+async function boot(){
+  try{ ROWS=await loadBriefsLive(); }catch(e){ ROWS=[]; }
+  window.ROWS=ROWS; window.byNdeg={}; ROWS.forEach(r=>byNdeg[r.ndeg]=r);
+  MASTERS=ROWS.filter(r=>r.entree==="Maître" && (r.ndeg||"").charAt(0)!=="≈");
+  // journal (depuis quand un dossier est bloqué / en attente) — meilleur que updated_at
+  try{
+    const r=await fetch("/rest/v1/task_events?kind=eq.status&order=at.desc&limit=500",{headers:supaHeaders(),cache:"no-store"});
+    if(r.ok) EVENTS=await r.json();
+  }catch(e){}
+  // dernier commentaire par dossier à arbitrer (le « pourquoi » en une ligne)
+  try{
+    const r=await fetch("/rest/v1/comments?order=created_at.desc&limit=300",{headers:supaHeaders(),cache:"no-store"});
+    if(r.ok){ const need=new Set(arbitrer().map(m=>m.ndeg));
+      (await r.json()).forEach(c=>{ if(need.has(c.ndeg) && !LASTCMT[c.ndeg]) LASTCMT[c.ndeg]=(c.body||"").slice(0,140); }); }
+  }catch(e){}
+  renderMast(); renderArb(); renderWeek(); bind();
+  renderWall();
+  if(window.sourceBanner) sourceBanner();
+  if(window.lucide) lucide.createIcons();
+}
+document.addEventListener("DOMContentLoaded",boot);
+</script>
+</body>
+</html>

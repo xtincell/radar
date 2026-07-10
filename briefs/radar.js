@@ -158,13 +158,15 @@ function renderQueue(active){
     const tags = [];
     if(u.tag!=="normal") tags.push(`<span class="urg-tag ${URG_CLS[u.tag]}">${URG_LABEL[u.tag]}</span>`);
     if(isLate(m) && m.prio==="P0") tags.push(`<span class="urg-tag urg-p0">P0</span>`);
-    const dl = isLate(m) ? `<span style="color:var(--orange-300)">⏱ ${daysLate(m)}j</span>` : (m.marque?esc(m.marque):esc(m.client));
+    // titre en tête, méta ensuite ; le code dossier ferme la ligne, discret
+    const who = esc(m.marque || m.client || "");
+    const dl = isLate(m) ? `<span style="color:var(--orange-300);flex:0 0 auto">en retard de ${daysLate(m)}j</span>` : "";
     return `<div class="qrow${isTraite(m.ndeg)?' done':''}" data-nd="${esc(m.ndeg)}">
       <div class="qleft">
         <span class="cdot" style="background:${clientCol(m.client)}"></span>
         <div class="qmeta">
-          <div class="qn"><span>${esc(m.ndeg)}</span><span style="opacity:.6">·</span>${dl}</div>
           <div class="qt">${esc(m.projet)}</div>
+          <div class="qn"><span>${who}</span>${dl?`<span style="opacity:.6">·</span>${dl}`:""}<span class="qcode">${esc(m.ndeg)}</span></div>
         </div>
       </div>
       <div class="qright">${tags.join("")}

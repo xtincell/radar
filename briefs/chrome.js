@@ -32,6 +32,7 @@ window.MTG_getTheme = getTheme;
    ces pages, plus dans la nav principale pour réduire le bruit. */
 const NAV = [
   {key:"radar",     label:"Aujourd'hui", href:"radar.html",     icon:"radar"},
+  {key:"direction", label:"Direction",   href:"direction.html", icon:"compass"},
   {key:"dashboard", label:"Projets",     href:"dashboard.html", icon:"layout-grid"},
   {key:"wiki",      label:"Wiki",        href:"wiki.html",      icon:"book-open"},
   {key:"marques",   label:"Marques",     href:"marques.html",   icon:"library"},
@@ -51,7 +52,7 @@ const NAV = [
   {key:"entrees",    label:"Entrées",     href:"entrees.html",                   icon:"list"},
 ];
 const NAV_SECONDARY = [];
-const NAV_PRIMARY   = ["radar","todo","dashboard","valider","bilan"];
+const NAV_PRIMARY   = ["radar","direction","todo","dashboard","valider","bilan"];
 const NAV_MORE_KEYS = ["equipe","evaluation","rapport","faits","gantt","sla","wiki","marques","archive","gel","gabarits"];
 const esc = s => (s==null?"":String(s)).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const initial = s => ((s||"").trim().charAt(0).toUpperCase() || "?");
@@ -72,7 +73,7 @@ function injectStyles(){
   .mtg-logo-svg text{font-family:var(--font-display),"Familjen Grotesk",system-ui,sans-serif}
   .mtg-logo-svg .l1-2{fill:var(--fg1);font-weight:900}
   .mtg-logo-svg .l3{fill:var(--orange-500);font-weight:900}
-  .mtg-sub{font-family:var(--font-mono);font-size:10px;color:var(--fg3);text-transform:uppercase;letter-spacing:.08em;border-left:1px solid var(--border);padding-left:10px;margin-left:2px}
+  .mtg-sub{font-size:11.5px;color:var(--fg3);border-left:1px solid var(--border);padding-left:10px;margin-left:2px}
   .mtg-nav{display:flex;gap:2px;align-items:center;flex:1;min-width:0;overflow-x:auto;scrollbar-width:none}
   .mtg-nav::-webkit-scrollbar{display:none}
   .mtg-nav a{display:inline-flex;align-items:center;gap:7px;text-decoration:none;color:var(--fg2);
@@ -90,7 +91,7 @@ function injectStyles(){
   .mtg-id.guest .av{background:var(--ink-700)}
   .mtg-menu{position:absolute;z-index:120;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);
     box-shadow:var(--shadow-lg);padding:7px;min-width:210px;max-height:60vh;overflow:auto}
-  .mtg-menu .hd{font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--fg3);padding:6px 9px 4px}
+  .mtg-menu .hd{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--fg3);padding:6px 9px 4px}
   .mtg-menu button{display:flex;align-items:center;gap:9px;width:100%;text-align:left;border:0;background:transparent;
     color:var(--fg1);font:inherit;font-size:13.5px;font-weight:600;padding:8px 9px;border-radius:var(--radius-sm);cursor:pointer}
   .mtg-menu button:hover{background:var(--paper-100)}
@@ -119,10 +120,10 @@ function injectStyles(){
   .mtg-more-menu .ic{display:inline-flex;width:18px;justify-content:center;color:var(--fg3);flex:0 0 auto}
   .mtg-foot{display:flex;align-items:center;gap:14px;flex-wrap:wrap;justify-content:space-between;
     max-width:1180px;margin:42px auto 18px;padding:14px 16px;border-top:1px solid var(--border);
-    font-family:var(--font-mono);font-size:11.5px;color:var(--fg3)}
-  .mtg-foot .brand{font-weight:600;color:var(--fg2);letter-spacing:.04em}
+    font-size:12px;color:var(--fg3)}
+  .mtg-foot .brand{font-weight:600;color:var(--fg2)}
   .mtg-foot .feeds{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-  .mtg-foot .feeds .lbl{text-transform:uppercase;letter-spacing:.1em;color:var(--fg3);margin-right:2px}
+  .mtg-foot .feeds .lbl{color:var(--fg3);margin-right:2px}
   .mtg-foot a{display:inline-flex;align-items:center;gap:5px;text-decoration:none;color:var(--fg2);
     border:1px solid var(--border);border-radius:var(--radius-pill);padding:4px 11px;transition:.13s}
   .mtg-foot a:hover{border-color:var(--orange-400);color:var(--orange-600)}
@@ -143,7 +144,9 @@ function injectStyles(){
     .mtg-logo-svg{height:36px;width:108px}
     .mtg-sub{display:none}
     .mtg-bar{flex-wrap:wrap;gap:8px;padding:8px 9px 8px 11px;top:8px}
-    .mtg-nav{order:5;width:100%;gap:1px;-webkit-overflow-scrolling:touch}
+    /* flex-basis:100% obligatoire : le flex:1 de base (basis 0) empêchait le
+       passage à la ligne → la nav entière était écrasée en une bande de ~35px. */
+    .mtg-nav{order:5;flex-basis:100%;width:100%;gap:1px;-webkit-overflow-scrolling:touch}
     .mtg-nav a{padding:8px 11px;font-size:13px}
     .mtg-ticket .lbl{display:none}              /* Ticket = icône seule sur mobile */
     .mtg-ticket{padding:8px 11px}
@@ -235,7 +238,12 @@ function openIdMenu(anchor){
        <button data-me="" class="${me===''?'sel':''}"><span class="av">?</span>Personne (réinit.)</button>`
     : `<div class="hd">Connecté·e</div>
        <button disabled style="cursor:default;opacity:1"><span class="av">${esc(initial(IDENT.person||IDENT.email||"?"))}</span>${esc(IDENT.person||IDENT.email||"")} — ${esc(ROLE_LBL[IDENT.role]||IDENT.role)}</button>`;
+  // page d'accueil : préférence perso (radar:landing) — défaut « selon mon rôle »
+  let landing=""; try{ landing=localStorage.getItem("radar:landing")||""; }catch(e){}
+  const LANDINGS=[["","Selon mon rôle"],["direction.html","Direction"],["radar.html","Aujourd'hui"],["todo.html","À faire"]];
   menu.innerHTML=`${viewAs}
+    <div class="hd" style="border-top:1px solid var(--border);margin-top:6px;padding-top:8px">Ma page d'accueil</div>
+    ${LANDINGS.map(([v,l])=>`<button data-landing="${v}" class="${landing===v?'sel':''}"><span class="av">${v?"⌂":"✦"}</span>${l}</button>`).join("")}
     <div class="hd" style="border-top:1px solid var(--border);margin-top:6px;padding-top:8px">Mon compte</div>
     <button data-goto="profil.html"><span class="av">🔑</span>Mon mot de passe</button>
     <button data-goto="/logout"><span class="av">⎋</span>Se déconnecter</button>`;
@@ -245,6 +253,10 @@ function openIdMenu(anchor){
   menu.style.right=Math.max(8,(window.innerWidth-r.right))+"px";
   menu.addEventListener("click",e=>{
     const g=e.target.closest("[data-goto]"); if(g){ location.href=g.getAttribute("data-goto"); return; }
+    const L=e.target.closest("[data-landing]");
+    if(L){ try{ const v=L.getAttribute("data-landing");
+      if(v) localStorage.setItem("radar:landing",v); else localStorage.removeItem("radar:landing");
+    }catch(err){} closeMenus(); return; }
     const b=e.target.closest("[data-me]"); if(!b) return;
     const v=b.getAttribute("data-me"); if(window.setMe) setMe(v); location.reload(); });
 }
@@ -290,6 +302,21 @@ function mountBar(host){
   <div class="mtg-more-menu" id="mtg-more-menu" hidden role="menu">${moreLinks}</div>`;
   wire();
   if(window.lucide) window.lucide.createIcons();
+  // La nav déborde sur les pages étroites et en mobile (scrollbar masquée) :
+  // sans ceci, l'onglet actif peut être totalement hors-champ. Recalé après le
+  // premier layout ET après le chargement des fontes (les largeurs bougent).
+  const centerActive = ()=>{
+    const nav = host.querySelector(".mtg-nav");
+    const act = nav && nav.querySelector("a.active, .mtg-more.active");
+    if(!nav || !act) return;
+    if(nav.scrollWidth > nav.clientWidth){
+      const left = act.getBoundingClientRect().left - nav.getBoundingClientRect().left + nav.scrollLeft;
+      nav.scrollLeft = Math.max(0, left - (nav.clientWidth - act.offsetWidth)/2);
+    }
+  };
+  requestAnimationFrame(centerActive);
+  if(document.fonts && document.fonts.ready) document.fonts.ready.then(()=>requestAnimationFrame(centerActive));
+  setTimeout(centerActive, 600);
 }
 
 function mountFab(){

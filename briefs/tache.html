@@ -5,8 +5,8 @@
 <script>try{if(localStorage.getItem("radar:theme")==="dark")document.documentElement.dataset.theme="dark";}catch(e){}</script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Radar — Tâche</title>
-<link rel="stylesheet" href="colors_and_type.css?v=20260622">
-<link rel="stylesheet" href="radar.css?v=20260619">
+<link rel="stylesheet" href="colors_and_type.css?v=20260710">
+<link rel="stylesheet" href="radar.css?v=20260710">
 <style>
   /* page dédiée à UNE tâche — réutilise les classes dossier de radar.css (.kv, .dr-sect, .dossier, .doc-chip, .dr-doc, .dbadge, .dr-sel, .dr-btn, .dr-mini) */
   body{background-image:radial-gradient(1100px 650px at 88% -8%, var(--bg-app-warm) 0%, transparent 60%),var(--bg-app);background-attachment:fixed}
@@ -141,6 +141,17 @@
     background:color-mix(in srgb,var(--orange-500) 12%,#fff);border:1px solid color-mix(in srgb,var(--orange-500) 26%,var(--border));border-radius:999px;padding:2px 9px}
   .cmt-itag:hover{background:color-mix(in srgb,var(--orange-500) 20%,#fff)}
   a.cmt-who{text-decoration:none} a.cmt-who:hover{text-decoration:underline}
+  /* visuels de livrables */
+  .vis-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin:6px 0 4px}
+  .vis-card{position:relative;margin:0;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--paper-100)}
+  .vis-card img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover}
+  .vis-card figcaption{font-size:11.5px;color:var(--fg2);padding:6px 9px;border-top:1px solid var(--border-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .vis-del{position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:50%;border:0;background:rgba(20,16,10,.55);color:#fff;font-size:12px;line-height:1;cursor:pointer;opacity:0;transition:.12s}
+  .vis-card:hover .vis-del{opacity:1}
+  .vis-add{display:grid;place-items:center;min-height:112px;border:1.5px dashed var(--border-strong);border-radius:12px;cursor:pointer;color:var(--fg3);text-align:center;font-size:13px;transition:.12s}
+  .vis-add:hover,.vis-add.over{border-color:var(--orange-400);color:var(--orange-600);background:var(--accent-soft)}
+  .vis-add small{font-size:11px}
+  .vis-empty{color:var(--fg3);font-size:12.5px}
 </style>
 </head>
 <body>
@@ -157,9 +168,10 @@
 </div>
 
 <script src="https://unpkg.com/lucide@1.21.0"></script>
-<script src="supa.js?v=20260641"></script>
-<script src="ui.js?v=20260640"></script>
-<script src="chrome.js?v=20260637"></script>
+<script src="supa.js?v=20260710"></script>
+<script src="ui.js?v=20260710"></script>
+<script src="chrome.js?v=20260710"></script>
+<script src="visuels.js?v=20260710"></script>
 <script>
 "use strict";
 /* ============================================================
@@ -997,6 +1009,8 @@ function render(){
         <a class="dr-mini" href="dashboard.html"><i data-lucide="layout-grid" style="width:14px;height:14px"></i>Voir dans le dashboard</a>
       </div>
       <div class="dr-doc" id="docrender"><span class="dr-doc-load">Chargement du brief…</span></div>
+      <div class="dr-sect">Visuels du livrable${m.privateTo?` · confidentiel`:""}</div>
+      <div class="vis-grid" id="vis-grid"><span class="vis-empty">Chargement…</span></div>
       ${kids.length?`<div class="dr-sect">${m.entree==="Maître"?"Tâches":"Révisions"} & liées (${kids.length})</div><div class="kv">${kids.map(k=>`<div class="k"><a href="tache.html?code=${encodeURIComponent(k.ndeg)}">${esc(k.ndeg)}</a>${k.entree&&k.entree!=="Maître"?` <span style="font-size:10px;color:var(--fg3)">${esc(k.entree)}</span>`:""}</div><div class="v">${esc(k.projet)}${k.responsable?` <span style="color:var(--fg3)">· ${esc(normResp(k.responsable))}</span>`:""}</div>`).join("")}</div>`:""}
       
       ${m.id?`<div class="dr-sect">Gestion — édition générale</div>
@@ -1499,6 +1513,45 @@ function render(){
   loadDoc("BRIEF.md");
   loadMarketCtx(m);
   renderComments(m.ndeg);
+  renderVisuels(m);
+}
+
+/* ---- visuels de livrables (upload compressé côté client → /visuels) ---- */
+async function renderVisuels(m){
+  const box=$("#vis-grid"); if(!box) return;
+  let items=[];
+  try{ items=await loadVisuels(m.ndeg); }catch(e){}
+  const canEdit=!!m.id; // pas de base → lecture seule
+  box.innerHTML =
+    items.map(a=>`<figure class="vis-card">
+        <img loading="lazy" src="${esc(visuelUrl(a))}" alt="${esc(a.caption||m.projet||'')}">
+        ${a.caption?`<figcaption>${esc(a.caption)}</figcaption>`:""}
+        ${canEdit?`<button class="vis-del" title="Retirer ce visuel" data-del="${a.id}">✕</button>`:""}
+      </figure>`).join("")
+    + (canEdit?`<label class="vis-add" id="vis-add"><input type="file" accept="image/png,image/jpeg,image/webp,image/avif" multiple hidden><span>+ Ajouter un visuel<br><small>glisser une image, ou cliquer</small></span></label>`
+       :(items.length?"":`<span class="vis-empty">Aucun visuel pour l'instant.</span>`));
+  const add=$("#vis-add");
+  if(add){
+    const send=async files=>{
+      const list=[...files].filter(f=>/^image\//.test(f.type));
+      if(!list.length) return;
+      add.querySelector("span").textContent="Envoi…";
+      for(const f of list){
+        try{ await uploadVisuel(m.ndeg,f,""); }
+        catch(err){ flash("✗ "+(err.message||"envoi impossible"),"err"); }
+      }
+      flash("✓ Visuel ajouté","ok"); renderVisuels(m);
+    };
+    add.querySelector("input").onchange=e=>send(e.target.files);
+    add.ondragover=e=>{ e.preventDefault(); add.classList.add("over"); };
+    add.ondragleave=()=>add.classList.remove("over");
+    add.ondrop=e=>{ e.preventDefault(); add.classList.remove("over"); send(e.dataTransfer.files); };
+  }
+  box.querySelectorAll("[data-del]").forEach(b=>b.onclick=async()=>{
+    if(!confirm("Retirer ce visuel ?")) return;
+    try{ await deleteVisuel(b.dataset.del); flash("Visuel retiré","ok"); renderVisuels(m); }
+    catch(err){ flash("✗ "+(err.message||"suppression impossible"),"err"); }
+  });
 }
 
 async function boot(){
