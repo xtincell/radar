@@ -121,6 +121,11 @@
   .work.typo .face .cl{font-size:11.5px;font-weight:700;color:rgba(255,255,255,.75);margin-bottom:6px}
   .work.typo .face .ti{font-family:var(--font-display);font-weight:600;font-size:17px;line-height:1.15;color:#fff;
     display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+  .work .more{position:absolute;top:10px;right:10px;font-size:11px;font-weight:700;color:#fff;
+    background:rgba(20,16,10,.62);border-radius:999px;padding:3px 9px}
+  .wall-seg{display:inline-flex;border:1px solid var(--border);border-radius:var(--radius-pill);overflow:hidden;flex:0 0 auto}
+  .wall-seg button{font:inherit;font-size:12px;font-weight:600;border:0;background:transparent;color:var(--fg3);padding:6px 13px;cursor:pointer}
+  .wall-seg button.on{background:var(--surface-cream);color:var(--fg1)}
 
   /* ---- transmettre un retour ---- */
   .ing{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);padding:16px 18px}
@@ -199,7 +204,9 @@
   </section>
 
   <section id="sec-work" hidden>
-    <div class="sec-h"><h2>Le travail</h2><span class="why">les livrables récents de l'équipe</span><span class="rule"></span></div>
+    <div class="sec-h"><h2>Le travail</h2><span class="why">les livrables récents de l'équipe</span><span class="rule"></span>
+      <div class="wall-seg" id="wall-seg"><button data-sort="recent" class="on">Récents</button><button data-sort="client">Par client</button></div>
+    </div>
     <div class="wall" id="d-wall"></div>
   </section>
 
@@ -337,21 +344,32 @@ function renderWeek(){
     : `<div class="wempty">Rien de livré sur les 7 derniers jours.</div>`;
 }
 
+let WALL_ASSETS=null, WALL_SORT="recent";
 async function renderWall(){
-  let assets=[];
-  try{ assets=await loadVisuelsRecents(40); }catch(e){}
+  if(WALL_ASSETS===null){ try{ WALL_ASSETS=await loadVisuelsRecents(60); }catch(e){ WALL_ASSETS=[]; } }
   const byNd={}; ROWS.forEach(r=>byNd[r.ndeg]=r);
-  // ceinture : un visuel dont le dossier n'est pas dans le périmètre visible est écarté
-  const cards = assets.filter(a=>byNd[a.ndeg]).slice(0,12).map(a=>{
+  // ceinture : un visuel dont le dossier n'est pas dans le périmètre visible est écarté ;
+  // une carte par DOSSIER (le visuel le plus récent devant, badge « +N » s'il y en a d'autres)
+  const groups=[];
+  const byDossier={};
+  WALL_ASSETS.filter(a=>byNd[a.ndeg]).forEach(a=>{
+    if(!byDossier[a.ndeg]){ byDossier[a.ndeg]={cover:a, count:0}; groups.push(byDossier[a.ndeg]); }
+    byDossier[a.ndeg].count++;
+  });
+  if(WALL_SORT==="client") groups.sort((g1,g2)=>
+    String(byNd[g1.cover.ndeg].client||"").localeCompare(String(byNd[g2.cover.ndeg].client||""),"fr")
+    || String(g2.cover.created_at||"").localeCompare(String(g1.cover.created_at||"")));
+  const cards = groups.slice(0,12).map(({cover:a,count})=>{
     const m=byNd[a.ndeg];
     return `<figure class="work" data-nd="${esc(a.ndeg)}" style="margin:0">
       <img loading="lazy" src="${esc(visuelUrl(a))}" alt="${esc(a.caption||m.projet||'')}">
+      ${count>1?`<span class="more">+${count-1}</span>`:""}
       <div class="cap"><span class="dot" style="background:${clientVar(m.client)}"></span>
         <span class="t">${esc(a.caption||m.projet||"")}</span><span class="c">${esc(m.client||"")}</span></div>
     </figure>`;
   });
   if(cards.length<6){
-    const covered=new Set(assets.map(a=>a.ndeg));
+    const covered=new Set(WALL_ASSETS.map(a=>a.ndeg));
     livres().filter(({m})=>!covered.has(m.ndeg)).slice(0,6-cards.length).forEach(({m})=>{
       cards.push(`<div class="work typo" data-nd="${esc(m.ndeg)}" style="--wc:${clientVar(m.client)}">
         <div class="face"><div class="cl">${esc(m.client||"")}</div><div class="ti">${esc(m.projet||m.livrables||"")}</div></div>
@@ -363,6 +381,10 @@ async function renderWall(){
   if(!cards.length){ $("#sec-work").hidden=true; return; }
   $("#sec-work").hidden=false;
   $("#d-wall").innerHTML=cards.join("");
+  document.querySelectorAll("#wall-seg button").forEach(b=>{
+    b.classList.toggle("on", b.dataset.sort===WALL_SORT);
+    b.onclick=()=>{ WALL_SORT=b.dataset.sort; renderWall(); };
+  });
 }
 
 function bind(){

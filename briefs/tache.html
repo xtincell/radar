@@ -1009,8 +1009,8 @@ function render(){
         <a class="dr-mini" href="dashboard.html"><i data-lucide="layout-grid" style="width:14px;height:14px"></i>Voir dans le dashboard</a>
       </div>
       <div class="dr-doc" id="docrender"><span class="dr-doc-load">Chargement du brief…</span></div>
-      ${!m.privateTo?`<div class="dr-sect">Visuels du livrable</div>
-      <div class="vis-grid" id="vis-grid"><span class="vis-empty">Chargement…</span></div>`:""}
+      <div class="dr-sect">Visuels du livrable${m.privateTo?` · confidentiel`:""}</div>
+      <div class="vis-grid" id="vis-grid"><span class="vis-empty">Chargement…</span></div>
       ${kids.length?`<div class="dr-sect">${m.entree==="Maître"?"Tâches":"Révisions"} & liées (${kids.length})</div><div class="kv">${kids.map(k=>`<div class="k"><a href="tache.html?code=${encodeURIComponent(k.ndeg)}">${esc(k.ndeg)}</a>${k.entree&&k.entree!=="Maître"?` <span style="font-size:10px;color:var(--fg3)">${esc(k.entree)}</span>`:""}</div><div class="v">${esc(k.projet)}${k.responsable?` <span style="color:var(--fg3)">· ${esc(normResp(k.responsable))}</span>`:""}</div>`).join("")}</div>`:""}
       
       ${m.id?`<div class="dr-sect">Gestion — édition générale</div>

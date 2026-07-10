@@ -12,7 +12,7 @@ import { toWebRequest, writeWebResponse } from "./request-adapter.js";
 import { serveStatic } from "./static.js";
 import { openKv } from "./kv-sqlite.js";
 import { initDb, handleRest, query as pgQuery, hasDb } from "./pgrest.js";
-import { handleVisuelUpload, serveVisuel, handleVisuelDelete } from "./visuels.js";
+import { handleVisuelUpload, serveVisuel, handleVisuelDelete, purgeOrphans } from "./visuels.js";
 import { handleIngest } from "./ingest.js";
 import * as middleware from "../functions/_middleware.js";
 import * as token from "../functions/token.js";
@@ -86,7 +86,10 @@ const server = http.createServer(async (nodeReq, nodeRes) => {
 });
 
 // Prépare la base (schéma idempotent + seed depuis INDEX.csv si vide) au démarrage.
-initDb().then((ok) => console.log(ok ? "[radar] Postgres prêt (données de l'app)" : "[radar] pas de DATABASE_URL — repli statique/CSV"))
+initDb().then((ok) => {
+  console.log(ok ? "[radar] Postgres prêt (données de l'app)" : "[radar] pas de DATABASE_URL — repli statique/CSV");
+  if (ok) purgeOrphans().catch((e) => console.warn("[visuels] purge orphelins:", e && e.message));
+})
   .catch((e) => console.error("[radar] initDb:", e && e.message));
 const RADAR_NAME = process.env.RADAR_NAME || "Radar";
 server.listen(PORT, () => console.log(`${RADAR_NAME} — écoute sur :${PORT}`));

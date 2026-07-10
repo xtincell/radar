@@ -8,6 +8,9 @@ Pensé pour être déployé **standalone** (une instance = une équipe = une bas
 
 - API type PostgREST (`/rest/v1/<table>`) : select/order/limit, filtres `eq/neq/gte/lte/is/in/cs`, INSERT/PATCH/DELETE — traduits en SQL paramétré, tables et colonnes en liste blanche.
 - Journal d'activité automatique (`task_events`) → flux `/feed.xml` (RSS 2.0) et `/activity.json` (JSON Feed 1.1).
+- Visuels de livrables (`POST /visuels`, service `GET /visuels/<f>`) : images compressées côté client (WebP ≤ 1200 px), revalidées serveur (MIME + magic bytes, ≤ 2 Mo), métadonnées en base (`brief_assets`), binaires sur le volume `/data/visuels`.
+- Ingest des retours clients (`POST /ingest`) : texte libre → LLM local (Ollama) → tâches structurées (révision rattachée à un projet existant ou nouveau projet), insérées en statut « Reçu » et revues via la page « À valider ». Repli sans perte si Ollama est injoignable.
+- Écran « Direction » (`/direction.html`) : synthèse pour non-opérateurs — à arbitrer, livraisons de la semaine, mur des travaux récents, transmission des retours clients.
 - Authentification HTTP Basic + session cookie signée (HMAC-SHA256), avec self-service de mot de passe par utilisateur (`/profil`, stocké en SQLite locale).
 - Trois niveaux d'autorité configurables (`owner` / `supervisor` / `member`) — voir [Configurer les accès](#configurer-les-accès).
 - Isolation `private_to` appliquée côté serveur (pas seulement dans l'UI).
@@ -36,7 +39,7 @@ docker run -p 3000:3000 \
   radar
 ```
 
-Le schéma Postgres (`migrations/`) est appliqué automatiquement et de façon idempotente au démarrage (`server/pgrest.js`). Le volume `/data` conserve les mots de passe personnels (SQLite) entre redéploiements.
+Le schéma Postgres (`migrations/`) est appliqué automatiquement et de façon idempotente au démarrage (`server/pgrest.js`). Le volume `/data` conserve les mots de passe personnels (SQLite) **et les visuels de livrables** (`/data/visuels`) entre redéploiements — à inclure dans les sauvegardes côté hébergeur (Coolify : backup du volume `radar_data` ; la base Postgres se sauvegarde séparément, les binaires des visuels ne vivent que sur ce volume).
 
 ## Configuration
 
@@ -50,6 +53,8 @@ Voir [`.env.example`](.env.example) pour la liste complète des variables. Les e
 | `RADAR_AUTHZ_JSON` | Chemin d'un JSON `{email: {person, role}}` pour un roster complet — prioritaire sur `RADAR_ADMIN_EMAIL`. |
 | `DASH_PASSWORD` | Active le mur d'authentification (mot de passe partagé). |
 | `RADAR_SEED_CSV` | CSV optionnel pour peupler une base vide au premier boot. |
+| `VISUELS_DIR` | Répertoire des visuels de livrables. Défaut `/data/visuels` (repli `./data/visuels`). |
+| `OLLAMA_URL` / `OLLAMA_MODEL` | LLM local pour l'ingest des retours clients (`/ingest`). Défauts `http://127.0.0.1:11434` / `llama3.2`. |
 
 ### Configurer les accès
 
@@ -82,6 +87,8 @@ functions/_feed.js        flux RSS/JSON, lit task_events
 functions/token.js        JWT par utilisateur (intégration RLS externe optionnelle)
 functions/profil.js       self-service mot de passe
 server/pgrest.js          mini-PostgREST maison + schéma + seed optionnel
+server/visuels.js         visuels de livrables : upload / service / suppression (/visuels)
+server/ingest.js          retours clients → tâches via Ollama (/ingest)
 server/index.js           point d'entrée Node (remplace un runtime edge/Pages)
 server/kv-sqlite.js       stockage des mots de passe perso (remplace un KV managé)
 migrations/               schéma SQL, idempotent

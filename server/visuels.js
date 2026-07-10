@@ -9,7 +9,7 @@
 //  le serveur revalide MIME + magic bytes + taille, et nomme lui-même le fichier.
 // ============================================================
 "use strict";
-import { mkdir, writeFile, unlink, open, access, constants } from "node:fs/promises";
+import { mkdir, writeFile, unlink, open, access, constants, readdir, stat } from "node:fs/promises";
 import path from "node:path";
 import crypto from "node:crypto";
 import { query as pgQuery, emitEvent, hasDb, initDb } from "./pgrest.js";
@@ -17,6 +17,7 @@ import { identityFor } from "../functions/_authz.js";
 
 const MAX_BODY = 4 * 1024 * 1024;   // corps JSON (base64 ≈ +33%)
 const MAX_IMAGE = 2 * 1024 * 1024;  // binaire décodé
+const QUOTA_BYTES = (Number(process.env.VISUELS_QUOTA_MB) || 512) * 1024 * 1024; // plafond global du volume
 const EXT = { "image/webp": ".webp", "image/png": ".png", "image/jpeg": ".jpg" };
 const MIME_BY_EXT = { ".webp": "image/webp", ".png": "image/png", ".jpg": "image/jpeg" };
 // noms générés par nous uniquement (uuid + extension connue) — pas de traversal possible
@@ -69,6 +70,31 @@ function sniffMime(buf) {
   return null;
 }
 
+// ---- purge des orphelins (au boot) -------------------------------------------
+// Un crash entre l'écriture du fichier et l'INSERT laisse un binaire sans ligne.
+// On supprime les fichiers inconnus de la base ET plus vieux que 24 h (garde
+// anti-course avec un upload en cours). Jamais l'inverse : une ligne sans
+// fichier s'affiche cassée et se corrige à la main, on ne détruit pas de la donnée.
+export async function purgeOrphans() {
+  if (!hasDb()) return 0;
+  await initDb();
+  let dir;
+  try { dir = await visuelsDir(); } catch { return 0; }
+  const { rows } = await pgQuery("select filename from brief_assets", []);
+  const known = new Set(rows.map(r => r.filename));
+  let purged = 0;
+  const dayAgo = Date.now() - 24 * 3600 * 1000;
+  for (const f of await readdir(dir).catch(() => [])) {
+    if (!SAFE_NAME.test(f) || known.has(f)) continue;
+    try {
+      const s = await stat(path.join(dir, f));
+      if (s.mtimeMs < dayAgo) { await unlink(path.join(dir, f)); purged++; }
+    } catch {}
+  }
+  if (purged) console.log(`[visuels] ${purged} orphelin(s) purgé(s)`);
+  return purged;
+}
+
 // ---- POST /visuels — corps JSON { ndeg, caption?, data: dataURL base64 } -----
 export async function handleVisuelUpload(context) {
   if (!hasDb()) return json({ message: "base non configurée" }, 503);
@@ -94,12 +120,20 @@ export async function handleVisuelUpload(context) {
   const sniffed = sniffMime(bin);
   if (!sniffed || sniffed !== declared) return json({ message: "contenu image invalide (signature ≠ type déclaré)" }, 415);
 
-  // brief cible : doit exister ; les briefs confidentiels n'acceptent pas de visuels
-  // (brief_assets n'est pas scopé private_to côté REST — on ferme la porte à l'entrée).
+  // brief cible : doit exister. Un brief confidentiel accepte un visuel de la
+  // personne concernée uniquement — et les métadonnées restent scopées côté
+  // REST (jointure private_to dans pgrest), donc invisibles aux autres.
   const { rows } = await pgQuery("select id, client, projet, entree, private_to from briefs where ndeg = $1 limit 1", [ndeg]);
   if (!rows.length) return json({ message: "brief inconnu: " + ndeg }, 404);
   const b = rows[0];
-  if (b.private_to && String(b.private_to).trim() !== "") return json({ message: "pas de visuel sur un brief confidentiel" }, 403);
+  const priv = String(b.private_to || "").trim();
+  if (priv && priv !== (identityFor(email).person || "") && !(context.data && context.data.fullAccess))
+    return json({ message: "brief confidentiel" }, 403);
+
+  // quota global du volume (métadonnées font foi ; la purge d'orphelins réaligne le disque)
+  const { rows: q } = await pgQuery("select coalesce(sum(bytes),0)::bigint as used from brief_assets", []);
+  if (Number(q[0].used) + bin.length > QUOTA_BYTES)
+    return json({ message: "quota de stockage des visuels atteint — supprimez d'anciens visuels" }, 413);
 
   const dir = await visuelsDir();
   const filename = crypto.randomUUID() + EXT[declared];

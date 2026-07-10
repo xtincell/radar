@@ -283,6 +283,13 @@ export async function handleRest(context) {
   }
   // Scope private_to appliqué SAUF en accès machine full-access (MCP/Claude/Dan).
   if (table === "briefs" && !(context.data && context.data.fullAccess)) where.push(briefsScope(email, params));
+  // Même confidentialité pour les visuels : les métadonnées d'un brief privé ne
+  // sont visibles que par la personne concernée (jointure sur le ndeg).
+  if (table === "brief_assets" && !(context.data && context.data.fullAccess)) {
+    const me = identityFor(email || "").person || "";
+    params.push(me);
+    where.push(`exists (select 1 from briefs b where b.ndeg = brief_assets.ndeg and (b.private_to is null or b.private_to = '' or b.private_to = $${params.length}))`);
+  }
 
   try {
     if (method === "GET") {

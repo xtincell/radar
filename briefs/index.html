@@ -4,12 +4,32 @@
 <meta charset="utf-8">
 <script>try{if(localStorage.getItem("radar:theme")==="dark")document.documentElement.dataset.theme="dark";}catch(e){}</script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="refresh" content="0; url=radar.html">
 <title>Radar</title>
 <style>html,body{height:100%;margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#1a120b;color:#f5ede2;display:grid;place-items:center}</style>
 </head>
 <body>
 <p>Ouverture du RADAR… <a href="radar.html" style="color:#ff7a1a">Cliquer ici si rien ne se passe</a></p>
-<script>location.replace("radar.html");</script>
+<script>
+"use strict";
+/* Atterrissage : préférence personnelle d'abord (réglable via la puce identité,
+   clé radar:landing), sinon par rôle — owner/supervisor → Direction (synthèse),
+   member → À faire (ses tâches). /profil injoignable → cockpit historique. */
+(function(){
+  var go = function(href){ location.replace(href); };
+  try{
+    var pref = localStorage.getItem("radar:landing");
+    if(pref){ go(pref); return; }
+  }catch(e){}
+  var timer = setTimeout(function(){ go("radar.html"); }, 2500); // filet : jamais bloqué ici
+  fetch("/profil", {cache:"no-store"})
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(d){
+      clearTimeout(timer);
+      var role = (d && d.ok && d.role) || "";
+      go(role==="member" ? "todo.html" : (role==="owner"||role==="supervisor") ? "direction.html" : "radar.html");
+    })
+    .catch(function(){ clearTimeout(timer); go("radar.html"); });
+})();
+</script>
 </body>
 </html>

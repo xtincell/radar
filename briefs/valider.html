@@ -23,7 +23,7 @@
   .stats{display:flex;gap:12px;flex-wrap:wrap;margin:12px 0}
   .stat{background:var(--surface,#fff);border:1px solid var(--border,#E7DFD3);border-radius:14px;padding:11px 15px;min-width:120px}
   .stat .v{font-family:var(--font-display,Georgia);font-size:24px;font-weight:600}
-  .stat .l{font-family:var(--font-mono,monospace);font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--fg3,#857B6E)}
+  .stat .l{font-size:11px;font-weight:600;color:var(--fg3,#857B6E)}
   .bar{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin:10px 0 18px}
   .bar input,.bar select{font:inherit;font-size:13px;padding:8px 11px;border:1px solid var(--border,#E7DFD3);border-radius:999px;background:var(--surface,#fff);color:var(--fg1)}
   .bar input{flex:1;min-width:180px}
@@ -38,16 +38,16 @@
   .row .info{flex:1;min-width:0}
   .row .pt{font-weight:600;font-size:14.5px;line-height:1.25;cursor:pointer}
   .row .pt:hover{color:var(--accent)}
-  .row .ps{font-family:var(--font-mono,monospace);font-size:11px;color:var(--fg3);margin-top:2px}
+  .row .ps{font-size:11.5px;color:var(--fg3);margin-top:2px}
   .row .ded{font-size:12.5px;color:var(--fg2);margin-top:6px;line-height:1.4;border-left:2px solid var(--border);padding-left:9px}
-  .row .ded b{color:var(--fg3);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.04em}
+  .row .ded b{color:var(--fg3);font-weight:700;font-size:11px}
   .row .meta{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex:0 0 auto}
   .resp{font-size:12px;color:var(--fg2);white-space:nowrap}
   .resp.none{color:var(--fg4,#A89C8B);font-style:italic}
   .ok{border:1px solid var(--accent);background:var(--accent);color:#fff;font:inherit;font-size:12.5px;font-weight:700;padding:7px 13px;border-radius:999px;cursor:pointer;white-space:nowrap}
   .ok:hover{filter:brightness(1.05)} .ok:disabled{opacity:.5;cursor:default}
   .empty{text-align:center;color:var(--fg3);padding:50px 0;font-size:15px}
-  .src{margin-top:26px;font-family:var(--font-mono,monospace);font-size:11px;color:var(--fg4,#A89C8B)}
+  .src{margin-top:26px;font-size:11.5px;color:var(--fg4,#A89C8B)}
   .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink-950,#241E17);color:#F7F2EA;padding:11px 18px;border-radius:999px;font-size:13px;box-shadow:0 6px 24px rgba(0,0,0,.2);opacity:0;transition:.2s;pointer-events:none;z-index:200}
   .toast.show{opacity:1}
 </style>

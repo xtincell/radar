@@ -238,7 +238,12 @@ function openIdMenu(anchor){
        <button data-me="" class="${me===''?'sel':''}"><span class="av">?</span>Personne (réinit.)</button>`
     : `<div class="hd">Connecté·e</div>
        <button disabled style="cursor:default;opacity:1"><span class="av">${esc(initial(IDENT.person||IDENT.email||"?"))}</span>${esc(IDENT.person||IDENT.email||"")} — ${esc(ROLE_LBL[IDENT.role]||IDENT.role)}</button>`;
+  // page d'accueil : préférence perso (radar:landing) — défaut « selon mon rôle »
+  let landing=""; try{ landing=localStorage.getItem("radar:landing")||""; }catch(e){}
+  const LANDINGS=[["","Selon mon rôle"],["direction.html","Direction"],["radar.html","Aujourd'hui"],["todo.html","À faire"]];
   menu.innerHTML=`${viewAs}
+    <div class="hd" style="border-top:1px solid var(--border);margin-top:6px;padding-top:8px">Ma page d'accueil</div>
+    ${LANDINGS.map(([v,l])=>`<button data-landing="${v}" class="${landing===v?'sel':''}"><span class="av">${v?"⌂":"✦"}</span>${l}</button>`).join("")}
     <div class="hd" style="border-top:1px solid var(--border);margin-top:6px;padding-top:8px">Mon compte</div>
     <button data-goto="profil.html"><span class="av">🔑</span>Mon mot de passe</button>
     <button data-goto="/logout"><span class="av">⎋</span>Se déconnecter</button>`;
@@ -248,6 +253,10 @@ function openIdMenu(anchor){
   menu.style.right=Math.max(8,(window.innerWidth-r.right))+"px";
   menu.addEventListener("click",e=>{
     const g=e.target.closest("[data-goto]"); if(g){ location.href=g.getAttribute("data-goto"); return; }
+    const L=e.target.closest("[data-landing]");
+    if(L){ try{ const v=L.getAttribute("data-landing");
+      if(v) localStorage.setItem("radar:landing",v); else localStorage.removeItem("radar:landing");
+    }catch(err){} closeMenus(); return; }
     const b=e.target.closest("[data-me]"); if(!b) return;
     const v=b.getAttribute("data-me"); if(window.setMe) setMe(v); location.reload(); });
 }
