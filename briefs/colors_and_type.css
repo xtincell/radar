@@ -208,7 +208,16 @@
 .r26-body { font-family: var(--font-sans); font-weight: 400; font-size: var(--text-md); line-height: var(--leading-normal); color: var(--fg2); }
 .r26-body-sm { font-family: var(--font-sans); font-weight: 400; font-size: var(--text-sm); line-height: var(--leading-normal); color: var(--fg2); }
 .r26-label { font-family: var(--font-sans); font-weight: 600; font-size: var(--text-xs); line-height: 1.3; letter-spacing: var(--tracking-wide); text-transform: uppercase; color: var(--fg3); }
-.r26-code { font-family: var(--font-mono); font-weight: 400; font-size: var(--text-sm); color: var(--fg1); }
+/* ------------------------------------------------------------------ LISIBILITÉ
+   Règle typographique du système (lot « dé-technification ») :
+   • la mono (JetBrains Mono) est réservée aux CHIFFRES, DATES et CODES —
+     jamais à des mots français (labels, métas, statuts) ;
+   • l'uppercase est réservé aux micro-labels de section (.r26-label) ;
+   • les codes dossier (ndeg) sont secondaires : .r26-code, en fg3, petits,
+     APRÈS le client et le titre — jamais en tête de ligne. */
+.r26-label-quiet { font-family: var(--font-sans); font-weight: 600; font-size: var(--text-xs); line-height: 1.3; color: var(--fg3); }
+.r26-meta { font-family: var(--font-sans); font-weight: 400; font-size: var(--text-xs); line-height: 1.4; color: var(--fg3); }
+.r26-code { font-family: var(--font-mono); font-weight: 400; font-size: var(--text-2xs); color: var(--fg3); }
 
 /* ============================================================== DARK THEME
    Light is the default (no attribute). Dark is opt-in via a toggle that sets

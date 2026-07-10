@@ -258,24 +258,24 @@ const escAttr = s => (s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"
 
   /* Custom visual card layouts for concept variables */
   .mtg-ideabox { background: linear-gradient(135deg, color-mix(in srgb, var(--orange-500) 8%, var(--surface)) 0%, color-mix(in srgb, var(--orange-500) 2%, var(--surface)) 100%); border-left: 4px solid var(--orange-500); border-radius: 12px; padding: 18px; position: relative; text-align: left; }
-  .mtg-ideabox-title { font-family: var(--font-mono, monospace); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--orange-700); margin-bottom: 6px; }
+  .mtg-ideabox-title { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--orange-700); margin-bottom: 6px; }
   .mtg-ideabox-content { font-family: var(--font-display, inherit); font-style: italic; font-weight: 500; font-size: 17px; line-height: 1.45; color: var(--fg1); }
   
   .mtg-grid-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
   @media (max-width: 640px) { .mtg-grid-2col { grid-template-columns: 1fr; } }
   
   .mtg-info-card { background: var(--paper-50); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; text-align: left; }
-  .mtg-info-card-title { font-family: var(--font-mono, monospace); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--fg3); margin-bottom: 6px; }
+  .mtg-info-card-title { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--fg3); margin-bottom: 6px; }
   .mtg-info-card-text { font-size: 13.5px; line-height: 1.45; color: var(--fg1); white-space: pre-line; }
 
   .mtg-axecard { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px; text-align: left; }
   .mtg-axecard-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-  .mtg-axecard-badge { font-family: var(--font-mono, monospace); font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; background: var(--paper-200); color: var(--fg2); padding: 3px 9px; border-radius: 999px; }
+  .mtg-axecard-badge { font-size: 10px; font-weight: 700; background: var(--paper-200); color: var(--fg2); padding: 3px 9px; border-radius: 999px; }
   .mtg-axecard-title { font-family: var(--font-display, inherit); font-weight: 600; font-size: 15px; color: var(--fg1); }
   
   .mtg-axecard-item { margin-top: 10px; border-top: 1px solid var(--border-soft); padding-top: 8px; }
   .mtg-axecard-item:first-of-type { border-top: 0; padding-top: 0; margin-top: 0; }
-  .mtg-axecard-lbl { font-family: var(--font-mono, monospace); font-size: 9px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--fg3); font-weight: 600; margin-bottom: 2px; }
+  .mtg-axecard-lbl { font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--fg3); font-weight: 700; margin-bottom: 2px; }
   .mtg-axecard-val { font-size: 13px; line-height: 1.4; color: var(--fg1); }
   .mtg-axecard-copy { font-size: 13.5px; font-weight: 600; color: var(--orange-600); line-height: 1.35; }
 
@@ -354,7 +354,7 @@ window.setStatut = setStatut;
   .bm{background:var(--surface);border:1px solid var(--border);border-radius:18px;box-shadow:0 24px 70px rgba(30,20,10,.4);
     max-width:620px;width:100%;max-height:88vh;display:flex;flex-direction:column;overflow:hidden}
   .bm-h{padding:18px 22px 14px;border-bottom:1px solid var(--border)}
-  .bm-h .c{font-family:var(--font-mono);font-size:11.5px;color:var(--orange-600);font-weight:700;letter-spacing:.04em}
+  .bm-h .c{font-family:var(--font-mono);font-size:10.5px;color:var(--fg3);font-weight:500}
   .bm-h h2{font-family:var(--font-display);font-weight:600;font-size:20px;line-height:1.18;margin:5px 0 3px}
   .bm-h .s{font-size:12.5px;color:var(--fg3)}
   .bm-tabs{display:flex;gap:5px;padding:11px 22px 0}
@@ -362,10 +362,10 @@ window.setStatut = setStatut;
   .bm-tab.on{background:var(--ink-950);color:#F7F2EA}
   .bm-body{padding:14px 22px 8px;overflow:auto;flex:1;min-height:120px}
   .bm-meta{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 4px}
-  .bm-sec{font-family:var(--font-display);font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--fg3);margin:17px 0 9px;padding-top:12px;border-top:1px solid var(--border)}
+  .bm-sec{font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--fg3);margin:17px 0 9px;padding-top:12px;border-top:1px solid var(--border)}
   .bm-sec:first-child{margin-top:2px;padding-top:0;border-top:0}
   .bm-kv{display:grid;grid-template-columns:118px 1fr;gap:8px 14px;align-items:baseline}
-  .bm-k{font-family:var(--font-mono);font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.03em;color:var(--fg3);line-height:1.5}
+  .bm-k{font-size:12px;font-weight:600;color:var(--fg3);line-height:1.5}
   .bm-v{font-size:13.5px;line-height:1.5;color:var(--fg1)}
   .bm-claim{font-family:var(--font-display);font-weight:600;font-size:16.5px;line-height:1.3;color:var(--fg1);background:var(--paper-100);border-left:3px solid var(--orange-400);border-radius:0 10px 10px 0;padding:11px 14px;margin:0 0 6px}
   .bm-flag{font-size:11px;font-weight:700;color:var(--orange-700)}

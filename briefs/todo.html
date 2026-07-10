@@ -5,7 +5,7 @@
 <script>try{if(localStorage.getItem("radar:theme")==="dark")document.documentElement.dataset.theme="dark";}catch(e){}</script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Radar — Ma journée</title>
-<link rel="stylesheet" href="colors_and_type.css?v=20260630">
+<link rel="stylesheet" href="colors_and_type.css?v=20260710">
 <style>
   :root{
     --c-cad:#FF6A14;--c-frc:#2D6BD4;--c-eco:#1F9D63;--c-bel:#E23D2E;--c-nsi:#9A3F57;
@@ -25,7 +25,7 @@
 
   /* ── en-tête personnel ── */
   .hero{margin:30px 2px 8px}
-  .hero .hi{font-family:var(--font-mono);font-size:11px;text-transform:uppercase;letter-spacing:.16em;color:var(--fg3)}
+  .hero .hi{font-size:12px;text-transform:uppercase;letter-spacing:.07em;font-weight:700;color:var(--fg3)}
   .hero h1{font-family:var(--font-display);font-weight:500;font-size:clamp(28px,3.4vw,40px);line-height:1.04;
     letter-spacing:var(--tracking-tight);margin:7px 0 0}
   .hero h1 em{font-style:normal;color:var(--orange-600)}
@@ -46,7 +46,7 @@
   .streak.cold .flame{filter:grayscale(1);opacity:.5}
   .streak .sv{font-family:var(--font-display);font-weight:600;font-size:24px;line-height:1;color:var(--orange-600);font-feature-settings:'tnum' 1}
   .streak.cold .sv{color:var(--fg3)}
-  .streak .sl{font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--fg3);margin-top:3px}
+  .streak .sl{font-size:11px;color:var(--fg3);margin-top:3px}
   @media(max-width:560px){ .streak{border-left:0;padding-left:0;width:100%} }
 
   /* ── contrôle identité + (manager) recherche ── */
@@ -70,7 +70,7 @@
 
   /* ── focus : ce qui ne peut pas attendre ── */
   .focus{margin:24px 0 6px}
-  .focus .ft{font-family:var(--font-mono);font-size:11px;text-transform:uppercase;letter-spacing:.13em;color:var(--orange-600);font-weight:700;margin:0 2px 11px}
+  .focus .ft{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--orange-600);font-weight:700;margin:0 2px 11px}
   .fcard{display:grid;grid-template-columns:auto 1fr auto;gap:15px;align-items:center;
     background:var(--surface);border:1px solid var(--orange-300);border-left:4px solid var(--orange-500);
     border-radius:var(--radius-lg,16px);padding:16px 19px;box-shadow:0 6px 22px rgba(214,106,20,.10);margin-bottom:10px;transition:.13s}
@@ -109,18 +109,18 @@
   .info{min-width:0}
   .info .pt{font-weight:600;font-size:14.5px;line-height:1.25;color:var(--fg1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .info .ps{font-size:12px;color:var(--fg3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .info .ps2{font-family:var(--font-mono);font-size:10.5px;color:var(--fg3);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.01em}
+  .info .ps2{font-size:11.5px;color:var(--fg3);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .info .ps2 b{color:var(--fg2);font-weight:600} .info .ps2 .hard{color:var(--orange-600);font-weight:700}
   .info .ps2 .sep{opacity:.4;margin:0 3px}
   .meta{display:flex;gap:7px;align-items:center;flex:0 0 auto}
-  .tag{font-family:var(--font-mono);font-size:9.5px;font-weight:700;letter-spacing:.04em;padding:4px 9px;border-radius:var(--radius-pill);text-transform:uppercase;white-space:nowrap}
+  .tag{font-size:10.5px;font-weight:700;padding:4px 10px;border-radius:var(--radius-pill);white-space:nowrap}
   .tag.late{background:var(--danger);color:#fff}
   .tag.p0{background:var(--orange-500);color:var(--fg-on-orange,#fff)}
   .tag.block{background:var(--ink-950);color:#fff}
   .tag.wait{background:var(--orange-50,#fff4ec);color:var(--orange-700)}
   .tag.dl{background:var(--paper-100);color:var(--fg2)}
-  .shared{font-family:var(--font-mono);font-size:9px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
-    color:var(--fg2);background:var(--paper-100);padding:1px 6px;border-radius:var(--radius-pill)}
+  .shared{font-size:10px;font-weight:700;
+    color:var(--fg2);background:var(--paper-100);padding:1px 7px;border-radius:var(--radius-pill)}
 
   /* manager : petite étiquette responsable (lecture seule ici, réattribution sur la fiche) */
   .who-tag{font-size:12px;color:var(--fg2);font-weight:600;white-space:nowrap}
@@ -145,7 +145,7 @@
 
   /* ── cockpit manager ── */
   .cockpit{margin:18px 0 8px;display:flex;flex-direction:column;gap:10px}
-  .ck-label{font-family:var(--font-mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.12em;color:var(--fg3);font-weight:700;margin-bottom:2px}
+  .ck-label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--fg3);font-weight:700;margin-bottom:2px}
   .ck-links{display:flex;flex-wrap:wrap;gap:7px}
   .ck-link{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--fg2);
     border:1px solid var(--border);border-radius:var(--radius-pill);padding:7px 13px;text-decoration:none;transition:.12s;white-space:nowrap}
@@ -160,7 +160,7 @@
   .ckp.ck-late .ckav{background:var(--danger)}
   .ckp .cki{flex:1;min-width:0}
   .ckp .ckn{font-weight:600;font-size:13px;color:var(--fg1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .ckp .cks{font-size:10.5px;color:var(--fg3);margin-top:1px;font-family:var(--font-mono)}
+  .ckp .cks{font-size:11px;color:var(--fg3);margin-top:1px}
   .ckp .ck-badge{font-size:10px;font-weight:700;color:var(--danger);background:var(--danger-bg);
     border-radius:5px;padding:2px 5px;margin-left:auto;flex:0 0 auto}
   @media(max-width:560px){.ck-people{grid-template-columns:1fr 1fr}}
@@ -170,7 +170,7 @@
   .allclear .big{font-family:var(--font-display);font-weight:500;font-size:30px;color:var(--success);letter-spacing:var(--tracking-tight)}
   .allclear .sm{color:var(--fg2);font-size:14.5px;margin-top:8px}
   .empty{text-align:center;color:var(--fg3);padding:40px 20px;font-size:14.5px}
-  .src{font-family:var(--font-mono);font-size:10.5px;color:var(--fg4);margin-top:26px;text-align:right}
+  .src{font-size:11.5px;color:var(--fg4);margin-top:26px;text-align:right}
 
   @media (max-width:760px){
     .shell{padding:18px 16px 80px}
@@ -226,9 +226,9 @@
 </div>
 
 <script src="https://unpkg.com/lucide@1.21.0"></script>
-<script src="supa.js?v=20260639"></script>
-<script src="ui.js?v=20260639"></script>
-<script src="chrome.js?v=20260637"></script>
+<script src="supa.js?v=20260710"></script>
+<script src="ui.js?v=20260710"></script>
+<script src="chrome.js?v=20260710"></script>
 <script>
 "use strict";
 /* ============================================================
