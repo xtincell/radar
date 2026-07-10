@@ -12,6 +12,8 @@ import { toWebRequest, writeWebResponse } from "./request-adapter.js";
 import { serveStatic } from "./static.js";
 import { openKv } from "./kv-sqlite.js";
 import { initDb, handleRest, query as pgQuery, hasDb } from "./pgrest.js";
+import { handleVisuelUpload, serveVisuel, handleVisuelDelete } from "./visuels.js";
+import { handleIngest } from "./ingest.js";
 import * as middleware from "../functions/_middleware.js";
 import * as token from "../functions/token.js";
 import * as profil from "../functions/profil.js";
@@ -54,6 +56,11 @@ async function dispatch(context) {
 
   if (pathname.startsWith("/rest/v1/")) return handleRest(context);
   if (pathname === "/jour.json") return jourJson();
+  // Visuels de livrables — derrière le mur (pas dans la liste bypass de la middleware).
+  if (pathname === "/ingest" && method === "POST") return handleIngest(context);
+  if (pathname === "/visuels" && method === "POST") return handleVisuelUpload(context);
+  if (pathname.startsWith("/visuels/") && method === "GET") return serveVisuel(context);
+  if (pathname.startsWith("/visuels/") && method === "DELETE") return handleVisuelDelete(context);
   if (pathname === "/token" && method === "GET") return token.onRequestGet(context);
   if (pathname === "/profil" && method === "GET") return profil.onRequestGet(context);
   if (pathname === "/profil" && method === "POST") return profil.onRequestPost(context);

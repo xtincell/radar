@@ -26,6 +26,8 @@ const LABEL = {
   closed:     { e: "📦", t: "Clôturé / livrable" },
   reopened:   { e: "🔓", t: "Rouvert" },
   deleted:    { e: "🗑️", t: "Supprimé" },
+  asset:          { e: "🖼️", t: "Visuel ajouté" },
+  asset_deleted:  { e: "🖼️", t: "Visuel retiré" },
 };
 // sous-type des créations selon le niveau
 const CREATED_BY_ENTREE = {
