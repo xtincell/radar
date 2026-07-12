@@ -40,11 +40,13 @@ function MjSection({ title, n, children, tone }) {
 
 // ---- Volet 1 : Ma todo (vue member — verrouillée sur la personne) ----
 function MjTodoView({ done, setDone }) {
-  const [who, setWho] = useState('Laure Pemha');
+  // pré-sélection = identité connectée (/profil) ; repli démo si pas d'identité
+  const [who, setWho] = useState(() => (window.MTG_IDENTITY && window.MTG_IDENTITY.person) || TEAM_BASE[0] || 'Laure Pemha');
   const today = new Date(new Date().toDateString());
   const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   const tIso = iso(today);
-  const mine = ALL_BRIEFS.filter((b) => isActiveP(b) && b.responsable === who);
+  // co-responsables inclus (« Loïc Papin / Serge », « Nelson & Vanelle »…)
+  const mine = ALL_BRIEFS.filter((b) => isActiveP(b) && who && (b.responsable || '').includes(who));
   const isDone = (b) => !!done[b.ndeg];
   const doneToday = mine.filter(isDone);
   const open = mine.filter((b) => !isDone(b));
