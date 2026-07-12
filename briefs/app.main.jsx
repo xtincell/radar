@@ -95,6 +95,7 @@ function landingPref() {
 function App() {
   const [nav, setNavState] = useState(() => labelFromHash() || landingPref() || "Vue d'ensemble");
   const [ident, setIdent] = useState(null);
+  const [dataV, setDataV] = useState(0);
   const navTouched = useRef(Boolean(labelFromHash() || landingPref()));
   const isMobile = useIsMobile();
   const [navOpen, setNavOpen] = useState(false);
@@ -116,6 +117,15 @@ function App() {
     const onHash = () => { const l = labelFromHash(); if (l) { navTouched.current = true; setNavState(l); } };
     window.addEventListener('hashchange', onHash);
     return () => window.removeEventListener('hashchange', onHash);
+  }, []);
+
+  // données réelles : live-data.jsx remplace les données de démo du kit puis
+  // émet 'radar:data' — on remonte la vue courante pour re-calculer ses dérivés
+  useEffect(() => {
+    const onData = () => setDataV((v) => v + 1);
+    window.addEventListener('radar:data', onData);
+    if (window.__loadLiveData) window.__loadLiveData();
+    return () => window.removeEventListener('radar:data', onData);
   }, []);
 
   // identité réelle : /profil (middleware Basic) → { ok, role, person, email }
@@ -186,8 +196,14 @@ function App() {
         <Sidebar active={nav} onNavigate={go} ident={ident} />
       )}
       <main style={{ flex: 1, minWidth: 0, padding: isMobile ? '74px 14px 46px' : '26px 30px 40px' }}>
-        <Page ident={ident} />
+        <Page key={nav + ':' + dataV} ident={ident} />
       </main>
+      {window.__DATA_MODE === 'demo' && (
+        <div style={{ position: 'fixed', right: 14, bottom: 14, zIndex: 200, display: 'flex', alignItems: 'center', gap: 8, background: 'var(--ink-950)', color: '#F7F2EA', borderRadius: 'var(--radius-pill)', padding: '8px 15px', fontSize: 12, fontWeight: 600, boxShadow: 'var(--shadow-lg)' }}>
+          <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#C99A5B' }}></span>
+          Données de démonstration — base injoignable
+        </div>
+      )}
     </div>
   );
 }
