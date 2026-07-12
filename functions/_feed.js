@@ -72,7 +72,7 @@ async function fetchEvents(env, limit, kind) {
 function toItem(ev, origin) {
   const lab = (ev.kind === "created" && CREATED_BY_ENTREE[ev.entree]) || LABEL[ev.kind] || { e: "•", t: ev.kind };
   const projet = ev.projet || "(sans titre)";
-  const link = `${origin}/tache.html?code=${encodeURIComponent(ev.ndeg || "")}`;
+  const link = `${origin}/#/tache/${encodeURIComponent(ev.ndeg || "")}`;
   const who = (ev.resp_new || ev.resp_old || "").trim();
   const detail = [ev.client, ev.summary, who && "→ " + who].filter(Boolean).join(" · ");
   return {
@@ -103,7 +103,7 @@ function renderRSS(items, origin, name) {
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>${xmlEsc(name)} — Activité du pipe</title>
-    <link>${xmlEsc(origin)}/radar.html</link>
+    <link>${xmlEsc(origin)}/</link>
     <atom:link href="${xmlEsc(origin)}/feed.xml" rel="self" type="application/rss+xml"/>
     <description>Journal temps réel : créations, statuts, réattributions, échéances, gels, clôtures — tracker créatif.</description>
     <language>fr</language>
@@ -118,7 +118,7 @@ function renderJSON(items, origin, name) {
   return JSON.stringify({
     version: "https://jsonfeed.org/version/1.1",
     title: `${name} — Activité du pipe`,
-    home_page_url: origin + "/radar.html",
+    home_page_url: origin + "/",
     feed_url: origin + "/activity.json",
     items: items.map(e => ({
       id: e.id,

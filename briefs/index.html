@@ -1,35 +1,68 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="utf-8">
-<script>try{if(localStorage.getItem("radar:theme")==="dark")document.documentElement.dataset.theme="dark";}catch(e){}</script>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Radar</title>
-<style>html,body{height:100%;margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#1a120b;color:#f5ede2;display:grid;place-items:center}</style>
+  <meta charset="utf-8">
+  <script>try{if(localStorage.getItem("radar:theme")==="dark")document.documentElement.dataset.theme="dark";}catch(e){}</script>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Le Radar — pilotage créa</title>
+  <link rel="icon" href="assets/logo/mark.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="colors_and_type.css">
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; }
+    body { font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
+    button { font-family: var(--font-sans); }
+    .r26-icon svg { display: block; }
+    /* Responsive : les grilles inline passent en 1 colonne, les panneaux sticky se posent */
+    @media (max-width: 1120px) {
+      main [style*="grid-template-columns"] { grid-template-columns: 1fr !important; }
+      main [style*="position: sticky"] { position: static !important; }
+    }
+    /* Mobile : les rangées type tableau défilent horizontalement plutôt que d'écraser */
+    @media (max-width: 760px) {
+      main [style*="border-radius: var(--radius-xl)"] { overflow-x: auto !important; }
+      main h1, main [style*="font-size: 34px"] { font-size: 26px !important; }
+    }
+  </style>
+  <!-- Runtimes auto-hébergés (briefs/vendor) — aucun CDN, comme les polices. -->
+  <script src="vendor/lucide.min.js"></script>
+  <script src="vendor/react.production.min.js"></script>
+  <script src="vendor/react-dom.production.min.js"></script>
+  <script src="vendor/babel.min.js"></script>
 </head>
 <body>
-<p>Ouverture du RADAR… <a href="radar.html" style="color:#ff7a1a">Cliquer ici si rien ne se passe</a></p>
-<script>
-"use strict";
-/* Atterrissage : préférence personnelle d'abord (réglable via la puce identité,
-   clé radar:landing), sinon par rôle — owner/supervisor → Direction (synthèse),
-   member → À faire (ses tâches). /profil injoignable → cockpit historique. */
-(function(){
-  var go = function(href){ location.replace(href); };
-  try{
-    var pref = localStorage.getItem("radar:landing");
-    if(pref){ go(pref); return; }
-  }catch(e){}
-  var timer = setTimeout(function(){ go("radar.html"); }, 2500); // filet : jamais bloqué ici
-  fetch("/profil", {cache:"no-store"})
-    .then(function(r){ return r.ok ? r.json() : null; })
-    .then(function(d){
-      clearTimeout(timer);
-      var role = (d && d.ok && d.role) || "";
-      go(role==="member" ? "todo.html" : (role==="owner"||role==="supervisor") ? "direction.html" : "radar.html");
-    })
-    .catch(function(){ clearTimeout(timer); go("radar.html"); });
-})();
-</script>
+  <div id="root"></div>
+  <script src="image-slot.js"></script>
+  <script type="text/babel" src="primitives.jsx"></script>
+  <script type="text/babel" src="radar-helpers.jsx"></script>
+  <script type="text/babel" src="stakeholders.jsx"></script>
+  <script type="text/babel" src="brief-modal.jsx"></script>
+  <script type="text/babel" src="sidebar.main.jsx"></script>
+  <script type="text/babel" src="header.main.jsx"></script>
+  <script type="text/babel" src="stat-strip.jsx"></script>
+  <script type="text/babel" src="overview-row1.jsx"></script>
+  <script type="text/babel" src="overview-row2.jsx"></script>
+  <script type="text/babel" src="overview-row3.jsx"></script>
+  <script type="text/babel" src="overview-radar.jsx"></script>
+  <script type="text/babel" src="pages-projet-detail.jsx"></script>
+  <script type="text/babel" src="pages-demande-detail.jsx"></script>
+  <script type="text/babel" src="pages-tache-detail.jsx"></script>
+  <script type="text/babel" src="pages-projets.jsx"></script>
+  <script type="text/babel" src="pages-taches.jsx"></script>
+  <script type="text/babel" src="pages-equipe.jsx"></script>
+  <script type="text/babel" src="pages-rapports.jsx"></script>
+  <script type="text/babel" src="pages-direction-wiki.jsx"></script>
+  <script type="text/babel" src="pages-entrees.jsx"></script>
+  <script type="text/babel" src="pages-gantt.jsx"></script>
+  <script type="text/babel" src="pages-eval-dept.jsx"></script>
+  <script type="text/babel" src="pages-ticket.jsx"></script>
+  <script type="text/babel" src="data-gabarits-schema.jsx"></script>
+  <script type="text/babel" src="data-gabarits.jsx"></script>
+  <script type="text/babel" src="pages-gabarits.jsx"></script>
+  <script type="text/babel" src="pages-livraison.jsx"></script>
+  <script type="text/babel" src="pages-majournee.jsx"></script>
+  <script type="text/babel" src="pages-etalons.jsx"></script>
+  <script type="text/babel" src="pages-studio.jsx"></script>
+  <script type="text/babel" src="app.main.jsx"></script>
 </body>
 </html>
