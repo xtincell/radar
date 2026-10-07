@@ -101,4 +101,12 @@ node --check <fichier>.js   # vérif syntaxe rapide
 npm start                   # lance le serveur
 ```
 
-Aucun framework, aucun bundler : stdlib Node + `pg`.
+Backend : aucun framework, aucun bundler — stdlib Node + `pg`.
+
+Front : SPA `briefs/index.html` construite sur le design system **Dashboard R26**
+(React 18 + Babel standalone, sans étape de build — les `.jsx` sont compilés au
+chargement). Runtimes auto-hébergés dans `briefs/vendor/`, polices dans
+`briefs/fonts/` : aucun CDN. Routage par hash (`#/vue`), atterrissage par rôle
+via `/profil`. La couche données (`briefs/supa.js` + `briefs/live-data.jsx`)
+remplace les données de démonstration du kit par les lignes de la base quand
+l'API répond ; sinon l'app affiche la démo avec une pastille explicite.

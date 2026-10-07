@@ -42,7 +42,7 @@ function securityHeaders() {
 async function resolveFile(pathname) {
   // Cas particulier étroit : la seule cible extensionless du site (_redirects -> /radar).
   // Rien d'autre ne dépend d'une résolution d'URL "propre" généralisée.
-  const candidates = pathname === "/radar" ? ["/radar.html"] : [pathname];
+  const candidates = pathname === "/radar" ? ["/index.html"] : [pathname];
   for (const candidate of candidates) {
     const rel = decodeURIComponent(candidate).replace(/^\/+/, "");
     const abs = path.normalize(path.join(BRIEFS_DIR, rel));
