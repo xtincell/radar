@@ -12,7 +12,7 @@
 import { mkdir, writeFile, unlink, open, access, constants, readdir, stat } from "node:fs/promises";
 import path from "node:path";
 import crypto from "node:crypto";
-import { query as pgQuery, emitEvent, hasDb, initDb } from "./pgrest.js";
+import { query as pgQuery, emitEvent, transaction, hasDb, initDb } from "./pgrest.js";
 import { identityFor } from "../functions/_authz.js";
 
 const MAX_BODY = 4 * 1024 * 1024;   // corps JSON (base64 ≈ +33%)
@@ -28,6 +28,18 @@ const json = (obj, status = 200) => new Response(JSON.stringify(obj), {
 });
 function secu() {
   return { "X-Content-Type-Options": "nosniff", "Referrer-Policy": "strict-origin-when-cross-origin", "X-Frame-Options": "SAMEORIGIN" };
+}
+
+function accessible(brief, context) {
+  return context.data?.fullAccess || !brief.private_to || brief.private_to === identityFor(context.data?.email || '').person;
+}
+function rejected(message, status) { return Object.assign(new Error(message), { status }); }
+async function targetBrief(client, ndeg, context) {
+  const { rows } = await client.query('select * from briefs where ndeg=$1 for share', [ndeg]);
+  if (!rows.length) throw rejected('brief inconnu', 404);
+  if (rows.length !== 1) throw rejected('code de brief ambigu : rattachement à qualifier', 409);
+  if (!accessible(rows[0], context)) throw rejected('brief confidentiel', 403);
+  return rows[0];
 }
 
 // ---- répertoire de stockage : env, sinon /data (volume Docker), sinon ./data ----
@@ -77,7 +89,7 @@ function sniffMime(buf) {
 // fichier s'affiche cassée et se corrige à la main, on ne détruit pas de la donnée.
 export async function purgeOrphans() {
   if (!hasDb()) return 0;
-  await initDb();
+  if (!await initDb()) return 0;
   let dir;
   try { dir = await visuelsDir(); } catch { return 0; }
   const { rows } = await pgQuery("select filename from brief_assets", []);
@@ -98,7 +110,7 @@ export async function purgeOrphans() {
 // ---- POST /visuels — corps JSON { ndeg, caption?, data: dataURL base64 } -----
 export async function handleVisuelUpload(context) {
   if (!hasDb()) return json({ message: "base non configurée" }, 503);
-  await initDb();
+  if (!await initDb()) return json({ message: "base indisponible" }, 503);
   const email = (context.data && context.data.email) || "";
 
   const body = await readBodyCapped(context.request, MAX_BODY);
@@ -120,16 +132,6 @@ export async function handleVisuelUpload(context) {
   const sniffed = sniffMime(bin);
   if (!sniffed || sniffed !== declared) return json({ message: "contenu image invalide (signature ≠ type déclaré)" }, 415);
 
-  // brief cible : doit exister. Un brief confidentiel accepte un visuel de la
-  // personne concernée uniquement — et les métadonnées restent scopées côté
-  // REST (jointure private_to dans pgrest), donc invisibles aux autres.
-  const { rows } = await pgQuery("select id, client, projet, entree, private_to from briefs where ndeg = $1 limit 1", [ndeg]);
-  if (!rows.length) return json({ message: "brief inconnu: " + ndeg }, 404);
-  const b = rows[0];
-  const priv = String(b.private_to || "").trim();
-  if (priv && priv !== (identityFor(email).person || "") && !(context.data && context.data.fullAccess))
-    return json({ message: "brief confidentiel" }, 403);
-
   // quota global du volume (métadonnées font foi ; la purge d'orphelins réaligne le disque)
   const { rows: q } = await pgQuery("select coalesce(sum(bytes),0)::bigint as used from brief_assets", []);
   if (Number(q[0].used) + bin.length > QUOTA_BYTES)
@@ -140,27 +142,34 @@ export async function handleVisuelUpload(context) {
   await writeFile(path.join(dir, filename), bin);
   let row;
   try {
-    const ins = await pgQuery(
-      `insert into brief_assets (ndeg, client, projet, filename, mime, bytes, caption, created_by)
-       values ($1,$2,$3,$4,$5,$6,$7,$8) returning *`,
-      [ndeg, b.client, b.projet, filename, declared, bin.length, caption || null, email]);
-    row = ins.rows[0];
+    row = await transaction(async client => {
+      const b = await targetBrief(client, ndeg, context);
+      const ins = await client.query(
+        `insert into brief_assets (ndeg, client, projet, filename, mime, bytes, caption, created_by)
+         values ($1,$2,$3,$4,$5,$6,$7,$8) returning *`,
+        [ndeg, b.client, b.projet, filename, declared, bin.length, caption || null, email]);
+      await emitEvent(client, {
+        ndeg, entree: b.entree, client: b.client, projet: b.projet, kind: "asset",
+        resp_new: identityFor(email).person || email, summary: "Visuel ajouté" + (caption ? " : " + caption : ""),
+      }, b);
+      return ins.rows[0];
+    });
   } catch (e) {
     await unlink(path.join(dir, filename)).catch(() => {});
+    if (e.status) return json({ message: e.message }, e.status);
     throw e;
   }
-  await emitEvent({ query: pgQuery }, {
-    ndeg, entree: b.entree, client: b.client, projet: b.projet, kind: "asset",
-    resp_new: identityFor(email).person || email, summary: "Visuel ajouté" + (caption ? " : " + caption : ""),
-  });
   return json(row, 201);
 }
 
-// ---- GET /visuels/<filename> — service des binaires (cache fort) ------------
+// ---- GET /visuels/<filename> — la connaissance du nom n'est pas une permission
 export async function serveVisuel(context) {
   const { pathname } = new URL(context.request.url);
   const filename = decodeURIComponent(pathname.replace(/^\/visuels\//, ""));
   if (!SAFE_NAME.test(filename)) return new Response("404 — introuvable", { status: 404, headers: { "Content-Type": "text/plain; charset=utf-8", ...secu() } });
+  if (!hasDb() || !await initDb()) return json({ message: 'base indisponible' }, 503);
+  const { rows } = await pgQuery('select b.private_to from brief_assets a join briefs b on b.ndeg=a.ndeg where a.filename=$1', [filename]);
+  if (rows.length !== 1 || !accessible(rows[0], context)) return new Response('404 — introuvable', { status: 404, headers: { 'Cache-Control': 'no-store', ...secu() } });
   const dir = await visuelsDir();
   try {
     const handle = await open(path.join(dir, filename), "r");
@@ -168,8 +177,7 @@ export async function serveVisuel(context) {
       status: 200,
       headers: {
         "Content-Type": MIME_BY_EXT[path.extname(filename)] || "application/octet-stream",
-        // nom unique par contenu (uuid) → cache agressif sans ?v=
-        "Cache-Control": "public, max-age=31536000, immutable",
+        "Cache-Control": "private, no-store",
         ...secu(),
       },
     });
@@ -181,26 +189,33 @@ export async function serveVisuel(context) {
 // ---- DELETE /visuels/<id> — auteur, owner ou supervisor ----------------------
 export async function handleVisuelDelete(context) {
   if (!hasDb()) return json({ message: "base non configurée" }, 503);
-  await initDb();
+  if (!await initDb()) return json({ message: "base indisponible" }, 503);
   const email = (context.data && context.data.email) || "";
   const { pathname } = new URL(context.request.url);
   const id = Number(pathname.replace(/^\/visuels\//, ""));
   if (!Number.isFinite(id)) return json({ message: "id invalide" }, 400);
 
-  const { rows } = await pgQuery("select * from brief_assets where id = $1", [id]);
-  if (!rows.length) return json({ message: "visuel inconnu" }, 404);
-  const a = rows[0];
   const ident = identityFor(email);
-  const allowed = (context.data && context.data.fullAccess) || a.created_by === email ||
-    ident.role === "owner" || ident.role === "supervisor";
-  if (!allowed) return json({ message: "suppression réservée à l'auteur ou à un responsable" }, 403);
+  let a;
+  try {
+    a = await transaction(async client => {
+      const { rows } = await client.query("select * from brief_assets where id = $1 for update", [id]);
+      if (!rows.length) throw rejected('visuel inconnu', 404);
+      const asset = rows[0];
+      const b = await targetBrief(client, asset.ndeg, context);
+      const allowed = (context.data && context.data.fullAccess) || asset.created_by === email ||
+        ident.role === "owner" || ident.role === "supervisor";
+      if (!allowed) throw rejected("suppression réservée à l'auteur ou à un responsable", 403);
 
-  await pgQuery("delete from brief_assets where id = $1", [id]);
+      await client.query("delete from brief_assets where id = $1", [id]);
+      await emitEvent(client, {
+        ndeg: asset.ndeg, entree: b.entree, client: asset.client, projet: asset.projet, kind: "asset_deleted",
+        resp_new: ident.person || email, summary: "Visuel retiré",
+      }, b);
+      return asset;
+    });
+  } catch (e) { if (e.status) return json({ message: e.message }, e.status); throw e; }
   const dir = await visuelsDir();
   await unlink(path.join(dir, a.filename)).catch(() => {}); // tolérant si déjà absent
-  await emitEvent({ query: pgQuery }, {
-    ndeg: a.ndeg, client: a.client, projet: a.projet, kind: "asset_deleted",
-    resp_new: ident.person || email, summary: "Visuel retiré",
-  });
   return json({ ok: true });
 }

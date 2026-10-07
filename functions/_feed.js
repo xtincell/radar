@@ -8,12 +8,7 @@
 // Sorties : RSS 2.0 (feed.xml) et JSON Feed 1.1 (activity.json).
 // ============================================================
 "use strict";
-import { query as pgQuery, hasDb } from "../server/pgrest.js";
-
-// Repli PostgREST distant (legacy, seulement si DATABASE_URL absent) : aucune
-// valeur par défaut ici — fournir SUPA_URL / SUPA_KEY en env pour l'activer.
-const SUPA_URL = "";
-const SUPA_KEY = "";
+import { query as pgQuery, hasDb, initDb } from "../server/pgrest.js";
 
 // libellé + emoji par type d'événement
 const LABEL = {
@@ -26,6 +21,8 @@ const LABEL = {
   closed:     { e: "📦", t: "Clôturé / livrable" },
   reopened:   { e: "🔓", t: "Rouvert" },
   deleted:    { e: "🗑️", t: "Supprimé" },
+  updated:    { e: "✏️", t: "Dossier modifié" },
+  visibility: { e: "🔒", t: "Confidentialité modifiée" },
   asset:          { e: "🖼️", t: "Visuel ajouté" },
   asset_deleted:  { e: "🖼️", t: "Visuel retiré" },
 };
@@ -50,23 +47,20 @@ async function fetchEvents(env, limit, kind) {
   // Backend maison : lecture DIRECTE de la base Postgres (aucun HTTP, donc aucun mur
   // à retraverser — c'était la cause du 502 quand la source était le PostgREST distant).
   if (typeof hasDb === "function" && hasDb()) {
+    if (!await initDb()) throw new Error('base indisponible');
     const params = [];
-    let sql = "select id,at,ndeg,entree,client,projet,kind,statut_old,statut_new,resp_old,resp_new,summary from task_events";
-    if (kind) { params.push(kind); sql += ` where kind = $${params.length}`; }
+    let sql = `select e.id,e.at,e.ndeg,e.entree,e.client,e.projet,e.kind,e.statut_old,e.statut_new,e.resp_old,e.resp_new,e.summary
+      from task_events e where e.private_to = ''
+      and not exists (select 1 from briefs b where b.id=e.brief_id and coalesce(b.private_to,'') <> '')
+      and not exists (select 1 from task_events d where d.brief_id=e.brief_id and d.kind='deleted' and coalesce(d.private_to,'') <> '')`;
+    if (kind) { params.push(kind); sql += ` and e.kind = $${params.length}`; }
     sql += ` order by at desc limit ${lim}`;
     const { rows } = await pgQuery(sql, params);
-    return rows;
+    const unknown = await pgQuery('select count(*)::int as n from task_events where private_to is null', []);
+    return { rows, unqualified: unknown.rows[0].n };
   }
-  // Repli historique : PostgREST distant (uniquement si DATABASE_URL absent).
-  const url = (env && env.SUPA_URL) || SUPA_URL;
-  const key = (env && env.SUPA_KEY) || SUPA_KEY;
-  if (!url || !key) throw new Error("aucune source configurée (DATABASE_URL ou SUPA_URL/SUPA_KEY)");
-  const sel = "id,at,ndeg,entree,client,projet,kind,statut_old,statut_new,resp_old,resp_new,summary";
-  let q = `${url}/rest/v1/task_events?select=${sel}&order=at.desc&limit=${lim}`;
-  if (kind) q += `&kind=eq.${encodeURIComponent(kind)}`;
-  const r = await fetch(q, { headers: { apikey: key, Authorization: "Bearer " + key } });
-  if (!r.ok) throw new Error("PostgREST distant " + r.status);
-  return r.json();
+  // Un ancien PostgREST ne prouve ni la confidentialité historique ni courante.
+  throw new Error('flux non qualifié : backend Radar avec DATABASE_URL requis');
 }
 
 function toItem(ev, origin) {
@@ -90,7 +84,7 @@ function toItem(ev, origin) {
   };
 }
 
-function renderRSS(items, origin, name) {
+function renderRSS(items, origin, name, unqualified) {
   const body = items.map(e => `    <item>
       <title>${xmlEsc(e.title)}</title>
       <link>${xmlEsc(e.link)}</link>
@@ -105,7 +99,7 @@ function renderRSS(items, origin, name) {
     <title>${xmlEsc(name)} — Activité du pipe</title>
     <link>${xmlEsc(origin)}/radar.html</link>
     <atom:link href="${xmlEsc(origin)}/feed.xml" rel="self" type="application/rss+xml"/>
-    <description>Journal temps réel : créations, statuts, réattributions, échéances, gels, clôtures — tracker créatif.</description>
+    <description>${xmlEsc('Journal des mouvements publics qualifiés.' + (unqualified ? ` ${unqualified} événements anciens à qualifier ; historique incomplet.` : ''))}</description>
     <language>fr</language>
     <lastBuildDate>${rfc822(items[0] && items[0].when)}</lastBuildDate>
 ${body}
@@ -114,12 +108,13 @@ ${body}
 `;
 }
 
-function renderJSON(items, origin, name) {
+function renderJSON(items, origin, name, unqualified) {
   return JSON.stringify({
     version: "https://jsonfeed.org/version/1.1",
     title: `${name} — Activité du pipe`,
     home_page_url: origin + "/radar.html",
     feed_url: origin + "/activity.json",
+    _radar: { unqualified_events: unqualified, history_complete: unqualified === 0 },
     items: items.map(e => ({
       id: e.id,
       url: e.link,
@@ -150,17 +145,18 @@ export async function handleFeed(context, format) {
   const limit = Math.min(parseInt(url.searchParams.get("limit") || "60", 10) || 60, 200);
   const kind = url.searchParams.get("kind"); // filtre optionnel : created|status|reassigned|deadline|frozen|unfrozen|closed|reopened|deleted
 
-  let rows;
-  try { rows = await fetchEvents(env, limit, kind); }
+  let result;
+  try { result = await fetchEvents(env, limit, kind); }
   catch (e) { return new Response("Source indisponible : " + (e && e.message), { status: 502 }); }
+  const { rows, unqualified } = result;
   const items = rows.map(ev => toItem(ev, origin));
 
   if (format === "json") {
-    return new Response(renderJSON(items, origin, name), {
-      headers: { "content-type": "application/feed+json; charset=utf-8", "cache-control": "no-cache", "access-control-allow-origin": "*" },
+    return new Response(renderJSON(items, origin, name, unqualified), {
+      headers: { "content-type": "application/feed+json; charset=utf-8", "cache-control": "no-store", "access-control-allow-origin": "*", 'X-Radar-Unqualified-Events': String(unqualified) },
     });
   }
-  return new Response(renderRSS(items, origin, name), {
-    headers: { "content-type": "application/rss+xml; charset=utf-8", "cache-control": "no-cache", "access-control-allow-origin": "*" },
+  return new Response(renderRSS(items, origin, name, unqualified), {
+    headers: { "content-type": "application/rss+xml; charset=utf-8", "cache-control": "no-store", "access-control-allow-origin": "*", 'X-Radar-Unqualified-Events': String(unqualified) },
   });
 }

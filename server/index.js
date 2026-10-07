@@ -92,4 +92,4 @@ initDb().then((ok) => {
 })
   .catch((e) => console.error("[radar] initDb:", e && e.message));
 const RADAR_NAME = process.env.RADAR_NAME || "Radar";
-server.listen(PORT, () => console.log(`${RADAR_NAME} — écoute sur :${PORT}`));
+server.listen(PORT, process.env.HOST || '0.0.0.0', () => console.log(`${RADAR_NAME} — écoute sur :${PORT}`));
