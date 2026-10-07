@@ -38,12 +38,13 @@ const TABLES = {
   client_contacts: { pk: "id", cols: { id: "id", client: TEXT, data: JSONB, updated_at: TS } },
   comments: { pk: "id", cols: { id: "id", ndeg: TEXT, author: TEXT, involved: ARR, body: TEXT, kind: TEXT, created_at: TS } },
   app_config: { pk: "key", cols: { key: TEXT, value: JSONB } },
-  task_events: { pk: "id", cols: {
+  task_events: { pk: "id", readOnly: true, cols: {
+    brief_id: "id", private_to: TEXT,
     id: "id", at: TS, ndeg: TEXT, entree: TEXT, client: TEXT, projet: TEXT, kind: TEXT,
     statut_old: TEXT, statut_new: TEXT, resp_old: TEXT, resp_new: TEXT, summary: TEXT } },
   // Visuels de livrables. Lecture (et PATCH de caption) via REST ; création et
   // suppression UNIQUEMENT via /visuels (le fichier disque vit et meurt avec la ligne).
-  brief_assets: { pk: "id", noRestWrite: true, cols: {
+  brief_assets: { pk: "id", noRestWrite: true, patchCols: ['caption'], cols: {
     id: "id", ndeg: TEXT, client: TEXT, projet: TEXT, filename: TEXT, mime: TEXT,
     bytes: INT, caption: TEXT, created_by: TEXT, created_at: TS } },
 };
@@ -149,19 +150,20 @@ export function initDb() {
   _ready = (async () => {
     const client = await pool.connect();
     try {
+      await client.query("begin");
       await client.query(SCHEMA_SQL);
+      await client.query(readFileSync(new URL('./journal.sql', import.meta.url), 'utf8'));
       const { rows } = await client.query("select count(*)::int as n from briefs");
       // RADAR_SEED_CSV = chemin d'un CSV optionnel (colonnes INDEX.csv) pour peupler une
       // base vide au premier boot. Absent → instance vierge, aucune dépendance à un dossier local.
       const csvPath = process.env.RADAR_SEED_CSV;
       if (rows[0].n === 0 && csvPath) {
-        await client.query("begin");
         const seeded = await seedFromCsv(client, csvPath);
-        await client.query("commit");
         console.log(`[pgrest] schéma prêt · briefs vides → ${seeded} lignes semées depuis ${csvPath}`);
       } else {
         console.log(`[pgrest] schéma prêt · ${rows[0].n} briefs en base${!csvPath ? " (RADAR_SEED_CSV non défini)" : ""}`);
       }
+      await client.query("commit");
       return true;
     } catch (e) {
       try { await client.query("rollback"); } catch {}
@@ -223,41 +225,33 @@ function briefsScope(email, params) {
 }
 
 // ---- émission d'un événement de journal (task_events) ----------------------
-// `client` accepte un client de transaction OU le pool (utilisé par visuels.js).
-export async function emitEvent(client, ev) {
-  const cols = ["ndeg", "entree", "client", "projet", "kind", "statut_old", "statut_new", "resp_old", "resp_new", "summary"];
+// Le média et sa trace partagent la transaction et le brief verrouillé.
+export async function emitEvent(client, ev, brief) {
+  if (!brief?.id) throw new Error('rattachement de journal non qualifié');
+  const cols = ["brief_id", "private_to", "ndeg", "entree", "client", "projet", "kind", "statut_old", "statut_new", "resp_old", "resp_new", "summary"];
+  ev = { ...ev, brief_id: brief.id, private_to: brief.private_to || '' };
   const vals = cols.map((c) => ev[c] ?? null);
   const ph = cols.map((_, i) => "$" + (i + 1)).join(",");
-  try { await client.query(`insert into task_events (${cols.join(",")}) values (${ph})`, vals); }
-  catch (e) { console.warn("[pgrest] task_events KO:", e && e.message); }
-}
-const CLOSED = new Set(["Livré", "Livre", "Closed", "Clôturé", "Cloture", "Terminé", "Termine"]);
-function kindFromChange(oldRow, patch) {
-  const ns = patch.statut, os = oldRow.statut;
-  if (ns != null && ns !== os) {
-    if (ns === "Frozen") return { kind: "frozen", summary: "Tâche gelée" };
-    if (os === "Frozen") return { kind: "unfrozen", summary: "Tâche réactivée" };
-    if (CLOSED.has(ns)) return { kind: "closed", summary: "Clôturé : " + ns };
-    if (CLOSED.has(os)) return { kind: "reopened", summary: "Rouvert : " + ns };
-    return { kind: "status", summary: `${os || "—"} → ${ns}` };
-  }
-  if (patch.responsable != null && patch.responsable !== oldRow.responsable)
-    return { kind: "reassigned", summary: `${oldRow.responsable || "—"} → ${patch.responsable}` };
-  if (patch.deadline != null && patch.deadline !== oldRow.deadline)
-    return { kind: "deadline", summary: `Échéance → ${patch.deadline || "—"}` };
-  return null;
+  await client.query(`insert into task_events (${cols.join(",")}) values (${ph})`, vals);
 }
 
+export async function transaction(work) {
+  const client = await pool.connect();
+  try { await client.query('begin'); const result = await work(client); await client.query('commit'); return result; }
+  catch (e) { await client.query('rollback').catch(() => {}); throw e; }
+  finally { client.release(); }
+}
 // ---- handler principal : /rest/v1/<table> ----------------------------------
 export async function handleRest(context) {
   if (!pool) return json({ message: "base non configurée" }, 503);
-  await initDb(); // idempotent + mémoïsé : garantit schéma prêt avant toute requête
+  if (!await initDb()) return json({ message: "base indisponible" }, 503);
   const { request } = context;
   const url = new URL(request.url);
   const table = decodeURIComponent(url.pathname.replace(/^\/rest\/v1\//, "").split("/")[0].split("?")[0]);
   if (!TABLES[table]) return json({ message: "table inconnue: " + table }, 404);
   const email = (context.data && context.data.email) || "";
   const method = request.method.toUpperCase();
+  if (TABLES[table].readOnly && method !== 'GET') return json({ message: 'journal en lecture seule' }, 405);
   // brief_assets : créer/supprimer passe par /visuels (sinon fichiers disque orphelins).
   if (TABLES[table].noRestWrite && (method === "POST" || method === "DELETE"))
     return json({ message: "utiliser POST/DELETE /visuels pour cette table" }, 405);
@@ -281,14 +275,23 @@ export async function handleRest(context) {
     if (!isCol(table, k)) return json({ message: "filtre sur colonne inconnue: " + k }, 400);
     where.push(buildFilter(table, k, v, params));
   }
+  const hasUserFilter = where.length > 0;
   // Scope private_to appliqué SAUF en accès machine full-access (MCP/Claude/Dan).
   if (table === "briefs" && !(context.data && context.data.fullAccess)) where.push(briefsScope(email, params));
   // Même confidentialité pour les visuels : les métadonnées d'un brief privé ne
   // sont visibles que par la personne concernée (jointure sur le ndeg).
-  if (table === "brief_assets" && !(context.data && context.data.fullAccess)) {
+  if ((table === "brief_assets" || table === 'comments') && !(context.data && context.data.fullAccess)) {
     const me = identityFor(email || "").person || "";
     params.push(me);
-    where.push(`exists (select 1 from briefs b where b.ndeg = brief_assets.ndeg and (b.private_to is null or b.private_to = '' or b.private_to = $${params.length}))`);
+    where.push(`(select count(*) from briefs b where b.ndeg = ${table}.ndeg) = 1`);
+    where.push(`exists (select 1 from briefs b where b.ndeg = ${table}.ndeg and (b.private_to is null or b.private_to = '' or b.private_to = $${params.length}))`);
+  }
+  if (table === 'task_events' && !(context.data && context.data.fullAccess)) {
+    const me = identityFor(email).person || '';
+    params.push(me);
+    where.push(`(private_to = '' or private_to = $${params.length})`);
+    where.push(`not exists (select 1 from briefs b where b.id = task_events.brief_id and coalesce(b.private_to,'') <> '' and b.private_to <> $${params.length})`);
+    where.push(`not exists (select 1 from task_events d where d.brief_id=task_events.brief_id and d.kind='deleted' and coalesce(d.private_to,'') <> '' and d.private_to <> $${params.length})`);
   }
 
   try {
@@ -309,14 +312,21 @@ export async function handleRest(context) {
       const off = parseInt(url.searchParams.get("offset") || "", 10);
       if (Number.isFinite(off)) sql += ` offset ${Math.max(off, 0)}`;
       const { rows } = await pool.query(sql, params);
-      return json(rows);
+      const headers = {};
+      if (table === 'task_events') {
+        const unknown = await pool.query('select count(*)::int as n from task_events where private_to is null');
+        headers['X-Radar-Unqualified-Events'] = String(unknown.rows[0].n);
+      }
+      return json(rows, 200, headers);
     }
 
     if (method === "POST") {
       let body = await request.json().catch(() => null);
-      if (!body) return json({ message: "corps JSON attendu" }, 400);
+      if (!body || typeof body !== 'object') return json({ message: "corps JSON attendu" }, 400);
       const list = Array.isArray(body) ? body : [body];
       if (!list.length) return json([]);
+      if (list.some(rec => !rec || typeof rec !== 'object' || Array.isArray(rec)
+        || !Object.keys(rec).some(k => isCol(table, k) && k !== 'id'))) return json({ message: 'aucune colonne reconnue à insérer' }, 400);
       const client = await pool.connect();
       try {
         await client.query("begin");
@@ -331,10 +341,6 @@ export async function handleRest(context) {
             : `insert into ${table} default values${ret}`;
           const res = await client.query(q, vals);
           if (res.rows[0]) out.push(res.rows[0]);
-          if (table === "briefs") {
-            const row = res.rows[0] || rec;
-            await emitEvent(client, { ndeg: row.ndeg, entree: row.entree, client: row.client, projet: row.projet, kind: "created", statut_new: row.statut, resp_new: row.responsable, summary: "Nouvelle entrée" });
-          }
         }
         await client.query("commit");
         return json(wantRepr ? out : [], 201);
@@ -343,24 +349,19 @@ export async function handleRest(context) {
     }
 
     if (method === "PATCH" || method === "DELETE") {
-      if (!where.length) return json({ message: "écriture sans filtre refusée" }, 400);
+      if (!hasUserFilter) return json({ message: "écriture sans filtre refusée" }, 400);
       const client = await pool.connect();
       try {
         await client.query("begin");
-        // état avant (pour le journal) — limité aux briefs
-        let before = [];
-        if (table === "briefs") {
-          const r = await client.query(`select * from ${table} where ${where.join(" and ")}`, params);
-          before = r.rows;
-        }
         let result;
         if (method === "DELETE") {
           result = await client.query(`delete from ${table} where ${where.join(" and ")}${wantRepr ? " returning *" : ""}`, params);
-          if (table === "briefs") for (const b of before)
-            await emitEvent(client, { ndeg: b.ndeg, client: b.client, projet: b.projet, kind: "deleted", statut_old: b.statut, resp_old: b.responsable, summary: "Supprimé" });
         } else {
           const body = await request.json().catch(() => ({}));
           const patch = body && typeof body === "object" ? body : {};
+          if (TABLES[table].patchCols && Object.keys(patch).some(k => !TABLES[table].patchCols.includes(k))) {
+            await client.query('rollback'); return json({ message: 'seule la légende du visuel est modifiable ici' }, 400);
+          }
           const keys = Object.keys(patch).filter((k) => isCol(table, k) && k !== TABLES[table].pk);
           if (!keys.length) { await client.query("rollback"); return json({ message: "aucune colonne à modifier" }, 400); }
           // updated_at auto si la colonne existe
@@ -368,10 +369,6 @@ export async function handleRest(context) {
           const setParams = params.slice(); // WHERE d'abord ($1..$W), puis les SET ($W+1..)
           const sets = keys.map((k) => { setParams.push(paramForWrite(colType(table, k), patch[k])); return `${k} = $${setParams.length}`; });
           result = await client.query(`update ${table} set ${sets.join(",")} where ${where.join(" and ")}${wantRepr ? " returning *" : ""}`, setParams);
-          if (table === "briefs") for (const b of before) {
-            const ch = kindFromChange(b, patch);
-            if (ch) await emitEvent(client, { ndeg: b.ndeg, client: b.client, projet: b.projet, kind: ch.kind, statut_old: b.statut, statut_new: patch.statut ?? b.statut, resp_old: b.responsable, resp_new: patch.responsable ?? b.responsable, summary: ch.summary });
-          }
         }
         await client.query("commit");
         return json(wantRepr ? (result.rows || []) : []);

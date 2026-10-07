@@ -13,7 +13,7 @@
 //     « Retour client à trier » portant le texte brut (fallback:true).
 // ============================================================
 "use strict";
-import { query as pgQuery, emitEvent, hasDb, initDb } from "./pgrest.js";
+import { query as pgQuery, transaction, hasDb, initDb } from "./pgrest.js";
 import { identityFor } from "../functions/_authz.js";
 
 const OLLAMA_URL = (process.env.OLLAMA_URL || "http://127.0.0.1:11434").replace(/\/$/, "");
@@ -30,13 +30,13 @@ const todayISO = () => {
 };
 
 // ---- contexte : l'existant sert de référentiel au modèle --------------------
-async function loadContext() {
-  const { rows: masters } = await pgQuery(
+async function loadContext(query = pgQuery) {
+  const { rows: masters } = await query(
     `select ndeg, client, marque, projet, statut from briefs
      where entree = 'Maître' and coalesce(private_to,'') = ''
        and coalesce(statut,'') not in ('Bouclé','Archivé','Frozen','Gelé')
      order by ndeg desc limit 200`, []);
-  const { rows: all } = await pgQuery("select ndeg, client, parent, entree from briefs", []);
+  const { rows: all } = await query("select ndeg, client, parent, entree from briefs", []);
   return { masters, all };
 }
 
@@ -144,34 +144,32 @@ function normalizeItems(items, masters, clientHint) {
 
 // ---- insertion (statut Reçu, brief déduit → file « À valider ») -------------
 async function insertTasks(tasks, rawText, person) {
-  const { all } = await loadContext();
-  const taken = [];
-  const created = [];
-  const today = todayISO();
-  for (const t of tasks) {
-    const ndeg = t.revision ? nextRevisionCode(all, taken, t.parent) : nextProjectCode(all, taken, clientPrefix(all, t.client));
-    taken.push(ndeg);
-    const comm = "Retour client (ingest" + (person ? " · " + person : "") + ") : " + (t.resume || String(rawText).slice(0, 300));
-    const { rows } = await pgQuery(
-      `insert into briefs (ndeg, client, marque, projet, niveau, type, statut, prio, deadline,
-                           livrables, date_reception, entree, parent, comm, entre_par, brief_etat)
-       values ($1,$2,$3,$4,$5,$6,'Reçu',$7,$8,$9,$10,$11,$12,$13,$14,'déduit') returning *`,
-      [ndeg, t.client, t.marque, t.projet, t.revision ? "Révision" : "Maître", t.type, t.prio,
-       t.deadline, t.livrables, today, t.revision ? "Révision" : "Maître", t.parent, comm, person]);
-    const b = rows[0];
-    await emitEvent({ query: pgQuery }, {
-      ndeg: b.ndeg, entree: b.entree, client: b.client, projet: b.projet,
-      kind: "created", statut_new: b.statut, resp_new: person, summary: "Retour client → " + (t.revision ? "révision" : "nouveau projet"),
-    });
-    created.push({ ndeg: b.ndeg, projet: b.projet, client: b.client, entree: b.entree, parent: b.parent || "", prio: b.prio, deadline: b.deadline || "" });
-  }
-  return created;
+  return transaction(async client => {
+    const { all } = await loadContext(client.query.bind(client));
+    const taken = [];
+    const created = [];
+    const today = todayISO();
+    for (const t of tasks) {
+      const ndeg = t.revision ? nextRevisionCode(all, taken, t.parent) : nextProjectCode(all, taken, clientPrefix(all, t.client));
+      taken.push(ndeg);
+      const comm = "Retour client (ingest" + (person ? " · " + person : "") + ") : " + (t.resume || String(rawText).slice(0, 300));
+      const { rows } = await client.query(
+        `insert into briefs (ndeg, client, marque, projet, niveau, type, statut, prio, deadline,
+                             livrables, date_reception, entree, parent, comm, entre_par, brief_etat)
+         values ($1,$2,$3,$4,$5,$6,'Reçu',$7,$8,$9,$10,$11,$12,$13,$14,'déduit') returning *`,
+        [ndeg, t.client, t.marque, t.projet, t.revision ? "Révision" : "Maître", t.type, t.prio,
+         t.deadline, t.livrables, today, t.revision ? "Révision" : "Maître", t.parent, comm, person]);
+      const b = rows[0];
+      created.push({ ndeg: b.ndeg, projet: b.projet, client: b.client, entree: b.entree, parent: b.parent || "", prio: b.prio, deadline: b.deadline || "" });
+    }
+    return created;
+  });
 }
 
 // ---- POST /ingest — { text, client? } ----------------------------------------
 export async function handleIngest(context) {
   if (!hasDb()) return json({ message: "base non configurée" }, 503);
-  await initDb();
+  if (!await initDb()) return json({ message: "base indisponible" }, 503);
   const email = (context.data && context.data.email) || "";
   const person = identityFor(email).person || email;
 

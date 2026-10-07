@@ -339,9 +339,9 @@ function mountFab(){
 const N_SEEN="radar:notif:seen", N_PUSH="radar:notif:push";
 const N_LAB={created:["🆕","Nouvelle entrée"],status:["🔁","Statut modifié"],reassigned:["👤","Réattribution"],
   deadline:["📅","Échéance modifiée"],frozen:["❄️","Gelé"],unfrozen:["♻️","Réactivé"],
-  closed:["📦","Clôturé / livrable"],reopened:["🔓","Rouvert"],deleted:["🗑️","Supprimé"]};
+  updated:["✏️","Dossier modifié"],visibility:["🔒","Confidentialité modifiée"],closed:["📦","Clôturé / livrable"],reopened:["🔓","Rouvert"],deleted:["🗑️","Supprimé"]};
 const N_CRE={"Maître":["🆕","Nouveau brief"],"Tâche":["✅","Nouvelle tâche"],"Révision":["🔄","Nouvelle révision"]};
-let NOTIFS=[];
+let NOTIFS=[], N_UNQUALIFIED=0, N_AVAILABLE=false;
 function nSeen(){ try{return localStorage.getItem(N_SEEN)||"";}catch(e){return "";} }
 function nSetSeen(v){ try{localStorage.setItem(N_SEEN,v);}catch(e){} }
 function nLabel(e){ return (e.kind==="created"&&N_CRE[e.entree])||N_LAB[e.kind]||["•",e.kind]; }
@@ -354,6 +354,7 @@ function bellBtnHTML(){
     <i data-lucide="bell" style="width:16px;height:16px"></i><span class="badge" id="mtg-bell-badge" hidden>0</span></button>`;
 }
 async function nFetch(){
+  N_AVAILABLE=false;
   if(!window.SUPA||!window.supaHeaders) return [];
   let me=null; try{ me=window.MTG_IDENTITY||(window.loadIdentity?await loadIdentity():null); }catch(e){}
   let r; try{
@@ -362,6 +363,7 @@ async function nFetch(){
   }catch(e){ return []; }
   if(!r.ok) return [];
   let evs=await r.json();
+  N_UNQUALIFIED=Number(r.headers.get("X-Radar-Unqualified-Events"))||0; N_AVAILABLE=true;
   if(me && me.role==="member" && me.person){ const p=me.person;
     evs=evs.filter(e=>(e.resp_new||"").includes(p)||(e.resp_old||"").includes(p)); }
   return evs;
@@ -403,8 +405,9 @@ function openNotifMenu(anchor){
     return `<button class="it${unseen?' unseen':''}" data-code="${esc(e.ndeg||'')}">
       <span class="em">${l[0]}</span><span class="tx"><span class="tt">${esc(l[1])} — ${esc(e.client||e.projet||'')}</span>
       <span class="mt">${esc(e.summary||'')} · ${esc(nAgo(e.at))}</span></span></button>`;
-  }).join("") : `<div class="hd" style="padding:14px 9px">Aucune activité récente.</div>`;
-  menu.innerHTML=`<div class="hd">Activité du pipe</div>${items}
+  }).join("") : `<div class="hd" style="padding:14px 9px">Aucun mouvement récent qualifié.</div>`;
+  const note=!N_AVAILABLE ? "Journal indisponible : l'activité n'a pas pu être vérifiée." : N_UNQUALIFIED ? `${N_UNQUALIFIED} événements anciens à qualifier ; historique incomplet.` : "";
+  menu.innerHTML=`<div class="hd">Activité du pipe</div>${note?`<div class="hd" role="status">${esc(note)}</div>`:""}${N_AVAILABLE?items:""}
     <div class="hd" style="border-top:1px solid var(--border);margin-top:6px;padding-top:8px">Notifications</div>
     <button data-act="seen"><span class="av">✓</span>Tout marquer comme lu</button>
     <button data-act="push"><span class="av">${pushOn?'🔔':'🔕'}</span>${pushOn?'Notifications navigateur : ON':'Activer les notifications navigateur'}</button>
