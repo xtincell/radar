@@ -93,10 +93,10 @@ async function loadIdentity(){
   try{
     const r=await fetch("/profil",{cache:"no-store"});
     if(r.ok){ const d=await r.json();
-      if(d && d.ok){ window.MTG_IDENTITY={email:d.email||"",person:d.person||"",role:d.role||"member"}; return window.MTG_IDENTITY; } }
+      if(d && d.ok){ window.MTG_IDENTITY={email:d.email||"",person:d.person||"",role:d.role||"member",taskMonth:d.taskMonth||""}; return window.MTG_IDENTITY; } }
   }catch(e){}
-  // /profil injoignable (hors-ligne, ou mur désactivé) → pas de restriction (on est déjà derrière le mur).
-  window.MTG_IDENTITY={email:"",person:"",role:"owner"};
+  // Une identité indisponible n'accorde jamais un rôle administrateur.
+  window.MTG_IDENTITY={email:"",person:"",role:"member"};
   return window.MTG_IDENTITY;
 }
 function _monthKey(d){ d=d||new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"); }
@@ -106,7 +106,7 @@ function _isFrozen(b){ return typeof window.isFrozen==="function" ? window.isFro
    (travail courant non planifié). Exclut le daté d'autres mois et le clos/gelé non-daté. */
 function _inCurrentMonth(b){
   const dl=String((b&&b.deadline)||"");
-  if(/^\d{4}-\d{2}/.test(dl)) return dl.slice(0,7)===_monthKey();
+  if(/^\d{4}-\d{2}/.test(dl)) return dl.slice(0,7)===(window.MTG_IDENTITY?.taskMonth||_monthKey());
   return !_isDone(b) && !_isFrozen(b);
 }
 async function _applyScope(rows){
@@ -114,14 +114,14 @@ async function _applyScope(rows){
   const me=id?id.person:"";
   /* Garde CONFIDENTIALITÉ — passe AVANT le niveau d'autorité : une ligne marquée
      private_to = X n'est visible QUE par X, même pour un owner ou un superviseur.
-     (Filtre d'UI : la base reste lisible via l'API ; isolation réelle = RLS, séparé.) */
+     Le serveur applique aussi ce périmètre à l'API, au CSV et aux médias. */
   rows = rows.filter(r=>{ const p=String(r&&r.privateTo||"").trim(); return !p || p===me; });
   if(!id || id.role==="owner") return rows;                       // accès total
   if(id.role==="supervisor") return rows;                         // TOUTES les tâches (vue ouverte aux superviseurs, toutes périodes)
   if(!me) return [];                                              // member sans nom : rien
   const owns = typeof window.ownsTask==="function"
     ? (r=>window.ownsTask(r.responsable, me))
-    : (r=>String(r&&r.responsable||"").includes(me));
+    : (r=>String(r&&r.responsable||"").split(/\s*[/&;]\s*|\s+et\s+/).map(x=>x.trim()).includes(me));
   return rows.filter(r=>owns(r) && _inCurrentMonth(r));
 }
 window.loadIdentity=loadIdentity; window.MTG_monthKey=_monthKey; window.MTG_scopeRows=_applyScope;

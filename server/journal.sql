@@ -1,6 +1,15 @@
 -- Aucune requalification de l'histoire : NULL signifie confidentialité inconnue.
 alter table task_events add column if not exists brief_id bigint;
 alter table task_events add column if not exists private_to text;
+-- Qualification minimale au moment du fait. Aucun remplissage rétroactif :
+-- les anciens événements ne prouvent pas leur responsable ni leur période.
+alter table task_events add column if not exists scope_snapshot jsonb;
+-- Les nouveaux rattachements suivent l'identifiant, pas un code réutilisable.
+-- Les anciens restent explicitement non qualifiés ; aucune attribution inventée.
+alter table comments add column if not exists brief_id bigint;
+alter table brief_assets add column if not exists brief_id bigint;
+create index if not exists comments_brief_id_idx on comments(brief_id);
+create index if not exists brief_assets_brief_id_idx on brief_assets(brief_id);
 create index if not exists task_events_brief_id_idx on task_events(brief_id);
 
 create or replace function radar_journal_brief() returns trigger language plpgsql as $$
@@ -30,8 +39,8 @@ begin
     elsif NEW.private_to is distinct from OLD.private_to then k := 'visibility'; s := 'Confidentialité modifiée';
     else k := 'updated'; s := 'Dossier modifié'; end if;
   end if;
-  insert into task_events(brief_id,private_to,ndeg,entree,client,projet,kind,statut_old,statut_new,resp_old,resp_new,summary)
-  values (b.id,priv,b.ndeg,b.entree,b.client,b.projet,k,
+  insert into task_events(brief_id,private_to,scope_snapshot,ndeg,entree,client,projet,kind,statut_old,statut_new,resp_old,resp_new,summary)
+  values (b.id,priv,jsonb_build_object('private_to',priv,'responsable',b.responsable,'deadline',b.deadline,'statut',b.statut,'closed_at',b.closed_at),b.ndeg,b.entree,b.client,b.projet,k,
     case when TG_OP <> 'INSERT' then OLD.statut end,
     case when TG_OP <> 'DELETE' then NEW.statut end,
     case when TG_OP <> 'INSERT' then OLD.responsable end,

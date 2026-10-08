@@ -13,7 +13,7 @@ Pensé pour être déployé **standalone** (une instance = une équipe = une bas
 - Écran « Direction » (`/direction.html`) : synthèse pour non-opérateurs — à arbitrer, livraisons de la semaine, mur des travaux récents, transmission des retours clients.
 - Authentification HTTP Basic + session cookie signée (HMAC-SHA256), avec self-service de mot de passe par utilisateur (`/profil`, stocké en SQLite locale).
 - Trois niveaux d'autorité configurables (`owner` / `supervisor` / `member`) — voir [Configurer les accès](#configurer-les-accès).
-- Isolation `private_to` appliquée côté serveur (pas seulement dans l'UI).
+- Périmètre de rôle et isolation `private_to` appliqués côté serveur aux tâches, commentaires, journal, CSV et médias.
 
 ## Démarrage rapide
 
@@ -72,6 +72,16 @@ L'autorité (qui se connecte, avec quel niveau) est **entièrement pilotée par 
 
 Rôles : `owner` (tout + `/rh`), `supervisor` (toutes les tâches, toutes périodes), `member` (ses tâches du mois en cours).
 
+Le périmètre membre inclut les co-responsabilités exactes (`/`, `&`, `;`, `et`) et le travail sans échéance calendaire encore ouvert. Un travail sans date clos, livré ou gelé est exclu. Le mois de l'instance suit `TZ` ; `/profil` le transmet à l'interface pour éviter une deuxième décision selon le fuseau du navigateur. `private_to` s'applique aussi aux owners et superviseurs. Un membre sans personne configurée ne reçoit aucune tâche. Une identité indisponible dans l'interface n'accorde aucun accès administrateur.
+
+Les écritures vérifient les dossiers sous verrou. Un lot contenant une ligne hors périmètre est refusé entièrement (403), sans écriture ni événement partiels. Transmettre sa propre tâche reste possible : l'ancien responsable perd ensuite son accès, y compris aux commentaires et aux binaires. Les commentaires et visuels exigent un code de dossier unique et autorisé. L'import transmet uniquement les projets accessibles au modèle, rattache les nouvelles tâches du membre à son nom et recontrôle les parents avant insertion. Les codes sont alloués sous un verrou de table bref.
+
+Le journal conserve la qualification de rôle des nouveaux événements, y compris après suppression. Les événements anciens sans cette qualification ne sont pas reconstruits à partir de l'état actuel : ils restent conservés mais ne sont pas affichés aux membres, et l'interface signale cet historique incomplet. Owners et superviseurs conservent la lecture selon la confidentialité historique. `INDEX.csv` est produit depuis la même base filtrée ; les fichiers métier CSV/JSON/Markdown/SQL déposés dans `briefs/` ne sont pas servis comme ressources statiques.
+
+Les nouveaux commentaires et visuels portent un `brief_id` attribué exclusivement par le serveur. Une suppression suivie d'une réutilisation du code ne les transfère pas au nouveau dossier. Un changement de code du dossier conserve leurs liens dans la même transaction. Les anciens rattachements sans identifiant restent conservés et accessibles aux responsables selon la règle historique du code ; ils ne sont pas exposés aux membres et doivent encore être qualifiés. Cette compatibilité historique ne prouve pas leur provenance d'origine.
+
+Ces règles concernent les routes protégées. `/jour.json`, `/jour.html` et les flux d'activité conservent leur contrat public explicite : données limitées et non privées ; `FEED_TOKEN` peut protéger les flux. Ils ne constituent pas des vues personnelles. La clé machine `RADAR_API_KEY` conserve son accès complet explicite. Les règles d'édition du wiki et de la configuration sont distinctes de ce périmètre de tâches.
+
 ## Intégration Galahad
 
 Une instance Radar n'a rien de spécial à faire pour être agrégée : elle expose son API (`/rest/v1/*`) et ses flux (`/feed.xml`, `/activity.json`), protégés par `RADAR_API_KEY` pour un accès machine full-scope (voir `.env.example`).
@@ -99,6 +109,8 @@ migrations/               schéma SQL, idempotent
 ```bash
 node --check <fichier>.js   # vérif syntaxe rapide
 npm start                   # lance le serveur
+# Recette HTTP sur une base locale jetable créée et supprimée par la suite :
+RADAR_TEST_ADMIN_URL=postgresql://postgres:mot-de-passe@127.0.0.1:5432/postgres npm test
 ```
 
 Aucun framework, aucun bundler : stdlib Node + `pg`.

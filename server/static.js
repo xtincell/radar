@@ -46,7 +46,9 @@ async function resolveFile(pathname) {
   for (const candidate of candidates) {
     const rel = decodeURIComponent(candidate).replace(/^\/+/, "");
     const abs = path.normalize(path.join(BRIEFS_DIR, rel));
-    if (!abs.startsWith(BRIEFS_DIR)) continue; // anti-traversal
+    if (!abs.startsWith(BRIEFS_DIR + path.sep)) continue; // frontière de répertoire
+    // Les données métier et migrations ne sont pas des ressources d'interface.
+    if (!['.html','.css','.js','.svg','.png','.jpg','.jpeg','.ico','.ttf','.woff','.woff2'].includes(path.extname(abs).toLowerCase())) continue;
     try {
       const s = await stat(abs);
       if (s.isFile()) return abs;

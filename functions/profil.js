@@ -8,7 +8,7 @@
 // pour que le front restreigne la vue (owner=tout, supervisor=toutes les tâches, member=ses tâches).
 "use strict";
 
-import { identityFor } from "./_authz.js";
+import { identityFor, monthKey } from "./_authz.js";
 
 function emailFromAuth(request) {
   const h = request.headers.get("Authorization") || "";
@@ -35,7 +35,7 @@ export async function onRequestGet(context) {
   let perso = false;
   if (env.DASH_USERS) { try { perso = !!(await env.DASH_USERS.get(email)); } catch {} }
   const id = identityFor(email);   // { email, person, role }
-  return json({ ok: true, email, person: id.person, role: id.role, perso, kv: !!env.DASH_USERS });
+  return json({ ok: true, email, person: id.person, role: id.role, taskMonth:monthKey(), perso, kv: !!env.DASH_USERS });
 }
 
 // POST /profil { nouveau } → définit le mot de passe perso de l'appelant.

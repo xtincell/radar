@@ -21,7 +21,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci --ignore-scripts --no-audit --no-fund
-      - run: node --check server/pgrest.js && node --check server/visuels.js && node --check server/ingest.js && node --check functions/_feed.js && node --check briefs/chrome.js
+      - run: node --check server/pgrest.js && node --check server/visuels.js && node --check server/ingest.js && node --check server/static.js && node --check functions/_authz.js && node --check functions/_middleware.js && node --check functions/profil.js && node --check functions/_feed.js && node --check briefs/supa.js && node --check briefs/chrome.js
       - run: npm test
         env:
           RADAR_TEST_ADMIN_URL: postgresql://postgres:recette-ci@127.0.0.1:5432/postgres

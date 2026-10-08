@@ -12,7 +12,7 @@
 "use strict";
 import pg from "pg";
 import { readFileSync } from "node:fs";
-import { identityFor } from "../functions/_authz.js";
+import { assertBriefAccess, briefScopeSql, taskAuthority } from "../functions/_authz.js";
 
 const { Pool } = pg;
 const pool = process.env.DATABASE_URL
@@ -36,7 +36,7 @@ const TABLES = {
   clients: { pk: "id", cols: { id: "id", ordre: INT, nom: TEXT, client: TEXT, data: JSONB, updated_at: TS } },
   client_markets: { pk: "id", cols: { id: "id", client: TEXT, data: JSONB, updated_at: TS } },
   client_contacts: { pk: "id", cols: { id: "id", client: TEXT, data: JSONB, updated_at: TS } },
-  comments: { pk: "id", cols: { id: "id", ndeg: TEXT, author: TEXT, involved: ARR, body: TEXT, kind: TEXT, created_at: TS } },
+  comments: { pk: "id", cols: { id: "id", brief_id: "id", ndeg: TEXT, author: TEXT, involved: ARR, body: TEXT, kind: TEXT, created_at: TS } },
   app_config: { pk: "key", cols: { key: TEXT, value: JSONB } },
   task_events: { pk: "id", readOnly: true, cols: {
     brief_id: "id", private_to: TEXT,
@@ -45,7 +45,7 @@ const TABLES = {
   // Visuels de livrables. Lecture (et PATCH de caption) via REST ; création et
   // suppression UNIQUEMENT via /visuels (le fichier disque vit et meurt avec la ligne).
   brief_assets: { pk: "id", noRestWrite: true, patchCols: ['caption'], cols: {
-    id: "id", ndeg: TEXT, client: TEXT, projet: TEXT, filename: TEXT, mime: TEXT,
+    id: "id", brief_id: "id", ndeg: TEXT, client: TEXT, projet: TEXT, filename: TEXT, mime: TEXT,
     bytes: INT, caption: TEXT, created_by: TEXT, created_at: TS } },
 };
 const isCol = (t, c) => Object.prototype.hasOwnProperty.call(TABLES[t].cols, c);
@@ -218,18 +218,38 @@ function paramForWrite(type, v) {
 }
 
 // ---- scope private_to (confidentialité serveur, tous rôles) ----------------
-function briefsScope(email, params) {
-  const me = identityFor(email || "").person || "";
-  params.push(me);
-  return `(private_to is null or private_to = '' or private_to = $${params.length})`;
+export async function targetBrief(client, ndeg, context) {
+  const { rows } = await client.query('select * from briefs where ndeg=$1 order by id for share', [ndeg]);
+  if (!rows.length) throw Object.assign(new Error('brief inconnu'),{status:404});
+  if (rows.length !== 1) throw Object.assign(new Error('code de brief ambigu : rattachement à qualifier'),{status:409});
+  assertBriefAccess(rows[0],context);
+  return rows[0];
+}
+
+export function linkedBriefJoin(table) {
+  return `((${table}.brief_id is not null and b.id=${table}.brief_id) or (${table}.brief_id is null and b.ndeg=${table}.ndeg))`;
+}
+export async function targetLinkedBrief(client,row,context) {
+  if (row.brief_id == null) {
+    const who=taskAuthority(context);
+    if (!who.fullAccess && !['owner','supervisor'].includes(who.role))
+      throw Object.assign(new Error('ancien rattachement à qualifier'),{status:403});
+    return targetBrief(client,row.ndeg,context);
+  }
+  const {rows}=await client.query('select * from briefs where id=$1 for share',[row.brief_id]);
+  if (!rows.length) throw Object.assign(new Error('dossier rattaché introuvable'),{status:404});
+  assertBriefAccess(rows[0],context);
+  return rows[0];
 }
 
 // ---- émission d'un événement de journal (task_events) ----------------------
 // Le média et sa trace partagent la transaction et le brief verrouillé.
 export async function emitEvent(client, ev, brief) {
   if (!brief?.id) throw new Error('rattachement de journal non qualifié');
-  const cols = ["brief_id", "private_to", "ndeg", "entree", "client", "projet", "kind", "statut_old", "statut_new", "resp_old", "resp_new", "summary"];
-  ev = { ...ev, brief_id: brief.id, private_to: brief.private_to || '' };
+  const cols = ["brief_id", "private_to", "scope_snapshot", "ndeg", "entree", "client", "projet", "kind", "statut_old", "statut_new", "resp_old", "resp_new", "summary"];
+  ev = { ...ev, brief_id: brief.id, private_to: brief.private_to || '', scope_snapshot: JSON.stringify({
+    private_to: brief.private_to || '', responsable:brief.responsable, deadline:brief.deadline, statut:brief.statut, closed_at:brief.closed_at,
+  }) };
   const vals = cols.map((c) => ev[c] ?? null);
   const ph = cols.map((_, i) => "$" + (i + 1)).join(",");
   await client.query(`insert into task_events (${cols.join(",")}) values (${ph})`, vals);
@@ -276,22 +296,29 @@ export async function handleRest(context) {
     where.push(buildFilter(table, k, v, params));
   }
   const hasUserFilter = where.length > 0;
-  // Scope private_to appliqué SAUF en accès machine full-access (MCP/Claude/Dan).
-  if (table === "briefs" && !(context.data && context.data.fullAccess)) where.push(briefsScope(email, params));
-  // Même confidentialité pour les visuels : les métadonnées d'un brief privé ne
-  // sont visibles que par la personne concernée (jointure sur le ndeg).
-  if ((table === "brief_assets" || table === 'comments') && !(context.data && context.data.fullAccess)) {
-    const me = identityFor(email || "").person || "";
-    params.push(me);
-    where.push(`(select count(*) from briefs b where b.ndeg = ${table}.ndeg) = 1`);
-    where.push(`exists (select 1 from briefs b where b.ndeg = ${table}.ndeg and (b.private_to is null or b.private_to = '' or b.private_to = $${params.length}))`);
+  // Les mutations verrouillent tous les candidats : aucun lot partiel silencieux.
+  if (method === 'GET' && table === 'briefs') where.push(briefScopeSql(context,params));
+  if (method === 'GET' && (table === 'brief_assets' || table === 'comments')) {
+    const who=taskAuthority(context);
+    if (!who.fullAccess && !['owner','supervisor'].includes(who.role)) where.push(`${table}.brief_id is not null`);
+    const join=linkedBriefJoin(table);
+    where.push(`(select count(*) from briefs b where ${join}) = 1`);
+    where.push(`exists (select 1 from briefs b where ${join} and ${briefScopeSql(context,params,'b.')})`);
   }
-  if (table === 'task_events' && !(context.data && context.data.fullAccess)) {
-    const me = identityFor(email).person || '';
+  if (table === 'task_events' && !context.data?.fullAccess) {
+    const who = taskAuthority(context), me = who.person || '';
     params.push(me);
     where.push(`(private_to = '' or private_to = $${params.length})`);
     where.push(`not exists (select 1 from briefs b where b.id = task_events.brief_id and coalesce(b.private_to,'') <> '' and b.private_to <> $${params.length})`);
     where.push(`not exists (select 1 from task_events d where d.brief_id=task_events.brief_id and d.kind='deleted' and coalesce(d.private_to,'') <> '' and d.private_to <> $${params.length})`);
+    if (who.role !== 'owner' && who.role !== 'supervisor') {
+      const snapshotFields = alias => Object.fromEntries(['private_to','responsable','deadline','statut','closed_at'].map(k=>[k,`(${alias}.scope_snapshot->>'${k}')`]));
+      where.push(`scope_snapshot is not null and ${briefScopeSql(context,params,snapshotFields('task_events'))}`);
+      where.push(`(exists (select 1 from briefs b where b.id=task_events.brief_id and ${briefScopeSql(context,params,'b.')})
+        or (not exists (select 1 from briefs b where b.id=task_events.brief_id)
+          and exists (select 1 from task_events d where d.brief_id=task_events.brief_id and d.kind='deleted'
+            and ${briefScopeSql(context,params,snapshotFields('d'))})))`);
+    }
   }
 
   try {
@@ -316,6 +343,10 @@ export async function handleRest(context) {
       if (table === 'task_events') {
         const unknown = await pool.query('select count(*)::int as n from task_events where private_to is null');
         headers['X-Radar-Unqualified-Events'] = String(unknown.rows[0].n);
+        if (!context.data?.fullAccess && !['owner','supervisor'].includes(taskAuthority(context).role)) {
+          const unqualified = await pool.query('select count(*)::int as n from task_events where private_to is not null and scope_snapshot is null');
+          headers['X-Radar-Unqualified-Role-Events'] = String(unqualified.rows[0].n);
+        }
       }
       return json(rows, 200, headers);
     }
@@ -332,6 +363,11 @@ export async function handleRest(context) {
         await client.query("begin");
         const out = [];
         for (const rec of list) {
+          if (table === 'briefs') assertBriefAccess(rec,context);
+          if (table === 'comments') {
+            if (Object.hasOwn(rec,'brief_id')) throw Object.assign(new Error('rattachement réservé au serveur'),{status:400});
+            rec.brief_id=(await targetBrief(client,rec.ndeg,context)).id;
+          }
           const keys = Object.keys(rec).filter((k) => isCol(table, k) && k !== "id");
           const vals = keys.map((k) => paramForWrite(colType(table, k), rec[k]));
           const ph = keys.map((_, i) => "$" + (i + 1)).join(",");
@@ -353,12 +389,24 @@ export async function handleRest(context) {
       const client = await pool.connect();
       try {
         await client.query("begin");
+        const candidates = await client.query(`select * from ${table} where ${where.join(' and ')} order by ${TABLES[table].pk} for update`,params);
+        if (!candidates.rows.length) { await client.query('rollback'); return json({message:'ligne introuvable'},404); }
+        for (const row of candidates.rows) {
+          if (table === 'briefs') assertBriefAccess(row,context);
+          if (table === 'comments' || table === 'brief_assets') await targetLinkedBrief(client,row,context);
+        }
+        const ids = candidates.rows.map(row=>row[TABLES[table].pk]);
+        const writeWhere = `${TABLES[table].pk} = any($1)`;
         let result;
         if (method === "DELETE") {
-          result = await client.query(`delete from ${table} where ${where.join(" and ")}${wantRepr ? " returning *" : ""}`, params);
+          result = await client.query(`delete from ${table} where ${writeWhere}${wantRepr ? " returning *" : ""}`, [ids]);
         } else {
           const body = await request.json().catch(() => ({}));
           const patch = body && typeof body === "object" ? body : {};
+          if (table === 'comments') {
+            if (Object.hasOwn(patch,'brief_id')) throw Object.assign(new Error('rattachement réservé au serveur'),{status:400});
+            if (Object.hasOwn(patch,'ndeg')) patch.brief_id=(await targetBrief(client,patch.ndeg,context)).id;
+          }
           if (TABLES[table].patchCols && Object.keys(patch).some(k => !TABLES[table].patchCols.includes(k))) {
             await client.query('rollback'); return json({ message: 'seule la légende du visuel est modifiable ici' }, 400);
           }
@@ -366,9 +414,13 @@ export async function handleRest(context) {
           if (!keys.length) { await client.query("rollback"); return json({ message: "aucune colonne à modifier" }, 400); }
           // updated_at auto si la colonne existe
           if (isCol(table, "updated_at") && !keys.includes("updated_at")) { patch.updated_at = new Date().toISOString(); keys.push("updated_at"); }
-          const setParams = params.slice(); // WHERE d'abord ($1..$W), puis les SET ($W+1..)
+          const setParams = [ids]; // Écrit exactement les candidats reçus sous verrou.
           const sets = keys.map((k) => { setParams.push(paramForWrite(colType(table, k), patch[k])); return `${k} = $${setParams.length}`; });
-          result = await client.query(`update ${table} set ${sets.join(",")} where ${where.join(" and ")}${wantRepr ? " returning *" : ""}`, setParams);
+          result = await client.query(`update ${table} set ${sets.join(",")} where ${writeWhere}${wantRepr ? " returning *" : ""}`, setParams);
+          if (table === 'briefs' && keys.includes('ndeg')) {
+            for (const linked of ['comments','brief_assets'])
+              await client.query(`update ${linked} set ndeg=$1 where brief_id=any($2)`,[patch.ndeg,ids]);
+          }
         }
         await client.query("commit");
         return json(wantRepr ? (result.rows || []) : []);
@@ -378,6 +430,7 @@ export async function handleRest(context) {
 
     return json({ message: "méthode non supportée" }, 405);
   } catch (e) {
+    if (e.status) return json({message:e.message},e.status);
     console.error("[pgrest]", method, table, e && e.message);
     return json({ message: "erreur SQL", detail: String((e && e.message) || e) }, 500);
   }
@@ -386,4 +439,17 @@ export async function handleRest(context) {
 export async function query(sql, params) {
   if (!pool) throw new Error("no db");
   return pool.query(sql, params);
+}
+
+// Repli historique de supa.js : même source et même autorité que REST.
+// Un INDEX.csv déposé sur disque n'est jamais une seconde base lisible brute.
+export async function handleBriefCsv(context) {
+  if (!pool || !await initDb()) return json({message:'base indisponible'},503);
+  const params=[], scope=briefScopeSql(context,params);
+  const {rows}=await pool.query(`select * from briefs where ${scope} order by ndeg`,params);
+  const entries=Object.entries(CSV_MAP);
+  const cell=value=>'"'+String(value ?? '').replaceAll('"','""')+'"';
+  const csv=[entries.map(([label])=>cell(label)).join(','),
+    ...rows.map(row=>entries.map(([,key])=>cell(row[key])).join(','))].join('\r\n')+'\r\n';
+  return new Response(csv,{headers:{'Content-Type':'text/csv; charset=utf-8','Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'}});
 }
