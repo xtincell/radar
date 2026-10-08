@@ -5,7 +5,7 @@ import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { createServer } from 'node:net';
 import { createServer as createHttpServer } from 'node:http';
-import { mkdtemp, rm, readdir, readFile } from 'node:fs/promises';
+import { mkdtemp, rm, readdir, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import pg from 'pg';
@@ -16,7 +16,7 @@ const target = new URL(adminUrl);
 if (!['127.0.0.1', 'localhost', '[::1]'].includes(target.hostname)) throw new Error('Base de recette locale uniquement');
 const name = 'shinkiro_radar_' + process.pid + '_' + Date.now();
 const admin = new pg.Pool({ connectionString: adminUrl });
-let db, child, origin, directory, ollama, ollamaReply=null, childLogs = '';
+let db, child, origin, directory, ollama, ollamaReply=null, ollamaRequests=[], childLogs = '';
 const auth = who => ({ Authorization: 'Basic ' + Buffer.from(who + '@recette.invalid:recette-locale').toString('base64') });
 const req = (url, who = 'alice', method = 'GET', body) => fetch(origin + url, {
   method, headers: { ...(who ? auth(who) : {}), ...(body ? { 'Content-Type': 'application/json', Prefer: 'return=representation' } : {}) },
@@ -27,9 +27,11 @@ async function startChild(port) {
   child = spawn(process.execPath, ['server/index.js'], { cwd: new URL('../', import.meta.url),
     env: { ...process.env, DATABASE_URL: target.href, PORT: String(port), HOST: '127.0.0.1', SQLITE_PATH: path.join(directory, 'users.sqlite'),
       VISUELS_DIR: path.join(directory, 'visuels'), DASH_PASSWORD: 'recette-locale', DASH_COOKIE_SECRET: 'signature-de-recette',
-      RADAR_API_KEY: '', FEED_TOKEN: '', RADAR_SEED_CSV: '', OLLAMA_URL: 'http://127.0.0.1:'+ollama.address().port,
+      TZ: 'Africa/Douala', RADAR_API_KEY: 'machine-de-recette', FEED_TOKEN: '', RADAR_SEED_CSV: '', OLLAMA_URL: 'http://127.0.0.1:'+ollama.address().port,
       RADAR_AUTHZ_JSON: JSON.stringify({ 'alice@recette.invalid': { person: 'Alice Recette', role: 'owner' },
-        'bob@recette.invalid': { person: 'Bob Recette', role: 'member' } }),
+        'bob@recette.invalid': { person: 'Bob Recette', role: 'member' },
+        'sue@recette.invalid': { person: 'Sue Recette', role: 'supervisor' },
+        'empty@recette.invalid': { person: '', role: 'member' } }),
     }, stdio: ['ignore', 'pipe', 'pipe'] });
   child.stdout.on('data', b => { childLogs += b; }); child.stderr.on('data', b => { childLogs += b; });
   for (let i = 0; i < 100; i++) {
@@ -56,7 +58,8 @@ before(async () => {
   const socket = createServer(); socket.listen(0, '127.0.0.1'); await once(socket, 'listening');
   const port = socket.address().port; await new Promise(r => socket.close(r)); origin = 'http://127.0.0.1:' + port;
   ollama=createHttpServer(async (req,res)=>{
-    for await (const chunk of req) {}
+    let body=''; for await (const chunk of req) body+=chunk;
+    ollamaRequests.push(JSON.parse(body));
     if (!ollamaReply) { res.writeHead(503); res.end('Simulateur indisponible'); return; }
     res.setHeader('Content-Type','application/json'); res.end(JSON.stringify({message:{content:JSON.stringify(ollamaReply)}}));
   });
@@ -260,4 +263,202 @@ test('un redémarrage conserve les dossiers et le journal sans les rejouer', asy
   assert.deepEqual(await counts(),before);
   await db.query("insert into briefs(ndeg,projet) values ('REC-APRES-BOOT','Un seul mouvement après redémarrage')");
   assert.equal((await db.query("select count(*)::int as n from task_events where ndeg='REC-APRES-BOOT'")).rows[0].n,1);
+});
+
+const currentDeadline = () => new Intl.DateTimeFormat('en-CA', {timeZone:'Africa/Douala',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()).slice(0,7)+'-15';
+async function fixture(code, patch={}) {
+  const body={ndeg:code,projet:code,statut:'Reçu',responsable:'Bob Recette',deadline:currentDeadline(),...patch};
+  const cols=Object.keys(body);
+  return (await db.query(`insert into briefs (${cols.join(',')}) values (${cols.map((_,i)=>'$'+(i+1)).join(',')}) returning *`,cols.map(k=>body[k]))).rows[0];
+}
+
+test('le membre ne lit que ses tâches du mois ou ses tâches sans date encore ouvertes', async () => {
+  for (const [suffix,patch] of Object.entries({
+    OWN:{}, SHARED:{responsable:'Alice Recette / Bob Recette'}, ET:{responsable:'Alice Recette et Bob Recette'},
+    OPEN:{deadline:'À confirmer'}, FOREIGN:{responsable:'Alice Recette'}, SUBSTRING:{responsable:'Bob Recette Junior'},
+    OLD:{deadline:'2000-01-10'}, CLOSED:{deadline:'',closed_at:'2026-01-01T00:00:00Z'},
+    DONE:{deadline:'',statut:'Envoyé dans Slack'}, FROZEN:{deadline:'',statut:'Gelé'},
+    PRIVATE:{private_to:'Alice Recette'},
+  })) await fixture('ROLE-READ-'+suffix,patch);
+  const rows=await (await req('/rest/v1/briefs?ndeg=like.ROLE-READ-%','bob')).json();
+  assert.deepEqual(rows.map(r=>r.ndeg).sort(),['ET','OPEN','OWN','SHARED'].map(k=>'ROLE-READ-'+k).sort());
+  assert.equal((await (await req('/rest/v1/briefs?ndeg=like.ROLE-READ-%','sue')).json()).length,10);
+  assert.deepEqual(await (await req('/rest/v1/briefs?ndeg=like.ROLE-READ-%','empty')).json(),[]);
+  const machine=await fetch(origin+'/rest/v1/briefs?ndeg=like.ROLE-READ-%',{headers:{Authorization:'Bearer machine-de-recette'}});
+  assert.equal((await machine.json()).length,11);
+  assert.equal((await req('/rh/evaluation-departement.html','sue')).status,403);
+});
+
+test('réattribution étrangère et lot mixte refusés sans changement ni journal partiel', async () => {
+  const own=await fixture('ROLE-PATCH-OWN');
+  const other=await fixture('ROLE-PATCH-OTHER',{responsable:'Alice Recette'});
+  const before=(await db.query('select count(*)::int as n from task_events')).rows[0].n;
+  assert.equal((await req('/rest/v1/briefs?id=eq.'+other.id,'bob','PATCH',{responsable:'Bob Recette'})).status,403);
+  assert.equal((await req('/rest/v1/briefs?id=in.('+own.id+','+other.id+')','bob','PATCH',{statut:'En cours'})).status,403);
+  assert.equal((await req('/rest/v1/briefs?id=eq.'+other.id,'bob','DELETE')).status,403);
+  assert.equal((await db.query('select count(*)::int as n from task_events')).rows[0].n,before);
+  assert.equal((await db.query('select statut from briefs where id=$1',[own.id])).rows[0].statut,'Reçu');
+  // Le responsable peut transmettre son propre travail ; l'accès cesse aussitôt.
+  assert.equal((await req('/rest/v1/briefs?id=eq.'+own.id,'bob','PATCH',{responsable:'Alice Recette'})).status,200);
+  assert.deepEqual(await (await req('/rest/v1/briefs?id=eq.'+own.id,'bob')).json(),[]);
+  assert.equal((await req('/rest/v1/briefs?id=eq.'+own.id,'bob','PATCH',{responsable:'Bob Recette'})).status,403);
+});
+
+test('création et commentaires contrôlent leur rattachement dans la même transaction', async () => {
+  await fixture('ROLE-COMMENT-OWN'); await fixture('ROLE-COMMENT-OTHER',{responsable:'Alice Recette'});
+  const before=(await db.query('select count(*)::int as n from briefs')).rows[0].n;
+  assert.equal((await req('/rest/v1/briefs','bob','POST',[
+    {ndeg:'ROLE-CREATE-OWN',responsable:'Bob Recette',statut:'Reçu'},
+    {ndeg:'ROLE-CREATE-OTHER',responsable:'Alice Recette',statut:'Reçu'},
+  ])).status,403);
+  assert.equal((await db.query('select count(*)::int as n from briefs')).rows[0].n,before);
+  assert.equal((await req('/rest/v1/comments','bob','POST',{ndeg:'ROLE-COMMENT-OTHER',body:'Intrusion'})).status,403);
+  const added=await req('/rest/v1/comments','bob','POST',{ndeg:'ROLE-COMMENT-OWN',body:'Autorisé'});
+  assert.equal(added.status,201); const id=(await added.json())[0].id;
+  assert.equal((await req('/rest/v1/comments?id=eq.'+id,'bob','PATCH',{ndeg:'ROLE-COMMENT-OTHER'})).status,403);
+  assert.equal((await db.query('select ndeg from comments where id=$1',[id])).rows[0].ndeg,'ROLE-COMMENT-OWN');
+  await db.query("update briefs set responsable='Alice Recette' where ndeg='ROLE-COMMENT-OWN'");
+  assert.deepEqual(await (await req('/rest/v1/comments?id=eq.'+id,'bob')).json(),[]);
+  assert.equal((await req('/rest/v1/comments?id=eq.'+id,'bob','DELETE')).status,403);
+});
+
+test('médias et légendes suivent le rôle, même après transfert du dossier', async () => {
+  const brief=await fixture('ROLE-MEDIA');
+  const upload=await req('/visuels','bob','POST',{ndeg:brief.ndeg,data:png});
+  assert.equal(upload.status,201); const a=await upload.json();
+  assert.equal((await req('/visuels/'+a.filename,'bob')).status,200);
+  await db.query("update briefs set responsable='Alice Recette' where id=$1",[brief.id]);
+  assert.equal((await req('/visuels/'+a.filename,'bob')).status,404);
+  assert.deepEqual(await (await req('/rest/v1/brief_assets?id=eq.'+a.id,'bob')).json(),[]);
+  assert.equal((await req('/rest/v1/brief_assets?id=eq.'+a.id,'bob','PATCH',{caption:'Intrusion'})).status,403);
+  assert.equal((await req('/visuels/'+a.id,'bob','DELETE')).status,403);
+  const files=await readdir(path.join(directory,'visuels'));
+  assert.equal((await req('/visuels','bob','POST',{ndeg:brief.ndeg,data:png})).status,403);
+  assert.deepEqual(await readdir(path.join(directory,'visuels')),files);
+});
+
+test('le journal applique le périmètre courant et conserve une qualification après suppression', async () => {
+  const b=await fixture('ROLE-HISTORY-OWN');
+  await fixture('ROLE-HISTORY-OTHER',{responsable:'Alice Recette'});
+  assert.equal((await (await req('/rest/v1/task_events?ndeg=eq.'+b.ndeg,'bob')).json()).length,1);
+  assert.deepEqual(await (await req('/rest/v1/task_events?ndeg=eq.ROLE-HISTORY-OTHER','bob')).json(),[]);
+  await db.query('delete from briefs where id=$1',[b.id]);
+  assert.equal((await (await req('/rest/v1/task_events?ndeg=eq.'+b.ndeg,'bob')).json()).length,2);
+  await db.query("insert into task_events(brief_id,private_to,ndeg,kind,summary) values ($1,'',$2,'updated','SANS_QUALIFICATION_ROLE')",[b.id,b.ndeg]);
+  const rows=await (await req('/rest/v1/task_events?ndeg=eq.'+b.ndeg,'bob')).json();
+  assert.equal(rows.length,2); assert.ok(!JSON.stringify(rows).includes('SANS_QUALIFICATION_ROLE'));
+  const transferred=await fixture('ROLE-HISTORY-TRANSFER');
+  await db.query("update briefs set responsable='Alice Recette' where id=$1",[transferred.id]);
+  assert.deepEqual(await (await req('/rest/v1/task_events?ndeg=eq.'+transferred.ndeg,'bob')).json(),[]);
+});
+
+test('le repli CSV sert les mêmes lignes autorisées, jamais un export brut', async () => {
+  const csv=await req('/INDEX.csv','bob'); assert.equal(csv.status,200);
+  assert.match(csv.headers.get('cache-control'),/no-store/);
+  const text=await csv.text(); assert.ok(text.includes('ROLE-READ-OWN')); assert.ok(!text.includes('ROLE-READ-FOREIGN'));
+  assert.ok(!text.includes('ROLE-READ-OLD')); assert.ok(!text.includes('CONFIDENTIEL_RECETTE'));
+  const supervisor=await (await req('/INDEX.csv','sue')).text(); assert.ok(supervisor.includes('ROLE-READ-FOREIGN'));
+});
+
+test('un import membre ne transmet aucun projet étranger au modèle et reste à son nom', async () => {
+  await fixture('ROLE-INGEST-OWN',{entree:'Maître',projet:'CONTEXTE_MEMBRE_AUTORISE'});
+  await fixture('ROLE-INGEST-OTHER',{entree:'Maître',responsable:'Alice Recette',projet:'CONTEXTE_ETRANGER_INTERDIT'});
+  const r=await req('/ingest','bob','POST',{text:'Retour membre de recette',client:'Recette'});
+  assert.equal(r.status,201); const result=await r.json();
+  const prompt=JSON.stringify(ollamaRequests.at(-1));
+  assert.ok(prompt.includes('CONTEXTE_MEMBRE_AUTORISE')); assert.ok(!prompt.includes('CONTEXTE_ETRANGER_INTERDIT'));
+  const row=(await db.query('select responsable from briefs where ndeg=$1',[result.created[0].ndeg])).rows[0];
+  assert.equal(row.responsable,'Bob Recette');
+  assert.equal((await (await req('/rest/v1/briefs?ndeg=eq.'+result.created[0].ndeg,'bob')).json()).length,1);
+  const calls=ollamaRequests.length;
+  assert.equal((await req('/ingest','empty','POST',{text:'Sans identité'})).status,403);
+  assert.equal(ollamaRequests.length,calls);
+});
+
+test('une mutation en attente de verrou recontrôle le responsable après une réattribution concurrente', async () => {
+  const b=await fixture('ROLE-RACE'); const lock=await db.connect();
+  try {
+    await lock.query('begin'); await lock.query('select id from briefs where id=$1 for update',[b.id]);
+    const pending=req('/rest/v1/briefs?id=eq.'+b.id,'bob','PATCH',{projet:'INTRUSION_CONCURRENTE'});
+    // Attend une vraie requête SQL bloquée, pas une durée supposée suffisante.
+    let waiting=false;
+    for(let i=0;i<100;i++) {
+      const state=await db.query("select 1 from pg_stat_activity where datname=current_database() and wait_event_type='Lock' and pid<>pg_backend_pid()");
+      if(state.rowCount) {waiting=true;break;} await new Promise(r=>setTimeout(r,20));
+    }
+    assert.ok(waiting,'la mutation doit attendre le verrou du dossier');
+    await lock.query("update briefs set responsable='Alice Recette' where id=$1",[b.id]); await lock.query('commit');
+    assert.equal((await pending).status,403);
+    assert.equal((await db.query('select projet from briefs where id=$1',[b.id])).rows[0].projet,b.projet);
+  } finally {await lock.query('rollback');lock.release();}
+});
+
+test('les mêmes restrictions restent actives après redémarrage', async () => {
+  const port=Number(new URL(origin).port); await stopChild(); await startChild(port);
+  assert.deepEqual(await (await req('/rest/v1/briefs?ndeg=eq.ROLE-READ-FOREIGN','bob')).json(),[]);
+  assert.equal((await req('/rest/v1/comments','bob','POST',{ndeg:'ROLE-COMMENT-OTHER',body:'Après boot'})).status,403);
+  assert.equal((await (await req('/rest/v1/task_events?ndeg=eq.ROLE-HISTORY-OWN','bob')).json()).length,2);
+});
+
+test('les variantes encodées ne contournent pas le portail RH', async () => {
+  for(const route of ['/rh%2fevaluation-departement.html','/stub%2f..%2frh%2fevaluation-departement.html']) {
+    assert.equal((await req(route,'bob')).status,403,route);
+    assert.equal((await req(route,'sue')).status,403,route);
+  }
+  assert.equal((await req('/rh%2fevaluation-departement.html','alice')).status,200);
+});
+
+test('un ancien fichier de données placé dans briefs ne devient pas une API parallèle', async () => {
+  for (const ext of ['csv','json','md','sql']) {
+    const filename='recette-donnees-'+process.pid+'.'+ext;
+    const file=new URL('../briefs/'+filename,import.meta.url);
+    await writeFile(file,'CONTENU_BRUT_INTERDIT',{flag:'wx'});
+    try {
+      assert.equal((await req('/'+filename,'alice')).status,404);
+      assert.equal((await req('/'+filename,'bob')).status,404);
+    } finally {await rm(file);}
+  }
+});
+
+test('le mois autorisé vient du serveur et les événements sans qualification de rôle sont signalés', async () => {
+  assert.equal((await (await req('/profil','bob')).json()).taskMonth,currentDeadline().slice(0,7));
+  const r=await req('/rest/v1/task_events?ndeg=eq.ROLE-HISTORY-OWN','bob');
+  assert.equal(r.headers.get('x-radar-unqualified-role-events'),'1');
+});
+
+test('les imports concurrents allouent des codes distincts sans exposer le portefeuille complet', async () => {
+  const responses=await Promise.all([1,2,3].map(n=>req('/ingest','bob','POST',{text:'Retour parallèle '+n,client:'Recette'})));
+  for(const r of responses) assert.equal(r.status,201);
+  const results=await Promise.all(responses.map(r=>r.json()));
+  const codes=results.map(r=>r.created[0].ndeg); assert.equal(new Set(codes).size,3);
+  const count=await db.query('select count(*)::int as n from briefs where ndeg=any($1)',[codes]); assert.equal(count.rows[0].n,3);
+});
+
+test('la réutilisation d’un code ne transfère pas les médias ou commentaires du dossier supprimé', async () => {
+  const b=await fixture('ROLE-REUSE');
+  const asset=await (await req('/visuels','bob','POST',{ndeg:b.ndeg,data:png})).json();
+  const comment=await (await req('/rest/v1/comments','bob','POST',{ndeg:b.ndeg,body:'ANCIEN_COMMENTAIRE'})).json();
+  await db.query('delete from briefs where id=$1',[b.id]);
+  await fixture('ROLE-REUSE',{responsable:'Alice Recette'});
+  assert.equal((await req('/visuels/'+asset.filename,'alice')).status,404);
+  assert.deepEqual(await (await req('/rest/v1/brief_assets?id=eq.'+asset.id,'alice')).json(),[]);
+  assert.deepEqual(await (await req('/rest/v1/comments?id=eq.'+comment[0].id,'alice')).json(),[]);
+});
+
+test('le changement de code conserve les liens qualifiés et le client ne peut imposer un identifiant parent', async () => {
+  const b=await fixture('ROLE-RENAME');
+  const a=await (await req('/visuels','bob','POST',{ndeg:b.ndeg,data:png})).json();
+  const c=(await (await req('/rest/v1/comments','bob','POST',{ndeg:b.ndeg,body:'Suivi'})).json())[0];
+  assert.equal(a.brief_id,b.id); assert.equal(c.brief_id,b.id);
+  assert.equal((await req('/rest/v1/comments','bob','POST',{ndeg:b.ndeg,brief_id:1,body:'Faux parent'})).status,400);
+  assert.equal((await req('/rest/v1/comments?id=eq.'+c.id,'bob','PATCH',{brief_id:1})).status,400);
+  assert.equal((await req('/rest/v1/briefs?id=eq.'+b.id,'bob','PATCH',{ndeg:'ROLE-RENAMED'})).status,200);
+  assert.equal((await (await req('/rest/v1/comments?ndeg=eq.ROLE-RENAMED','bob')).json())[0].id,c.id);
+  assert.equal((await (await req('/rest/v1/brief_assets?ndeg=eq.ROLE-RENAMED','bob')).json())[0].id,a.id);
+  assert.equal((await req('/visuels/'+a.filename,'bob')).status,200);
+  // Ancien rattachement non prouvé : aucune migration n'en invente l'origine.
+  await db.query("insert into comments(ndeg,body) values ('ROLE-RENAMED','ANCIEN_SANS_ID')");
+  const migration=await readFile(new URL('../server/journal.sql',import.meta.url),'utf8'); await db.query(migration);
+  assert.equal((await db.query("select brief_id from comments where body='ANCIEN_SANS_ID'")).rows[0].brief_id,null);
+  assert.equal((await (await req('/rest/v1/comments?ndeg=eq.ROLE-RENAMED','bob')).json()).length,1);
 });

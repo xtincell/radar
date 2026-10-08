@@ -11,7 +11,7 @@ import http from "node:http";
 import { toWebRequest, writeWebResponse } from "./request-adapter.js";
 import { serveStatic } from "./static.js";
 import { openKv } from "./kv-sqlite.js";
-import { initDb, handleRest, query as pgQuery, hasDb } from "./pgrest.js";
+import { initDb, handleRest, handleBriefCsv, query as pgQuery, hasDb } from "./pgrest.js";
 import { handleVisuelUpload, serveVisuel, handleVisuelDelete, purgeOrphans } from "./visuels.js";
 import { handleIngest } from "./ingest.js";
 import * as middleware from "../functions/_middleware.js";
@@ -55,6 +55,7 @@ async function dispatch(context) {
   const method = context.request.method;
 
   if (pathname.startsWith("/rest/v1/")) return handleRest(context);
+  if (decodeURIComponent(pathname).toLowerCase() === '/index.csv' && method === 'GET') return handleBriefCsv(context);
   if (pathname === "/jour.json") return jourJson();
   // Visuels de livrables — derrière le mur (pas dans la liste bypass de la middleware).
   if (pathname === "/ingest" && method === "POST") return handleIngest(context);

@@ -341,7 +341,7 @@ const N_LAB={created:["🆕","Nouvelle entrée"],status:["🔁","Statut modifié
   deadline:["📅","Échéance modifiée"],frozen:["❄️","Gelé"],unfrozen:["♻️","Réactivé"],
   updated:["✏️","Dossier modifié"],visibility:["🔒","Confidentialité modifiée"],closed:["📦","Clôturé / livrable"],reopened:["🔓","Rouvert"],deleted:["🗑️","Supprimé"]};
 const N_CRE={"Maître":["🆕","Nouveau brief"],"Tâche":["✅","Nouvelle tâche"],"Révision":["🔄","Nouvelle révision"]};
-let NOTIFS=[], N_UNQUALIFIED=0, N_AVAILABLE=false;
+let NOTIFS=[], N_UNQUALIFIED=0, N_ROLE_UNQUALIFIED=0, N_AVAILABLE=false;
 function nSeen(){ try{return localStorage.getItem(N_SEEN)||"";}catch(e){return "";} }
 function nSetSeen(v){ try{localStorage.setItem(N_SEEN,v);}catch(e){} }
 function nLabel(e){ return (e.kind==="created"&&N_CRE[e.entree])||N_LAB[e.kind]||["•",e.kind]; }
@@ -364,8 +364,9 @@ async function nFetch(){
   if(!r.ok) return [];
   let evs=await r.json();
   N_UNQUALIFIED=Number(r.headers.get("X-Radar-Unqualified-Events"))||0; N_AVAILABLE=true;
-  if(me && me.role==="member" && me.person){ const p=me.person;
-    evs=evs.filter(e=>(e.resp_new||"").includes(p)||(e.resp_old||"").includes(p)); }
+  N_ROLE_UNQUALIFIED=Number(r.headers.get("X-Radar-Unqualified-Role-Events"))||0;
+  // Le serveur qualifie aussi les événements de médias/échéance : leur auteur
+  // n'est pas nécessairement le responsable de la tâche autorisée.
   return evs;
 }
 function paintBell(){
@@ -406,7 +407,10 @@ function openNotifMenu(anchor){
       <span class="em">${l[0]}</span><span class="tx"><span class="tt">${esc(l[1])} — ${esc(e.client||e.projet||'')}</span>
       <span class="mt">${esc(e.summary||'')} · ${esc(nAgo(e.at))}</span></span></button>`;
   }).join("") : `<div class="hd" style="padding:14px 9px">Aucun mouvement récent qualifié.</div>`;
-  const note=!N_AVAILABLE ? "Journal indisponible : l'activité n'a pas pu être vérifiée." : N_UNQUALIFIED ? `${N_UNQUALIFIED} événements anciens à qualifier ; historique incomplet.` : "";
+  const note=!N_AVAILABLE ? "Journal indisponible : l'activité n'a pas pu être vérifiée." : [
+    N_UNQUALIFIED ? `${N_UNQUALIFIED} événements anciens à qualifier ; historique incomplet.` : '',
+    N_ROLE_UNQUALIFIED ? `${N_ROLE_UNQUALIFIED} événements au périmètre de rôle non qualifié ; historique incomplet.` : '',
+  ].filter(Boolean).join(' ');
   menu.innerHTML=`<div class="hd">Activité du pipe</div>${note?`<div class="hd" role="status">${esc(note)}</div>`:""}${N_AVAILABLE?items:""}
     <div class="hd" style="border-top:1px solid var(--border);margin-top:6px;padding-top:8px">Notifications</div>
     <button data-act="seen"><span class="av">✓</span>Tout marquer comme lu</button>

@@ -13,8 +13,8 @@
 //     « Retour client à trier » portant le texte brut (fallback:true).
 // ============================================================
 "use strict";
-import { query as pgQuery, transaction, hasDb, initDb } from "./pgrest.js";
-import { identityFor } from "../functions/_authz.js";
+import { query as pgQuery, transaction, hasDb, initDb, targetBrief } from "./pgrest.js";
+import { taskAuthority, briefScopeSql, assertBriefAccess } from "../functions/_authz.js";
 
 const OLLAMA_URL = (process.env.OLLAMA_URL || "http://127.0.0.1:11434").replace(/\/$/, "");
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "llama3.2";
@@ -30,12 +30,14 @@ const todayISO = () => {
 };
 
 // ---- contexte : l'existant sert de référentiel au modèle --------------------
-async function loadContext(query = pgQuery) {
+async function loadContext(context, query = pgQuery) {
+  const params=[];
+  const scope=briefScopeSql(context,params);
   const { rows: masters } = await query(
     `select ndeg, client, marque, projet, statut from briefs
-     where entree = 'Maître' and coalesce(private_to,'') = ''
+     where entree = 'Maître' and coalesce(private_to,'') = '' and ${scope}
        and coalesce(statut,'') not in ('Bouclé','Archivé','Frozen','Gelé')
-     order by ndeg desc limit 200`, []);
+     order by ndeg desc limit 200`, params);
   const { rows: all } = await query("select ndeg, client, parent, entree from briefs", []);
   return { masters, all };
 }
@@ -143,22 +145,28 @@ function normalizeItems(items, masters, clientHint) {
 }
 
 // ---- insertion (statut Reçu, brief déduit → file « À valider ») -------------
-async function insertTasks(tasks, rawText, person) {
+async function insertTasks(tasks, rawText, person, context) {
   return transaction(async client => {
-    const { all } = await loadContext(client.query.bind(client));
+    // L'allocation interne doit rester globale, sans transmettre ces codes au modèle.
+    await client.query('lock table briefs in share row exclusive mode');
+    const { all } = await loadContext(context,client.query.bind(client));
     const taken = [];
     const created = [];
     const today = todayISO();
     for (const t of tasks) {
+      if (t.revision) await targetBrief(client,t.parent,context);
+      const who=taskAuthority(context);
+      const responsable=who.fullAccess || who.role==='owner' || who.role==='supervisor' ? '' : who.person;
+      assertBriefAccess({responsable,statut:'Reçu',deadline:t.deadline},context);
       const ndeg = t.revision ? nextRevisionCode(all, taken, t.parent) : nextProjectCode(all, taken, clientPrefix(all, t.client));
       taken.push(ndeg);
       const comm = "Retour client (ingest" + (person ? " · " + person : "") + ") : " + (t.resume || String(rawText).slice(0, 300));
       const { rows } = await client.query(
         `insert into briefs (ndeg, client, marque, projet, niveau, type, statut, prio, deadline,
-                             livrables, date_reception, entree, parent, comm, entre_par, brief_etat)
-         values ($1,$2,$3,$4,$5,$6,'Reçu',$7,$8,$9,$10,$11,$12,$13,$14,'déduit') returning *`,
+                             livrables, date_reception, entree, parent, comm, entre_par, brief_etat, responsable)
+         values ($1,$2,$3,$4,$5,$6,'Reçu',$7,$8,$9,$10,$11,$12,$13,$14,'déduit',$15) returning *`,
         [ndeg, t.client, t.marque, t.projet, t.revision ? "Révision" : "Maître", t.type, t.prio,
-         t.deadline, t.livrables, today, t.revision ? "Révision" : "Maître", t.parent, comm, person]);
+         t.deadline, t.livrables, today, t.revision ? "Révision" : "Maître", t.parent, comm, person, responsable]);
       const b = rows[0];
       created.push({ ndeg: b.ndeg, projet: b.projet, client: b.client, entree: b.entree, parent: b.parent || "", prio: b.prio, deadline: b.deadline || "" });
     }
@@ -171,7 +179,10 @@ export async function handleIngest(context) {
   if (!hasDb()) return json({ message: "base non configurée" }, 503);
   if (!await initDb()) return json({ message: "base indisponible" }, 503);
   const email = (context.data && context.data.email) || "";
-  const person = identityFor(email).person || email;
+  const who=taskAuthority(context);
+  const person = who.person || email;
+  if (!who.fullAccess && who.role!=='owner' && who.role!=='supervisor' && !who.person)
+    return json({message:'identité de responsable requise'},403);
 
   let payload;
   try { payload = await context.request.json(); } catch { return json({ message: "corps JSON attendu" }, 400); }
@@ -180,13 +191,15 @@ export async function handleIngest(context) {
   if (!text) return json({ message: "text requis" }, 400);
   if (text.length > MAX_TEXT) return json({ message: "texte trop long" }, 413);
 
-  const { masters } = await loadContext();
+  const { masters } = await loadContext(context);
   let items = null, llmError = "";
   try { items = normalizeItems(await askOllama(text, clientHint, masters), masters, clientHint); }
   catch (e) { llmError = String((e && e.message) || e); }
 
   if (items && items.length) {
-    const created = await insertTasks(items, text, person);
+    let created;
+    try { created = await insertTasks(items, text, person, context); }
+    catch(e) { if(e.status) return json({message:e.message},e.status); throw e; }
     return json({ ok: true, created, model: OLLAMA_MODEL }, 201);
   }
 
@@ -196,6 +209,6 @@ export async function handleIngest(context) {
     revision: false, parent: "", client: clientHint || "À qualifier", marque: "",
     projet: "Retour client à trier — " + todayISO(), type: "Autre", prio: "P2",
     deadline: "", livrables: "", resume: String(text).slice(0, 500),
-  }], text, person);
+  }], text, person, context);
   return json({ ok: true, fallback: true, reason: llmError || "réponse inexploitable", created, model: OLLAMA_MODEL }, 201);
 }

@@ -130,7 +130,11 @@ function withSession(res, token, secure) {
 export async function onRequest(context) {
   const { request, env, next } = context;
   const url = new URL(request.url);
-  const path = url.pathname;
+  // La garde et le serveur statique doivent reconnaître le même chemin :
+  // /rh%2f... et /stub%2f..%2frh%2f... désignent aussi un fichier RH.
+  let path;
+  try { path = new URL('/'+decodeURIComponent(url.pathname).replace(/^\/+/,''),url.origin).pathname; }
+  catch { return new Response('400 — chemin invalide',{status:400}); }
   const secure = url.protocol === "https:";
 
   // Flux d'activité (RSS/JSON) : destinés aux services externes (machines), ils
@@ -171,7 +175,7 @@ export async function onRequest(context) {
 
   // Si le mot de passe n'est pas configuré, on ne bloque pas (évite de se verrouiller dehors).
   const password = env.DASH_PASSWORD;
-  if (!password) return next();
+  if (!password) return rhDenied(path,'') || next();
 
   // Allowlist = liste par défaut (membres Slack) + extras éventuels via DASH_ALLOWLIST.
   const extra = (env.DASH_ALLOWLIST || "").split(",").map(s => s.trim().toLowerCase()).filter(Boolean);

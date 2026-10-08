@@ -12,8 +12,8 @@
 import { mkdir, writeFile, unlink, open, access, constants, readdir, stat } from "node:fs/promises";
 import path from "node:path";
 import crypto from "node:crypto";
-import { query as pgQuery, emitEvent, transaction, hasDb, initDb } from "./pgrest.js";
-import { identityFor } from "../functions/_authz.js";
+import { query as pgQuery, emitEvent, transaction, hasDb, initDb, targetBrief, targetLinkedBrief, linkedBriefJoin } from "./pgrest.js";
+import { identityFor, canAccessBrief, taskAuthority } from "../functions/_authz.js";
 
 const MAX_BODY = 4 * 1024 * 1024;   // corps JSON (base64 ≈ +33%)
 const MAX_IMAGE = 2 * 1024 * 1024;  // binaire décodé
@@ -30,17 +30,7 @@ function secu() {
   return { "X-Content-Type-Options": "nosniff", "Referrer-Policy": "strict-origin-when-cross-origin", "X-Frame-Options": "SAMEORIGIN" };
 }
 
-function accessible(brief, context) {
-  return context.data?.fullAccess || !brief.private_to || brief.private_to === identityFor(context.data?.email || '').person;
-}
 function rejected(message, status) { return Object.assign(new Error(message), { status }); }
-async function targetBrief(client, ndeg, context) {
-  const { rows } = await client.query('select * from briefs where ndeg=$1 for share', [ndeg]);
-  if (!rows.length) throw rejected('brief inconnu', 404);
-  if (rows.length !== 1) throw rejected('code de brief ambigu : rattachement à qualifier', 409);
-  if (!accessible(rows[0], context)) throw rejected('brief confidentiel', 403);
-  return rows[0];
-}
 
 // ---- répertoire de stockage : env, sinon /data (volume Docker), sinon ./data ----
 let _dir = null;
@@ -145,9 +135,9 @@ export async function handleVisuelUpload(context) {
     row = await transaction(async client => {
       const b = await targetBrief(client, ndeg, context);
       const ins = await client.query(
-        `insert into brief_assets (ndeg, client, projet, filename, mime, bytes, caption, created_by)
-         values ($1,$2,$3,$4,$5,$6,$7,$8) returning *`,
-        [ndeg, b.client, b.projet, filename, declared, bin.length, caption || null, email]);
+        `insert into brief_assets (ndeg, client, projet, filename, mime, bytes, caption, created_by, brief_id)
+         values ($1,$2,$3,$4,$5,$6,$7,$8,$9) returning *`,
+        [ndeg, b.client, b.projet, filename, declared, bin.length, caption || null, email,b.id]);
       await emitEvent(client, {
         ndeg, entree: b.entree, client: b.client, projet: b.projet, kind: "asset",
         resp_new: identityFor(email).person || email, summary: "Visuel ajouté" + (caption ? " : " + caption : ""),
@@ -168,8 +158,10 @@ export async function serveVisuel(context) {
   const filename = decodeURIComponent(pathname.replace(/^\/visuels\//, ""));
   if (!SAFE_NAME.test(filename)) return new Response("404 — introuvable", { status: 404, headers: { "Content-Type": "text/plain; charset=utf-8", ...secu() } });
   if (!hasDb() || !await initDb()) return json({ message: 'base indisponible' }, 503);
-  const { rows } = await pgQuery('select b.private_to from brief_assets a join briefs b on b.ndeg=a.ndeg where a.filename=$1', [filename]);
-  if (rows.length !== 1 || !accessible(rows[0], context)) return new Response('404 — introuvable', { status: 404, headers: { 'Cache-Control': 'no-store', ...secu() } });
+  const who=taskAuthority(context);
+  const qualified=who.fullAccess || ['owner','supervisor'].includes(who.role) ? '' : ' and a.brief_id is not null';
+  const { rows } = await pgQuery(`select b.* from brief_assets a join briefs b on ${linkedBriefJoin('a')} where a.filename=$1${qualified}`, [filename]);
+  if (rows.length !== 1 || !canAccessBrief(rows[0], context)) return new Response('404 — introuvable', { status: 404, headers: { 'Cache-Control': 'no-store', ...secu() } });
   const dir = await visuelsDir();
   try {
     const handle = await open(path.join(dir, filename), "r");
@@ -202,7 +194,7 @@ export async function handleVisuelDelete(context) {
       const { rows } = await client.query("select * from brief_assets where id = $1 for update", [id]);
       if (!rows.length) throw rejected('visuel inconnu', 404);
       const asset = rows[0];
-      const b = await targetBrief(client, asset.ndeg, context);
+      const b = await targetLinkedBrief(client, asset, context);
       const allowed = (context.data && context.data.fullAccess) || asset.created_by === email ||
         ident.role === "owner" || ident.role === "supervisor";
       if (!allowed) throw rejected("suppression réservée à l'auteur ou à un responsable", 403);
