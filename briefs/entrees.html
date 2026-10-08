@@ -436,18 +436,22 @@ function bind(){
     const ent=ENTRIES.find(x=>x.m.ndeg===sel.dataset.resp); if(!ent) return;
     if(!ent.m.id){ alert("Réattribution impossible : base hors-ligne (mode CSV)."); return; }
     sel.disabled=true;
-    try{ await updateBrief(ent.m.id,{responsable:sel.value}); ent.m.responsable=sel.value; ent.resp=cleanPerson(sel.value); render(); }
+    try{ await updateBrief(ent.m.id,{responsable:sel.value}); await refreshEntries(); }
     catch(err){ alert("Échec de la réattribution : "+err.message); sel.disabled=false; }
   });
   $("#export-csv").addEventListener("click", e=>exportBriefsCSV(e.currentTarget));
 }
 
-async function boot(){
-  try{ ROWS=await loadBriefsLive(); }catch(e){ ROWS=[]; }
+async function refreshEntries(){
+  ROWS=await loadBriefsLive();
   ENTRIES = (ROWS||[])
     .filter(m=> m.entree!=="Doublon" && (m.ndeg||"").charAt(0)!=="≈")
     .map(m=>({ m, di:dateInfo(m), ch:channel(m), dem:demandeur(m), resp:cleanPerson(m.responsable), kd:kind(m) }));
-  fillFilters(); bind(); render();
+  fillFilters(); render();
+}
+async function boot(){
+  try{ await refreshEntries(); }catch(e){ ROWS=[]; ENTRIES=[]; render(); }
+  bind();
   const src=(window.SUPA_SOURCE==="supabase")?"Source : Supabase (live)"
           :(window.SUPA_SOURCE==="csv")?"Source : INDEX.csv (hors-ligne)":"Source : —";
   $("#src").innerHTML=`<b>${esc(src)}</b> · « demandé par » = entré par · « traité par » = responsable (déduit du type si non renseigné)`;
