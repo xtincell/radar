@@ -39,7 +39,7 @@ docker run -p 3000:3000 \
   radar
 ```
 
-Le schéma Postgres (`migrations/`) est appliqué automatiquement et de façon idempotente au démarrage (`server/pgrest.js`). Le volume `/data` conserve les mots de passe personnels (SQLite) **et les visuels de livrables** (`/data/visuels`) entre redéploiements — à inclure dans les sauvegardes côté hébergeur (Coolify : backup du volume `radar_data` ; la base Postgres se sauvegarde séparément, les binaires des visuels ne vivent que sur ce volume).
+Le serveur applique lui-même son schéma Postgres au démarrage, de façon idempotente : celui qu'embarque `server/pgrest.js`, puis le journal `server/journal.sql`. Le dossier `migrations/` n'est **pas** appliqué : il porte des miroirs documentaires pour les bases gérées à la main. Une différence existe : `migrations/20260701_add_suivi.sql` rend `suivi` obligatoire (valeur par défaut `{}`), alors que le schéma embarqué le laisse facultatif. Le volume `/data` conserve les mots de passe personnels (SQLite) **et les visuels de livrables** (`/data/visuels`) entre redéploiements — à inclure dans les sauvegardes côté hébergeur (Coolify : backup du volume `radar_data` ; la base Postgres se sauvegarde séparément, les binaires des visuels ne vivent que sur ce volume).
 
 ## Configuration
 
@@ -86,7 +86,17 @@ Ces règles concernent les routes protégées. `/jour.json`, `/jour.html` et les
 
 Une instance Radar n'a rien de spécial à faire pour être agrégée : elle expose son API (`/rest/v1/*`) et ses flux (`/feed.xml`, `/activity.json`), protégés par `RADAR_API_KEY` pour un accès machine full-scope (voir `.env.example`).
 
-Côté Galahad, une variable `RADAR_INSTANCES` (liste d'entrées `{name, baseUrl, apiKey}`, une par équipe/instance déployée) permet d'agréger plusieurs Radars indépendants sans qu'aucun ne connaisse l'existence des autres — chaque instance reste standalone et n'expose que ses propres données.
+Côté Galahad, `RADAR_INSTANCES` liste les noms des instances, séparés par des virgules. Chaque nom porte ensuite son adresse et sa clé dans deux variables, le nom passant en majuscules :
+
+```bash
+RADAR_INSTANCES=perso,equipe
+RADAR_PERSO_URL=https://radar.example.com
+RADAR_PERSO_KEY=…            # la RADAR_API_KEY de cette instance
+RADAR_EQUIPE_URL=…
+RADAR_EQUIPE_KEY=…
+```
+
+Galahad agrège ainsi plusieurs Radars indépendants sans qu'aucun ne connaisse l'existence des autres : chaque instance reste autonome et n'expose que ses propres données.
 
 ## Architecture
 
@@ -101,7 +111,7 @@ server/visuels.js         visuels de livrables : upload / service / suppression 
 server/ingest.js          retours clients → tâches via Ollama (/ingest)
 server/index.js           point d'entrée Node (remplace un runtime edge/Pages)
 server/kv-sqlite.js       stockage des mots de passe perso (remplace un KV managé)
-migrations/               schéma SQL, idempotent
+migrations/               miroirs SQL pour bases gérées à la main ; non appliqués par le serveur
 ```
 
 ## Développement
