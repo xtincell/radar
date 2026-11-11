@@ -89,6 +89,17 @@ async function upgradeStored(kv, email, previous, pass) {
   }
 }
 
+// Identifiants Basic : le realm annonce charset="UTF-8", les navigateurs envoient
+// donc des octets UTF-8 ; atob seul les rendait en Latin-1 (« Ã© » pour « é »),
+// et un mot de passe accentué défini dans /profil ne correspondait jamais.
+// Repli Latin-1 si la séquence n'est pas de l'UTF-8 valide (ancien client).
+function decodeBasic(b64) {
+  const bin = atob(b64);
+  const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
+  try { return new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes); }
+  catch { return bin; }
+}
+
 /* ---- helpers cookie signé (HMAC-SHA256, base64url) ---- */
 const enc = new TextEncoder();
 const dec = new TextDecoder();
@@ -227,7 +238,7 @@ export async function onRequest(context) {
 
   let decoded = "";
   try {
-    decoded = atob(header.slice(6));
+    decoded = decodeBasic(header.slice(6));
   } catch {
     return unauthorized(env);
   }
