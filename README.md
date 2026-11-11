@@ -11,7 +11,7 @@ Pensé pour être déployé **standalone** (une instance = une équipe = une bas
 - Visuels de livrables (`POST /visuels`, service `GET /visuels/<f>`) : images compressées côté client (WebP ≤ 1200 px), revalidées serveur (MIME + magic bytes, ≤ 2 Mo), métadonnées en base (`brief_assets`), binaires sur le volume `/data/visuels`.
 - Ingest des retours clients (`POST /ingest`) : texte libre → LLM local (Ollama) → tâches structurées (révision rattachée à un projet existant ou nouveau projet), insérées en statut « Reçu » et revues via la page « À valider ». Repli sans perte si Ollama est injoignable.
 - Écran « Direction » (`/direction.html`) : synthèse pour non-opérateurs — à arbitrer, livraisons de la semaine, mur des travaux récents, transmission des retours clients.
-- Authentification HTTP Basic + session cookie signée (HMAC-SHA256), avec self-service de mot de passe par utilisateur (`/profil`, stocké en SQLite locale).
+- Authentification HTTP Basic + session cookie signée (HMAC-SHA256), avec self-service de mot de passe par utilisateur (`/profil`, stocké sous empreinte PBKDF2-SHA256 salée en SQLite locale — voir [Mots de passe personnels](#mots-de-passe-personnels)).
 - Trois niveaux d'autorité configurables (`owner` / `supervisor` / `member`) — voir [Configurer les accès](#configurer-les-accès).
 - Périmètre de rôle et isolation `private_to` appliqués côté serveur aux tâches, commentaires, journal, CSV et médias.
 
@@ -39,7 +39,7 @@ docker run -p 3000:3000 \
   radar
 ```
 
-Le serveur applique lui-même son schéma Postgres au démarrage, de façon idempotente : celui qu'embarque `server/pgrest.js`, puis le journal `server/journal.sql`. Le dossier `migrations/` n'est **pas** appliqué : il porte des miroirs documentaires pour les bases gérées à la main. Une différence existe : `migrations/20260701_add_suivi.sql` rend `suivi` obligatoire (valeur par défaut `{}`), alors que le schéma embarqué le laisse facultatif. Le volume `/data` conserve les mots de passe personnels (SQLite) **et les visuels de livrables** (`/data/visuels`) entre redéploiements — à inclure dans les sauvegardes côté hébergeur (Coolify : backup du volume `radar_data` ; la base Postgres se sauvegarde séparément, les binaires des visuels ne vivent que sur ce volume).
+Le serveur applique lui-même son schéma Postgres au démarrage, de façon idempotente : celui qu'embarque `server/pgrest.js`, puis le journal `server/journal.sql`. Le dossier `migrations/` n'est **pas** appliqué : il porte des miroirs documentaires pour les bases gérées à la main. Une différence existe : `migrations/20260701_add_suivi.sql` rend `suivi` obligatoire (valeur par défaut `{}`), alors que le schéma embarqué le laisse facultatif. Le volume `/data` conserve les empreintes des mots de passe personnels (SQLite) **et les visuels de livrables** (`/data/visuels`) entre redéploiements — à inclure dans les sauvegardes côté hébergeur (Coolify : backup du volume `radar_data` ; la base Postgres se sauvegarde séparément, les binaires des visuels ne vivent que sur ce volume).
 
 ## Configuration
 
@@ -82,6 +82,27 @@ Les nouveaux commentaires et visuels portent un `brief_id` attribué exclusiveme
 
 Ces règles concernent les routes protégées. `/jour.json`, `/jour.html` et les flux d'activité conservent leur contrat public explicite : données limitées et non privées ; `FEED_TOKEN` peut protéger les flux. Ils ne constituent pas des vues personnelles. La clé machine `RADAR_API_KEY` conserve son accès complet explicite. Les règles d'édition du wiki et de la configuration sont distinctes de ce périmètre de tâches.
 
+### Mots de passe personnels
+
+`/profil` permet à chaque utilisateur de remplacer, pour son compte, le mot de passe partagé `DASH_PASSWORD` (4 caractères minimum). `GET /profil` indique seulement si un mot de passe personnel existe (`perso`), jamais sa valeur ni son format.
+
+Seule une empreinte est stockée, dans la table `dash_users` du fichier `SQLITE_PATH` :
+
+```
+pbkdf2-sha256$600000$<sel base64>$<empreinte base64>
+```
+
+PBKDF2-HMAC-SHA256 par WebCrypto (`functions/_password.js`), 600 000 itérations (recommandation OWASP), sel aléatoire de 16 octets, empreinte de 32 octets, comparaison en temps constant. Le format porte ses paramètres : une empreinte plus faible que les paramètres courants est renforcée à la connexion suivante. Le stockage refuse toute autre valeur et efface l'ancienne cellule (`secure_delete`). Le mot de passe partagé reste une variable d'environnement, comparé lui aussi en temps constant ; les sessions déjà ouvertes ne changent pas. Limite : Cloudflare Workers plafonne PBKDF2 à 100 000 itérations, ces empreintes ne s'y vérifieraient pas ; le runtime déployé est Node 22.
+
+Une valeur sans préfixe `pbkdf2-sha256$` est un ancien mot de passe en clair : elle reste acceptée à la prochaine connexion réussie, puis elle est remplacée par son empreinte. Une valeur qui porte le préfixe sans être lisible est refusée, jamais relue comme du clair. Pour convertir aussi les comptes qui ne se reconnectent pas (une session dure 30 jours), après le déploiement de cette version :
+
+```bash
+node server/hash-passwords.js           # convertit chaque valeur en clair, idempotent, puis VACUUM
+node server/hash-passwords.js --check   # n'écrit rien ; code de sortie 1 s'il reste du clair
+```
+
+Dans l'image Docker, `SQLITE_PATH` vaut déjà `/data/dash-users.sqlite3` : `docker exec <conteneur> node server/hash-passwords.js` (ou le terminal de la ressource dans Coolify). Le serveur peut rester en marche : chaque ligne est remplacée seulement si elle n'a pas changé entre-temps. Les sauvegardes du volume faites avant la conversion contiennent toujours les mots de passe en clair.
+
 ## Intégration Galahad
 
 Une instance Radar n'a rien de spécial à faire pour être agrégée : elle expose son API (`/rest/v1/*`) et ses flux (`/feed.xml`, `/activity.json`), protégés par `RADAR_API_KEY` pour un accès machine full-scope (voir `.env.example`).
@@ -106,11 +127,13 @@ functions/_middleware.js  mur d'authentification (Basic Auth + cookie de session
 functions/_feed.js        flux RSS/JSON, lit task_events
 functions/token.js        JWT par utilisateur (intégration RLS externe optionnelle)
 functions/profil.js       self-service mot de passe
+functions/_password.js    empreintes des mots de passe personnels (PBKDF2-SHA256)
 server/pgrest.js          mini-PostgREST maison + schéma + seed optionnel
 server/visuels.js         visuels de livrables : upload / service / suppression (/visuels)
 server/ingest.js          retours clients → tâches via Ollama (/ingest)
 server/index.js           point d'entrée Node (remplace un runtime edge/Pages)
-server/kv-sqlite.js       stockage des mots de passe perso (remplace un KV managé)
+server/kv-sqlite.js       stockage des empreintes de mots de passe perso (remplace un KV managé)
+server/hash-passwords.js  conversion en masse des anciens mots de passe en clair
 migrations/               miroirs SQL pour bases gérées à la main ; non appliqués par le serveur
 ```
 
@@ -121,6 +144,8 @@ node --check <fichier>.js   # vérif syntaxe rapide
 npm start                   # lance le serveur
 # Recette HTTP sur une base locale jetable créée et supprimée par la suite :
 RADAR_TEST_ADMIN_URL=postgresql://postgres:mot-de-passe@127.0.0.1:5432/postgres npm test
+# Recette des mots de passe seule, sans Postgres :
+node --test tests/mots-de-passe.test.mjs
 ```
 
 Aucun framework, aucun bundler : stdlib Node + `pg`.
