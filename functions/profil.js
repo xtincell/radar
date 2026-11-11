@@ -3,12 +3,14 @@
 // authentifié. L'email vient du middleware (context.data.email, fiable — posé après
 // validation cookie OU Basic Auth), avec repli sur l'en-tête Authorization. Jamais
 // depuis le corps → on ne peut changer QUE son propre mot de passe.
-// Stockage : Cloudflare KV (binding DASH_USERS), valeur en clair (repo privé, faible enjeu).
+// Stockage : binding DASH_USERS (SQLite, server/kv-sqlite.js) ; seule l'empreinte
+// PBKDF2-SHA256 salée est écrite (functions/_password.js), jamais le mot de passe.
 // Renvoie aussi le NIVEAU D'AUTORITÉ (role + person) lu depuis functions/_authz.js,
 // pour que le front restreigne la vue (owner=tout, supervisor=toutes les tâches, member=ses tâches).
 "use strict";
 
 import { identityFor, monthKey } from "./_authz.js";
+import { hashPassword } from "./_password.js";
 
 function emailFromAuth(request) {
   const h = request.headers.get("Authorization") || "";
@@ -27,7 +29,8 @@ function authedEmail(context) {
 const json = (obj, status = 200) =>
   new Response(JSON.stringify(obj), { status, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" } });
 
-// GET /profil → identité courante + indique si un mot de passe perso est déjà défini.
+// GET /profil → identité courante + indique si un mot de passe perso est déjà défini
+// (booléen seulement : ni la valeur stockée ni son format ne sont renvoyés).
 export async function onRequestGet(context) {
   const { env } = context;
   const email = authedEmail(context);
@@ -49,7 +52,7 @@ export async function onRequestPost(context) {
   const np = (body && body.nouveau != null ? String(body.nouveau) : "").trim();
   if (np.length < 4) return json({ ok: false, error: "Mot de passe trop court (4 caractères minimum)." }, 400);
   try {
-    await env.DASH_USERS.put(email, np);
+    await env.DASH_USERS.put(email, await hashPassword(np));
     return json({ ok: true, email });
   } catch (e) {
     return json({ ok: false, error: "Échec d'enregistrement : " + (e && e.message) }, 502);
