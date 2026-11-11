@@ -18,6 +18,10 @@
 //                         on signe avec DASH_PASSWORD, donc changer le mot de passe
 //                         partagé invalide toutes les sessions existantes).
 //
+// Mot de passe personnel (/profil) : stocké sous empreinte PBKDF2-SHA256 salée
+// (functions/_password.js) ; s'il existe, il remplace le partagé pour ce compte.
+// Un ancien mot de passe resté en clair est accepté puis converti à la connexion.
+//
 // Gérer les accès :
 //   - éditer la config d'autorité (RADAR_AUTHZ_JSON / RADAR_ADMIN_EMAIL, voir functions/_authz.js), OU
 //   - ajouter des emails sans toucher à la config : variable d'env DASH_ALLOWLIST="a@x.com,b@y.com"
@@ -28,6 +32,7 @@
 // Allowlist + niveaux d'autorité = source unique dans functions/_authz.js.
 // (Édite RADAR_AUTHZ_JSON / RADAR_ADMIN_EMAIL là-bas pour gérer les accès ; ici on ne fait que l'appliquer.)
 import { ALLOW, identityFor } from "./_authz.js";
+import { verifyPassword, hashPassword, equalSecrets } from "./_password.js";
 
 const COOKIE = "radar_sess";
 
@@ -68,6 +73,31 @@ function safeEqual(a, b) {
   let diff = 0;
   for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
   return diff === 0;
+}
+
+// Remplace un ancien mot de passe en clair (ou une empreinte aux paramètres
+// dépassés) juste après sa vérification réussie. Remplacement conditionnel : un
+// mot de passe changé entre-temps via /profil n'est pas écrasé. Un échec
+// d'écriture n'empêche pas la connexion ; la conversion en masse reste possible.
+async function upgradeStored(kv, email, previous, pass) {
+  try {
+    const next = await hashPassword(pass);
+    if (typeof kv.replace === "function") await kv.replace(email, previous, next);
+    else await kv.put(email, next);
+  } catch (e) {
+    console.warn("[auth] conversion du mot de passe personnel impossible :", e && e.message);
+  }
+}
+
+// Identifiants Basic : le realm annonce charset="UTF-8", les navigateurs envoient
+// donc des octets UTF-8 ; atob seul les rendait en Latin-1 (« Ã© » pour « é »),
+// et un mot de passe accentué défini dans /profil ne correspondait jamais.
+// Repli Latin-1 si la séquence n'est pas de l'UTF-8 valide (ancien client).
+function decodeBasic(b64) {
+  const bin = atob(b64);
+  const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
+  try { return new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes); }
+  catch { return bin; }
 }
 
 /* ---- helpers cookie signé (HMAC-SHA256, base64url) ---- */
@@ -208,7 +238,7 @@ export async function onRequest(context) {
 
   let decoded = "";
   try {
-    decoded = atob(header.slice(6));
+    decoded = decodeBasic(header.slice(6));
   } catch {
     return unauthorized(env);
   }
@@ -216,14 +246,26 @@ export async function onRequest(context) {
   const email = (idx >= 0 ? decoded.slice(0, idx) : "").trim().toLowerCase();
   const pass = idx >= 0 ? decoded.slice(idx + 1) : "";
 
-  // Mot de passe attendu : celui défini par l'utilisateur (KV) s'il existe, sinon le partagé.
-  let expected = password;
+  // Email hors allowlist : refus sans lire le stockage ni calculer d'empreinte.
+  if (!allow.has(email)) return unauthorized(env);
+
+  // Mot de passe attendu : le personnel (empreinte, ou ancien clair à convertir)
+  // s'il existe, sinon le partagé. Les deux comparaisons sont en temps constant.
+  let stored;
   if (env.DASH_USERS) {
-    try { const perso = await env.DASH_USERS.get(email); if (perso) expected = perso; } catch {}
+    try { stored = await env.DASH_USERS.get(email); } catch {}
+  }
+  let ok;
+  if (stored) {
+    const check = await verifyPassword(pass, stored);
+    ok = check.ok;
+    if (check.rehash) await upgradeStored(env.DASH_USERS, email, stored, pass);
+  } else {
+    ok = await equalSecrets(pass, password);
   }
 
   // Autorisé si : email dans l'allowlist ET mot de passe correct → on ouvre une session.
-  if (allow.has(email) && safeEqual(pass, expected)) {
+  if (ok) {
     context.data = context.data || {};
     context.data.email = email;
     const denied = rhDenied(path, email);               // gate owner-only sur /rh/*
