@@ -27,7 +27,9 @@ async function startChild(port) {
   child = spawn(process.execPath, ['server/index.js'], { cwd: new URL('../', import.meta.url),
     env: { ...process.env, DATABASE_URL: target.href, PORT: String(port), HOST: '127.0.0.1', SQLITE_PATH: path.join(directory, 'users.sqlite'),
       VISUELS_DIR: path.join(directory, 'visuels'), DASH_PASSWORD: 'recette-locale', DASH_COOKIE_SECRET: 'signature-de-recette',
-      TZ: 'Africa/Douala', RADAR_API_KEY: 'machine-de-recette', FEED_TOKEN: '', RADAR_SEED_CSV: '', OLLAMA_URL: 'http://127.0.0.1:'+ollama.address().port,
+      TZ: 'Africa/Douala', RADAR_API_KEY: 'machine-de-recette', FEED_TOKEN: '', RADAR_SEED_CSV: '',
+      // Publication explicite du flux pour cette recette : il est privé par défaut (tests/flux.test.mjs).
+      FEED_PUBLIC: '1', JOUR_PUBLIC: '', OLLAMA_URL: 'http://127.0.0.1:'+ollama.address().port,
       RADAR_AUTHZ_JSON: JSON.stringify({ 'alice@recette.invalid': { person: 'Alice Recette', role: 'owner' },
         'bob@recette.invalid': { person: 'Bob Recette', role: 'member' },
         'sue@recette.invalid': { person: 'Sue Recette', role: 'supervisor' },
@@ -145,8 +147,11 @@ test('un import brut échoue sans dossier résiduel lorsque sa trace est refusé
 });
 
 test('les 125 événements anciens restent conservés, non publiés et signalés comme incomplets', async () => {
+  // Privés jusqu'à relecture : lisibles des responsables, jamais d'un membre ni du flux.
   const http = await req('/rest/v1/task_events?ndeg=like.REC-ANCIEN-%');
-  assert.equal(http.headers.get('x-radar-unqualified-events'), '125'); assert.deepEqual(await http.json(), []);
+  assert.equal(http.headers.get('x-radar-unqualified-events'), '125'); assert.equal((await http.json()).length, 125);
+  assert.equal((await (await req('/rest/v1/task_events?ndeg=like.REC-ANCIEN-%', 'sue')).json()).length, 125);
+  assert.deepEqual(await (await req('/rest/v1/task_events?ndeg=like.REC-ANCIEN-%', 'bob')).json(), []);
   const feed = await (await req('/activity.json', null)).json();
   assert.equal(feed._radar.unqualified_events,125); assert.equal(feed._radar.history_complete,false);
   assert.ok(!JSON.stringify(feed.items).includes('ANCIEN_NON_QUALIFIE'));
@@ -215,11 +220,14 @@ test('la suppression média refusée par le journal conserve la ligne et le bina
   assert.equal((await req('/visuels/'+a.filename)).status,404);
 });
 
-test('un code ambigu ne permet pas de rattacher un binaire au premier dossier trouvé', async () => {
-  await db.query("insert into briefs(ndeg,projet,private_to) values ('REC-DOUBLE','Un public',''),('REC-DOUBLE','Un privé','Alice Recette')");
-  assert.equal((await req('/visuels','alice','POST',{ndeg:'REC-DOUBLE',data:png})).status,409);
-  await db.query("insert into brief_assets(ndeg,filename,mime) values ('REC-DOUBLE','00000000-0000-0000-0000-000000000000.png','image/png')");
-  assert.deepEqual(await (await req('/rest/v1/brief_assets?ndeg=eq.REC-DOUBLE','bob')).json(),[]);
+test('un code ne désigne plus deux dossiers ; un ancien rattachement ambigu reste sans attribution', async () => {
+  await db.query("insert into briefs(ndeg,projet,private_to) values ('REC-DOUBLE','Un public','')");
+  await assert.rejects(db.query("insert into briefs(ndeg,projet,private_to) values ('REC-DOUBLE','Un privé','Alice Recette')"), e => e.code === '23505');
+  assert.equal((await req('/rest/v1/briefs','alice','POST',{ndeg:'REC-DOUBLE',projet:'Doublon REST'})).status,409);
+  // Un ancien visuel que le dédoublonnage a marqué ambigu n'est attribué à personne.
+  await db.query("insert into brief_assets(ndeg,filename,mime,ndeg_ambigu) values ('REC-DOUBLE','00000000-0000-0000-0000-000000000000.png','image/png',true)");
+  assert.deepEqual(await (await req('/rest/v1/brief_assets?ndeg=eq.REC-DOUBLE','alice')).json(),[]);
+  assert.equal((await req('/visuels/00000000-0000-0000-0000-000000000000.png','alice')).status,404);
   assert.equal((await req('/visuels/00000000-0000-0000-0000-000000000000.png','bob')).status,404);
 });
 

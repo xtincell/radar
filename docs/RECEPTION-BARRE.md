@@ -50,10 +50,11 @@ Exécution : `RADAR_TEST_ADMIN_URL=postgresql://…@127.0.0.1:…/postgres npm t
 
 - La mesure avant/après et ses indicateurs (arbitrage 5.6) : la lecture rend la
   mesure possible, elle ne la calcule pas.
-- La publication des décisions dans le flux (arbitrage 5.7) : elles restent
-  privées.
+- La publication des décisions : l'arbitrage 5.7 (12 novembre) garde les flux
+  privés par défaut ; les décisions n'y entrent pas, publiées ou non.
 - Le chemin réseau en production entre Radar et La Barre, et l'exposition de la
   seule route `/radar/decisions` : rien n'est déployé, aucun jeton n'est posé.
 - L'attestation de La Fusée ne part pas vers Radar ; l'auteur reste déclaré.
 - Les changements de correspondance ne sont pas journalisés.
-- `ndeg` reste non unique (geste 4.4) ; ce câblage ne s'en sert pas.
+- `ndeg` est unique depuis le geste 4.4 ([RECEPTION-UNICITE-FLUX.md](RECEPTION-UNICITE-FLUX.md)) ;
+  ce câblage ne s'en sert toujours pas : la correspondance nomme `briefs.id`.

@@ -33,6 +33,7 @@
 // (Édite RADAR_AUTHZ_JSON / RADAR_ADMIN_EMAIL là-bas pour gérer les accès ; ici on ne fait que l'appliquer.)
 import { ALLOW, identityFor } from "./_authz.js";
 import { verifyPassword, hashPassword, equalSecrets } from "./_password.js";
+import { FEED_PATHS, JOUR_PATHS, feedAccess, jourPublic } from "./_publication.js";
 
 const COOKIE = "radar_sess";
 
@@ -167,14 +168,6 @@ export async function onRequest(context) {
   catch { return new Response('400 — chemin invalide',{status:400}); }
   const secure = url.protocol === "https:";
 
-  // Flux d'activité (RSS/JSON) : destinés aux services externes (machines), ils
-  // ne peuvent pas faire le Basic Auth navigateur. On les laisse traverser le mur
-  // (garde optionnelle via FEED_TOKEN, gérée dans _feed.js).
-  // /jour.html : todo du jour du département, PUBLIC par décision (affichage sans
-  // connexion). 100% autonome (n'utilise aucun asset derrière le mur).
-  if (path === "/feed.xml" || path === "/activity.json" ||
-      path === "/jour.html" || path === "/jour" || path === "/jour.json") return next();
-
   // API FULL-ACCESS (machine : serveur MCP / Claude / Dan). Une clé porteuse valide
   // franchit le mur ET fait sauter le scope private_to (voir pgrest : context.data.fullAccess).
   // La clé vit en env (RADAR_API_KEY), jamais dans le repo.
@@ -188,6 +181,15 @@ export async function onRequest(context) {
       return next();
     }
   }
+
+  // Sorties anonymes, après la clé machine qui garde son accès complet :
+  // seulement sur choix explicite de l'installation (functions/_publication.js,
+  // arbitrage 5.7). Flux publié (FEED_PUBLIC) ou tenu par jeton (FEED_TOKEN,
+  // vérifié dans _feed.js) : il traverse le mur. Vue du jour publiée
+  // (JOUR_PUBLIC) : idem. Sans ce choix, ces routes restent derrière le mur,
+  // comme le reste de l'application.
+  if (FEED_PATHS.has(path) && feedAccess(env) !== "prive") return next();
+  if (JOUR_PATHS.has(path) && jourPublic(env)) return next();
 
   // Déconnexion : efface le cookie de session et renvoie vers l'accueil.
   // (Le navigateur peut encore avoir le Basic Auth en cache pour la session courante ;

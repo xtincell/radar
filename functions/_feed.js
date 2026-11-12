@@ -1,14 +1,17 @@
 // ============================================================
 // RADAR — cœur du flux d'activité (partagé)
 // Source : table public.task_events = JOURNAL DURABLE alimenté par un trigger
-// Postgres sur public.briefs (functions/_authz n/a). Chaque MOUVEMENT (création,
-// changement de statut, réattribution, échéance, gel/dégel, clôture, suppression)
+// Postgres sur public.briefs. Chaque MOUVEMENT (création, changement de statut,
+// réattribution, échéance, gel/dégel, clôture, suppression, changement de code)
 // y produit une ligne — quelle que soit la source (UI, SQL, LLM). 100% automatique,
 // aucun LLM dans la boucle : c'est un pur effet d'un changement d'état en base.
 // Sorties : RSS 2.0 (feed.xml) et JSON Feed 1.1 (activity.json).
 // ============================================================
 "use strict";
 import { query as pgQuery, hasDb, initDb } from "../server/pgrest.js";
+import { taskAuthority } from "./_authz.js";
+import { equalSecrets } from "./_password.js";
+import { feedAccess } from "./_publication.js";
 
 // libellé + emoji par type d'événement
 const LABEL = {
@@ -23,6 +26,7 @@ const LABEL = {
   deleted:    { e: "🗑️", t: "Supprimé" },
   updated:    { e: "✏️", t: "Dossier modifié" },
   visibility: { e: "🔒", t: "Confidentialité modifiée" },
+  renamed:    { e: "🏷️", t: "Code modifié" },
   asset:          { e: "🖼️", t: "Visuel ajouté" },
   asset_deleted:  { e: "🖼️", t: "Visuel retiré" },
 };
@@ -133,17 +137,31 @@ export async function handleFeed(context, format) {
   const url = new URL(request.url);
   const origin = url.origin;
 
-  // Flux PUBLIC par défaut. Verrouillage optionnel via la variable d'env FEED_TOKEN :
-  //   /feed.xml?token=secret   et   /activity.json?token=secret
-  const need = (env && env.FEED_TOKEN) || "";
-  if (need) {
-    const got = url.searchParams.get("token") || "";
-    if (got !== need) return new Response("Forbidden — token de flux invalide (?token=…)", { status: 403 });
+  // Flux NON publié par défaut (arbitrage 5.7, functions/_publication.js) :
+  //   FEED_TOKEN → détenteurs du jeton (?token=…), comparé en temps constant,
+  //                et clé machine RADAR_API_KEY ;
+  //   FEED_PUBLIC → sans jeton ;
+  //   sinon → aperçu réservé aux responsables connectés et à la clé machine,
+  //   la route étant alors derrière le mur. Le contenu est le même dans les
+  //   trois cas : les seuls mouvements publics qualifiés.
+  const mode = feedAccess(env);
+  const refus = message => new Response(message, { status: 403, headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store" } });
+  if (mode === "jeton") {
+    const machine = context.data?.fullAccess === true;   // clé RADAR_API_KEY
+    if (!machine && !await equalSecrets(url.searchParams.get("token") || "", env.FEED_TOKEN)) return refus("Forbidden — token de flux invalide (?token=…)");
+  } else if (mode === "prive") {
+    const who = taskAuthority(context);
+    if (!who.fullAccess && who.role !== "owner" && who.role !== "supervisor")
+      return refus("Flux d'activité non publié sur cette installation (FEED_PUBLIC ou FEED_TOKEN l'ouvrent) ; les responsables connectés le consultent.");
   }
+  // Publié : lisible par des services tiers. Aperçu privé : jamais d'origine croisée.
+  const diffusion = mode === "prive"
+    ? { "cache-control": "private, no-store" }
+    : { "cache-control": "no-store", "access-control-allow-origin": "*" };
 
   const name = (env && env.RADAR_NAME) || "Radar";
   const limit = Math.min(parseInt(url.searchParams.get("limit") || "60", 10) || 60, 200);
-  const kind = url.searchParams.get("kind"); // filtre optionnel : created|status|reassigned|deadline|frozen|unfrozen|closed|reopened|deleted
+  const kind = url.searchParams.get("kind"); // filtre optionnel : created|status|reassigned|deadline|frozen|unfrozen|closed|reopened|deleted|renamed
 
   let result;
   try { result = await fetchEvents(env, limit, kind); }
@@ -153,10 +171,10 @@ export async function handleFeed(context, format) {
 
   if (format === "json") {
     return new Response(renderJSON(items, origin, name, unqualified), {
-      headers: { "content-type": "application/feed+json; charset=utf-8", "cache-control": "no-store", "access-control-allow-origin": "*", 'X-Radar-Unqualified-Events': String(unqualified) },
+      headers: { "content-type": "application/feed+json; charset=utf-8", ...diffusion, 'X-Radar-Unqualified-Events': String(unqualified) },
     });
   }
   return new Response(renderRSS(items, origin, name, unqualified), {
-    headers: { "content-type": "application/rss+xml; charset=utf-8", "cache-control": "no-store", "access-control-allow-origin": "*", 'X-Radar-Unqualified-Events': String(unqualified) },
+    headers: { "content-type": "application/rss+xml; charset=utf-8", ...diffusion, 'X-Radar-Unqualified-Events': String(unqualified) },
   });
 }

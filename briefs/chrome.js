@@ -339,7 +339,8 @@ function mountFab(){
 const N_SEEN="radar:notif:seen", N_PUSH="radar:notif:push";
 const N_LAB={created:["🆕","Nouvelle entrée"],status:["🔁","Statut modifié"],reassigned:["👤","Réattribution"],
   deadline:["📅","Échéance modifiée"],frozen:["❄️","Gelé"],unfrozen:["♻️","Réactivé"],
-  updated:["✏️","Dossier modifié"],visibility:["🔒","Confidentialité modifiée"],closed:["📦","Clôturé / livrable"],reopened:["🔓","Rouvert"],deleted:["🗑️","Supprimé"]};
+  updated:["✏️","Dossier modifié"],visibility:["🔒","Confidentialité modifiée"],closed:["📦","Clôturé / livrable"],reopened:["🔓","Rouvert"],deleted:["🗑️","Supprimé"],
+  renamed:["🏷️","Code modifié"]};
 const N_CRE={"Maître":["🆕","Nouveau brief"],"Tâche":["✅","Nouvelle tâche"],"Révision":["🔄","Nouvelle révision"]};
 let NOTIFS=[], N_UNQUALIFIED=0, N_ROLE_UNQUALIFIED=0, N_AVAILABLE=false;
 function nSeen(){ try{return localStorage.getItem(N_SEEN)||"";}catch(e){return "";} }
@@ -432,8 +433,9 @@ function openNotifMenu(anchor){
   });
 }
 
-/* Footer partagé : liens du flux d'activité (RSS + JSON Feed). Le flux est public
-   par défaut (cf. functions/_feed.js) → liens bruts. Monté une seule fois en bas de page. */
+/* Footer partagé : liens du flux d'activité (RSS + JSON Feed). Le flux n'est publié
+   que sur choix de l'installation (FEED_PUBLIC ou FEED_TOKEN, functions/_publication.js) ;
+   sinon ces liens ouvrent l'aperçu réservé aux responsables connectés. Monté une seule fois. */
 function mountFooter(){
   if(document.getElementById("mtg-foot")) return;
   const f=document.createElement("footer"); f.className="mtg-foot"; f.id="mtg-foot";

@@ -1,7 +1,7 @@
 -- Décisions La Barre lues par Radar — SHK-0005, sens 1, arbitrage 5.5 (11 novembre 2026).
 -- Appliqué à chaque démarrage par initDb (server/pgrest.js), après journal.sql ;
 -- idempotent. Aucune écriture dans briefs ni dans task_events : une décision ne
--- part pas dans le flux public (functions/_feed.js), l'arbitrage 5.7 restant ouvert.
+-- part dans aucun flux (functions/_feed.js), privé par défaut depuis l'arbitrage 5.7.
 
 -- Reçus : une ligne par version d'une décision, jamais réécrite ni effacée.
 -- Clé : (instance La Barre, identifiant de la décision, version). Une décision

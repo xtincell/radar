@@ -4,6 +4,11 @@ alter table task_events add column if not exists private_to text;
 -- Qualification minimale au moment du fait. Aucun remplissage rétroactif :
 -- les anciens événements ne prouvent pas leur responsable ni leur période.
 alter table task_events add column if not exists scope_snapshot jsonb;
+-- Revue humaine d'un événement ancien (arbitrage 5.7, server/revue.js) :
+-- private_to NULL = confidentialité inconnue, traitée comme privée jusqu'à ce
+-- qu'un responsable la qualifie explicitement. Qui et quand restent inscrits.
+alter table task_events add column if not exists revue_par text;
+alter table task_events add column if not exists revue_le timestamptz;
 -- Les nouveaux rattachements suivent l'identifiant, pas un code réutilisable.
 -- Les anciens restent explicitement non qualifiés ; aucune attribution inventée.
 alter table comments add column if not exists brief_id bigint;
@@ -37,6 +42,8 @@ begin
     elsif NEW.responsable is distinct from OLD.responsable then k := 'reassigned'; s := coalesce(OLD.responsable,'—') || ' → ' || coalesce(NEW.responsable,'—');
     elsif NEW.deadline is distinct from OLD.deadline then k := 'deadline'; s := 'Échéance → ' || coalesce(NEW.deadline,'—');
     elsif NEW.private_to is distinct from OLD.private_to then k := 'visibility'; s := 'Confidentialité modifiée';
+    -- Le code d'avant reste lisible dans la trace (dédoublonnage compris).
+    elsif NEW.ndeg is distinct from OLD.ndeg then k := 'renamed'; s := 'Code ' || coalesce(OLD.ndeg,'—') || ' → ' || coalesce(NEW.ndeg,'—');
     else k := 'updated'; s := 'Dossier modifié'; end if;
   end if;
   insert into task_events(brief_id,private_to,scope_snapshot,ndeg,entree,client,projet,kind,statut_old,statut_new,resp_old,resp_new,summary)
