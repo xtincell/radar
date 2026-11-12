@@ -7,6 +7,7 @@
 //   • /jour.json   → todo du jour (colonnes limitées, non-private) ; publique
 //                    seulement si JOUR_PUBLIC, sinon au périmètre de la personne
 //   • /journal/revue → qualification d'un événement ancien par un responsable
+//   • /mesure/avant-apres → indicateurs avant/après la bascule La Barre (lecture seule)
 //   • /token /profil /feed.xml /activity.json → fonctions inchangées
 //   Rien n'est publié sans connexion par défaut : functions/_publication.js.
 "use strict";
@@ -19,6 +20,7 @@ import { handleVisuelUpload, serveVisuel, handleVisuelDelete, purgeOrphans } fro
 import { handleIngest } from "./ingest.js";
 import { barreConfig, demarrerLecteurBarre } from "./barre.js";
 import { handleRevueJournal } from "./revue.js";
+import { handleMesure } from "./mesure.js";
 import { briefScopeSql } from "../functions/_authz.js";
 import { jourPublic } from "../functions/_publication.js";
 import * as middleware from "../functions/_middleware.js";
@@ -39,6 +41,7 @@ const env = {
   FEED_PUBLIC: process.env.FEED_PUBLIC,   // flux d'activité publié sans jeton (défaut : non)
   JOUR_PUBLIC: process.env.JOUR_PUBLIC,   // vue du jour publiée sans connexion (défaut : non)
   RADAR_API_KEY: process.env.RADAR_API_KEY, // clé porteuse full-access (MCP/Claude/Dan)
+  MESURE_BASCULE: process.env.MESURE_BASCULE, // date de bascule du relevé avant/après (défaut : première lecture La Barre)
   DASH_USERS: openKv(SQLITE_PATH), // mots de passe perso par utilisateur (self-service /profil)
 };
 
@@ -74,6 +77,7 @@ async function dispatch(context) {
   if (decodeURIComponent(pathname).toLowerCase() === '/index.csv' && method === 'GET') return handleBriefCsv(context);
   if (pathname === "/jour.json") return jourJson(context);
   if (pathname === "/journal/revue" && method === "POST") return handleRevueJournal(context);
+  if (pathname === "/mesure/avant-apres" && method === "GET") return handleMesure(context);
   // Visuels de livrables — derrière le mur (pas dans la liste bypass de la middleware).
   if (pathname === "/ingest" && method === "POST") return handleIngest(context);
   if (pathname === "/visuels" && method === "POST") return handleVisuelUpload(context);

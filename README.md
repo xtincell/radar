@@ -16,6 +16,7 @@ Pensé pour être déployé **standalone** (une instance = une équipe = une bas
 - Trois niveaux d'autorité configurables (`owner` / `supervisor` / `member`) — voir [Configurer les accès](#configurer-les-accès).
 - Périmètre de rôle et isolation `private_to` appliqués côté serveur aux tâches, commentaires, journal, CSV et médias.
 - Lecture des décisions La Barre (`server/barre.js`) : à intervalle, par jeton machine, reçues sans doublon et versionnées, privées par défaut — voir [Décisions La Barre](#décisions-la-barre).
+- Relevé avant/après la bascule La Barre (`GET /mesure/avant-apres`, page `/mesure.html`) : durée et ponctualité des dossiers, décisions reçues, réouvertures, réattributions, échéances, révisions — en lecture seule, chaque chiffre avec son assise — voir [Indicateurs avant/après](#indicateurs-avantaprès).
 
 ## Démarrage rapide
 
@@ -64,6 +65,7 @@ Voir [`.env.example`](.env.example) pour la liste complète des variables. Les e
 | `BARRE_INSTANCE` | Nom stable de l'installation La Barre dans les reçus. Défaut : l'hôte de `BARRE_URL` — à fixer, sans quoi un changement d'adresse ouvre une nouvelle série de reçus. |
 | `BARRE_INTERVAL_MIN` | Minutes entre deux lectures. Défaut `15`, plancher 1 s ; `0` désactive. |
 | `RADAR_INSTANCE` | Nom de cette instance inscrit dans chaque correspondance projet ↔ dossier. Défaut : `RADAR_NAME`, sinon `Radar`. |
+| `MESURE_BASCULE` | Jour de bascule du relevé avant/après (date ISO ; une date seule vaut minuit UTC). Défaut : la première lecture réussie de La Barre (voir [Indicateurs avant/après](#indicateurs-avantaprès)). |
 
 ### Configurer les accès
 
@@ -197,7 +199,18 @@ SHK-0005, sens 1, arbitrage 5.5 du 11 novembre 2026 : Radar va chercher les déc
 
 **Confidentialité.** Les décisions sont privées par défaut. Elles ne sont écrites ni dans `briefs` ni dans `task_events` : elles n'apparaissent pas dans `/activity.json`, `/feed.xml`, `/jour.json` ni `/INDEX.csv`. `barre_decisions`, `barre_projets` et `barre_lectures` sont réservées à `owner` et `supervisor` ; un membre reçoit `403`. Une décision rattachée suit la confidentialité de son dossier (`private_to`) ; une décision non rattachée est visible des superviseurs. L'arbitrage 5.7 du 12 novembre 2026 garde les flux privés par défaut ; publiés ou non, les décisions n'y entrent pas.
 
-**Ce que cette lecture ne reçoit pas.** Aucune mesure avant/après n'est calculée (arbitrage 5.6). L'attestation de La Fusée et le contenu créatif d'une piste ne sont pas transmis. Les changements de correspondance ne sont pas journalisés. Le chemin réseau entre Radar et La Barre en production (La Fusée devant La Barre, ou réseau privé) reste à décrire et à recevoir. Recette et limites : [docs/RECEPTION-BARRE.md](docs/RECEPTION-BARRE.md).
+**Ce que cette lecture ne reçoit pas.** La mesure avant/après est calculée à part, en lecture seule (voir [Indicateurs avant/après](#indicateurs-avantaprès)). L'attestation de La Fusée et le contenu créatif d'une piste ne sont pas transmis. Les changements de correspondance ne sont pas journalisés. Le chemin réseau entre Radar et La Barre en production (La Fusée devant La Barre, ou réseau privé) reste à décrire et à recevoir. Recette et limites : [docs/RECEPTION-BARRE.md](docs/RECEPTION-BARRE.md).
+
+## Indicateurs avant/après
+
+Arbitrage 5.6 du 12 novembre 2026. `GET /mesure/avant-apres` (JSON) et la page `/mesure.html` comparent deux fenêtres de même longueur autour de la **bascule**, le jour où Radar a commencé à lire La Barre. Réservé à `owner`, `supervisor` et à la clé machine (`403` pour un membre), calculé sur le périmètre de l'appelant avec les mêmes prédicats que REST ; rien n'est écrit, aucune tâche périodique n'est ajoutée.
+
+- **Bascule** : `MESURE_BASCULE` si fournie ; sinon le premier reçu écrit dans `barre_recus` (jamais réécrit) ; sinon `barre_lectures.derniere_reussite`, signalée provisoire car elle avance à chaque lecture reçue. Sans aucune des trois, le relevé le dit et ne calcule aucune fenêtre.
+- **Fenêtres** : `?jours=N` (1 à 3650, défaut 90) de part et d'autre ; réduites au temps écoulé depuis la bascule s'il est plus court, pour rester égales. Une fenêtre « avant » sans aucun événement du journal est signalée (l'équipe n'utilisait peut-être pas Radar).
+- **Dossiers** : un dossier compte dans une fenêtre s'il y est ouvert (`created`) et clos ; ouvert avant la bascule et clos après, il est **à cheval**, compté à part avec les mêmes indicateurs, jamais dans l'une ou l'autre fenêtre.
+- **Indicateurs** : durée (moyenne, médiane), ponctualité (comme `sla.html`, échéances au format jour seulement), réouvertures, réattributions, changements et reports d'échéance, révisions (`PARENT.RN`) ; décisions La Barre par verdict et retours par dossier rattaché, datées par `quand`, non rattachées comptées comme telles. Chaque bloc porte `n` ; sans fait, `null` et un `motif`. Le taux de reprise sur versions et les tours au-delà du vendu sont rendus `null` : non calculables depuis Radar.
+
+La clôture se lit dans la transition de statut de chaque événement : le genre `closed` du journal ne couvre pas Bouclé, Validé ni Envoyé dans Slack. Définitions complètes, choix et limites : [docs/RECEPTION-MESURE.md](docs/RECEPTION-MESURE.md).
 
 ## Architecture
 
@@ -216,6 +229,7 @@ server/barre.js           lecteur périodique des décisions La Barre (reçus, v
 server/barre.sql          tables barre_recus, barre_projets, barre_lectures et vue barre_decisions
 server/ndeg.sql           unicité de ndeg : dédoublonnage tracé des homonymes, puis contrainte
 server/revue.js           relecture des événements anciens à confidentialité inconnue (/journal/revue)
+server/mesure.js          relevé avant/après la bascule La Barre (/mesure/avant-apres), lecture seule
 server/index.js           point d'entrée Node (remplace un runtime edge/Pages)
 server/kv-sqlite.js       stockage des empreintes de mots de passe perso (remplace un KV managé)
 server/hash-passwords.js  conversion en masse des anciens mots de passe en clair

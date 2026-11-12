@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<script>try{if(localStorage.getItem("radar:theme")==="dark")document.documentElement.dataset.theme="dark";}catch(e){}</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Radar — Avant / après</title>
+<link rel="stylesheet" href="colors_and_type.css?v=20260631">
+<style>
+  :root{--ok:#1F9D63;--bad:#E23D2E;--warn:#FF8A3D}
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:var(--font-text,'Hanken Grotesk',system-ui,sans-serif);
+    background:radial-gradient(1100px 640px at 90% -10%, var(--bg-app-warm) 0%, transparent 58%), var(--bg-app);
+    color:var(--fg1);min-height:100vh;-webkit-font-smoothing:antialiased}
+  .shell{max-width:1100px;margin:0 auto;padding:22px 30px 100px}
+  .masthead{margin:30px 2px 6px}
+  .kick{font-family:var(--font-mono);font-size:11.5px;text-transform:uppercase;letter-spacing:.14em;color:var(--orange-600);font-weight:600}
+  .masthead h1{font-family:var(--font-display);font-weight:500;font-size:clamp(28px,3.4vw,40px);line-height:1.04;letter-spacing:var(--tracking-tight);margin:7px 0 4px}
+  .masthead p{margin:0;color:var(--fg2);font-size:14.5px;max-width:74ch}
+  .ctl{display:flex;align-items:center;gap:10px;margin:18px 2px 4px;font-size:13.5px;color:var(--fg2)}
+  .ctl select{font:inherit;padding:6px 10px;border-radius:var(--radius-md,12px);border:1px solid var(--border);background:var(--surface);color:var(--fg1)}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg,16px);padding:16px 20px;box-shadow:var(--shadow-sm);margin:12px 0}
+  .card .kl{font-family:var(--font-mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--fg3)}
+  .card .kv{font-family:var(--font-display);font-size:22px;margin-top:6px}
+  .card .ks{font-size:13px;color:var(--fg2);margin-top:6px}
+  .tag{display:inline-block;font-family:var(--font-mono);font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:999px;background:var(--paper-100);color:var(--fg2);margin-left:6px;vertical-align:middle}
+  .tag.warn{background:#fde3d6;color:#c2440a}
+  .sec{margin:30px 0 10px;display:flex;align-items:baseline;gap:12px}
+  .sec h2{font-family:var(--font-display);font-weight:600;font-size:18px;margin:0}
+  .sec .gline{flex:1;height:1px;background:var(--border)}
+  table{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg,16px);overflow:hidden}
+  th,td{padding:10px 14px;text-align:left;font-size:13.5px;border-bottom:1px solid var(--border);vertical-align:top}
+  th{font-family:var(--font-mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--fg3);font-weight:600;background:var(--paper-50)}
+  tr:last-child td{border-bottom:0}
+  td.name{font-weight:600;color:var(--fg1);width:26%}
+  td .v{font-feature-settings:'tnum' 1;font-variant-numeric:tabular-nums;font-weight:600}
+  td .n{font-family:var(--font-mono);font-size:11px;color:var(--fg3);margin-left:6px}
+  td .m{font-size:12px;color:var(--fg3)}
+  th.apart,td.apart{background:var(--paper-50)}
+  .counts{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:13px;color:var(--fg2)}
+  .counts b{color:var(--fg1);font-feature-settings:'tnum' 1}
+  .nc{font-size:13px;color:var(--fg2);margin:6px 0}
+  details{margin-top:26px;font-size:13px;color:var(--fg2)}
+  details dt{font-weight:600;color:var(--fg1);margin-top:8px}
+  details dd{margin:2px 0 0 0}
+  .empty{color:var(--fg3);font-size:14px;padding:30px 4px;text-align:center}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div id="mtg-top" data-page="" data-sub="avant / après"></div>
+
+  <div class="masthead">
+    <div class="kick">Mesure — arbitrage 5.6</div>
+    <h1>Avant / après La Barre</h1>
+    <p>Relevé en lecture seule, de part et d’autre du jour où Radar a commencé à lire La Barre. Chaque chiffre dit sur combien de faits il repose (<code>n</code>) ; sans fait, pas de chiffre. Les dossiers <b>à cheval</b> sur la bascule sont comptés à part.</p>
+  </div>
+
+  <div class="ctl">
+    <label for="jours">Longueur de chaque fenêtre</label>
+    <select id="jours"><option value="30">30 jours</option><option value="60">60 jours</option><option value="90" selected>90 jours</option><option value="180">180 jours</option></select>
+  </div>
+
+  <div id="content"><div class="empty">Calcul…</div></div>
+</div>
+
+<script src="https://unpkg.com/lucide@1.21.0"></script>
+<script src="supa.js?v=20260639"></script>
+<script src="ui.js?v=20260639"></script>
+<script src="chrome.js?v=20260637"></script>
+<script>
+"use strict";
+/* Source : GET /mesure/avant-apres (server/mesure.js). Aucune écriture. */
+const $=s=>document.querySelector(s);
+const esc=s=>(s==null?"":String(s)).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const dt=s=>s?new Date(s).toLocaleString("fr-FR",{dateStyle:"medium",timeStyle:"short"}):"—";
+const pct=x=>x==null?null:Math.round(x*1000)/10+" %";
+const num=x=>x==null?null:String(x).replace(".",",");
+
+// Une cellule : la valeur et son assise, ou le motif de son absence.
+function cell(bloc, val){
+  if(!bloc) return `<span class="m">—</span>`;
+  if(!bloc.n) return `<span class="m">${esc(bloc.motif||"aucun fait")}</span>`;
+  const v=val(bloc);
+  return v==null ? `<span class="m">non mesurable</span><span class="n">n=${bloc.n}</span>`
+    : `<span class="v">${esc(v)}</span><span class="n">n=${bloc.n}</span>`;
+}
+const LIGNES=[
+  ["Durée moyenne (jours)", g=>g.duree, b=>num(b.moyenne_jours)],
+  ["Durée médiane (jours)", g=>g.duree, b=>num(b.mediane_jours)],
+  ["Ponctualité", g=>g.ponctualite, b=>b.taux==null?null:`${pct(b.taux)} (${b.a_temps} à temps, ${b.en_retard} en retard)`],
+  ["Retard moyen (jours)", g=>g.ponctualite, b=>b.en_retard?num(b.retard_moyen_jours):"aucun retard"],
+  ["Dossiers rouverts", g=>g.reouvertures, b=>`${pct(b.part)} (${b.dossiers_rouverts} ; ${b.evenements} réouverture·s)`],
+  ["Réattributions par dossier", g=>g.reattributions, b=>`${num(b.par_dossier)} (${b.evenements} sur ${b.dossiers} dossier·s)`],
+  ["Changements d’échéance par dossier", g=>g.echeances, b=>`${num(b.par_dossier)} (${b.changements}, dont ${b.reports} report·s)`],
+  ["Révisions par dossier d’origine", g=>g.revisions, b=>`${num(b.par_dossier)} (${b.revisions} sur ${b.dossiers_revises} dossier·s)`],
+];
+const VERD=[["approuve","Approuvé"],["reserve","Réservé"],["retour","Retour"],["hors","Hors"],["autre","Autre"]];
+
+function tableau(m){
+  const G=["avant","apres","a_cheval"];
+  let h=`<table><thead><tr><th>Indicateur</th><th>Avant</th><th>Après</th><th class="apart">À cheval (à part)</th></tr></thead><tbody>`;
+  for(const [lab,pick,val] of LIGNES) h+=`<tr><td class="name">${esc(lab)}</td>`+G.map(g=>`<td${g==="a_cheval"?' class="apart"':''}>${cell(pick(m[g]),val)}</td>`).join("")+`</tr>`;
+  return h+`</tbody></table>`;
+}
+function barre(m){
+  const G=["avant","apres","a_cheval"];
+  let h=`<table><thead><tr><th>Décisions La Barre (date de la décision)</th><th>Avant</th><th>Après</th><th class="apart">À cheval (à part)</th></tr></thead><tbody>`;
+  h+=`<tr><td class="name">Décisions reçues</td>`+G.map(g=>`<td${g==="a_cheval"?' class="apart"':''}>${cell(m[g].barre.decisions,b=>b.n)}</td>`).join("")+`</tr>`;
+  for(const [k,lab] of VERD) h+=`<tr><td class="name">${esc(lab)}</td>`+G.map(g=>`<td${g==="a_cheval"?' class="apart"':''}>${cell(m[g].barre.decisions,b=>b.par_verdict[k])}</td>`).join("")+`</tr>`;
+  h+=`<tr><td class="name">Non rattachées / sans projet</td>`+G.map(g=>`<td${g==="a_cheval"?' class="apart"':''}>${cell(m[g].barre.decisions,b=>b.non_rattachees+" / "+b.sans_projet)}</td>`).join("")+`</tr>`;
+  h+=`<tr><td class="name">Retours par dossier rattaché</td>`+G.map(g=>`<td${g==="a_cheval"?' class="apart"':''}>${cell(m[g].barre.retours_par_projet,b=>`${num(b.par_dossier)} (${b.retours} retour·s)`)}</td>`).join("")+`</tr>`;
+  h+=`</tbody></table>`;
+  h+=`<div class="nc">Hors fenêtre : <b>${m.barre.hors_fenetre}</b> · sans date lisible : <b>${m.barre.sans_date}</b> · retirées par La Barre : <b>${m.barre.retirees}</b></div>`;
+  for(const [k,lab] of [["taux_reprise_versions","Taux de reprise sur versions"],["tours_au_dela_du_vendu","Tours au-delà du vendu"]])
+    h+=`<div class="nc"><b>${esc(lab)}</b> — ${esc(m.barre.non_calculable[k].motif)}</div>`;
+  return h;
+}
+function render(m){
+  const b=m.bascule;
+  let h=`<div class="card"><div class="kl">Bascule</div><div class="kv">${b.date?esc(dt(b.date)):"inconnue"}${b.provisoire?'<span class="tag warn">provisoire</span>':""}${b.source?`<span class="tag">${esc(b.source)}</span>`:""}</div><div class="ks">${esc(b.motif||"")}</div></div>`;
+  if(!m.fenetres){ $("#content").innerHTML=h+`<div class="empty">Aucune fenêtre calculée.</div>`; return; }
+  const f=m.fenetres, d=m.dossiers, j=m.journal;
+  h+=`<div class="card"><div class="kl">Fenêtres</div><div class="kv">${num(f.longueur_jours)} jour(s) de part et d’autre${f.tronquee?'<span class="tag warn">réduites</span>':""}</div>`+
+    `<div class="ks">Avant : ${esc(dt(f.avant.debut))} → ${esc(dt(f.avant.fin))} · Après : ${esc(dt(f.apres.debut))} → ${esc(dt(f.apres.fin))}${f.motif?"<br>"+esc(f.motif):""}</div></div>`;
+  if(j.avant_vide) h+=`<div class="card"><div class="kl">Fenêtre avant</div><div class="ks">${esc(j.motif)}</div></div>`;
+  h+=`<div class="sec"><h2>Dossiers</h2><span class="gline"></span></div><div class="counts">`+
+    [["avant",d.avant],["après",d.apres],["à cheval",d.a_cheval],["hors fenêtre",d.hors_fenetre],["non clos",d.non_clos.n],
+     ["créés déjà clos",d.cree_clos],["sans ouverture visible",d.sans_ouverture],["exclus",d.exclus],["supprimés",d.supprimes]]
+      .map(([k,v])=>`<span>${esc(k)} <b>${v}</b></span>`).join("")+
+    `<span>événements non attribués <b>${j.non_attribues}</b></span><span>révisions sans dossier d’origine <b>${m.revisions_sans_origine}</b></span></div>`;
+  h+=`<div class="sec"><h2>Dossiers et journal</h2><span class="gline"></span></div>`+tableau(m);
+  h+=`<div class="sec"><h2>La Barre</h2><span class="gline"></span></div>`+barre(m);
+  h+=`<details><summary>Définitions</summary><dl>`+Object.entries(m.definitions).map(([k,v])=>`<dt>${esc(k.replace(/_/g," "))}</dt><dd>${esc(v)}</dd>`).join("")+`</dl></details>`;
+  h+=`<div class="nc" style="margin-top:18px">Calculé le ${esc(dt(m.calcule_le))} · ${esc(m.perimetre.regle)}.</div>`;
+  $("#content").innerHTML=h;
+}
+async function load(){
+  $("#content").innerHTML=`<div class="empty">Calcul…</div>`;
+  try{
+    const r=await fetch("/mesure/avant-apres?jours="+encodeURIComponent($("#jours").value),{cache:"no-store"});
+    if(r.status===403){ $("#content").innerHTML=`<div class="empty">Relevé réservé aux superviseurs.</div>`; return; }
+    if(!r.ok) throw new Error("HTTP "+r.status);
+    render(await r.json());
+  }catch(e){ $("#content").innerHTML=`<div class="empty">Indisponible (${esc(e.message)}).</div>`; }
+}
+$("#jours").addEventListener("change",load);
+document.addEventListener("DOMContentLoaded",load);
+</script>
+</body>
+</html>

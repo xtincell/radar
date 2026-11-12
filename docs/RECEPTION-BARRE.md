@@ -48,8 +48,9 @@ Exécution : `RADAR_TEST_ADMIN_URL=postgresql://…@127.0.0.1:…/postgres npm t
 
 ## Ce qui reste ouvert
 
-- La mesure avant/après et ses indicateurs (arbitrage 5.6) : la lecture rend la
-  mesure possible, elle ne la calcule pas.
+- La mesure avant/après et ses indicateurs (arbitrage 5.6) : calculée à part,
+  en lecture seule, par `GET /mesure/avant-apres` ([RECEPTION-MESURE.md](RECEPTION-MESURE.md)) ;
+  cette lecture n'en écrit rien.
 - La publication des décisions : l'arbitrage 5.7 (12 novembre) garde les flux
   privés par défaut ; les décisions n'y entrent pas, publiées ou non.
 - Le chemin réseau en production entre Radar et La Barre, et l'exposition de la
