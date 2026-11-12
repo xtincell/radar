@@ -4,8 +4,11 @@
 // joue le routeur Pages + le callback next(), partageant le même `context`
 // (context.data.email posé par la middleware reste visible partout).
 //   • /rest/v1/*   → mini-PostgREST maison (pg) — données de l'app (derrière le mur)
-//   • /jour.json   → todo du jour PUBLIC (colonnes limitées, non-private)
+//   • /jour.json   → todo du jour (colonnes limitées, non-private) ; publique
+//                    seulement si JOUR_PUBLIC, sinon au périmètre de la personne
+//   • /journal/revue → qualification d'un événement ancien par un responsable
 //   • /token /profil /feed.xml /activity.json → fonctions inchangées
+//   Rien n'est publié sans connexion par défaut : functions/_publication.js.
 "use strict";
 import http from "node:http";
 import { toWebRequest, writeWebResponse } from "./request-adapter.js";
@@ -15,6 +18,9 @@ import { initDb, handleRest, handleBriefCsv, query as pgQuery, hasDb } from "./p
 import { handleVisuelUpload, serveVisuel, handleVisuelDelete, purgeOrphans } from "./visuels.js";
 import { handleIngest } from "./ingest.js";
 import { barreConfig, demarrerLecteurBarre } from "./barre.js";
+import { handleRevueJournal } from "./revue.js";
+import { briefScopeSql } from "../functions/_authz.js";
+import { jourPublic } from "../functions/_publication.js";
 import * as middleware from "../functions/_middleware.js";
 import * as token from "../functions/token.js";
 import * as profil from "../functions/profil.js";
@@ -30,20 +36,29 @@ const env = {
   DASH_COOKIE_SECRET: process.env.DASH_COOKIE_SECRET,
   SUPABASE_JWT_SECRET: process.env.SUPABASE_JWT_SECRET,
   FEED_TOKEN: process.env.FEED_TOKEN,
+  FEED_PUBLIC: process.env.FEED_PUBLIC,   // flux d'activité publié sans jeton (défaut : non)
+  JOUR_PUBLIC: process.env.JOUR_PUBLIC,   // vue du jour publiée sans connexion (défaut : non)
   RADAR_API_KEY: process.env.RADAR_API_KEY, // clé porteuse full-access (MCP/Claude/Dan)
   DASH_USERS: openKv(SQLITE_PATH), // mots de passe perso par utilisateur (self-service /profil)
 };
 
-// /jour.json — todo du jour PUBLIC, source same-origin de jour.html (qui, hors
-// Supabase, ne peut plus taper une base externe). Colonnes limitées + non-private.
+// /jour.json — todo du jour, source same-origin de jour.html. Colonnes limitées,
+// dossiers non privés. Publiée sans connexion seulement sur choix explicite
+// (JOUR_PUBLIC) ; sinon la route est derrière le mur et suit le périmètre de
+// rôle de la personne connectée, comme /rest/v1/briefs.
 const JOUR_COLS = ["ndeg", "client", "marque", "projet", "livrables", "statut", "deadline", "responsable", "entree", "prio"];
-async function jourJson() {
-  const head = { "content-type": "application/json; charset=utf-8", "cache-control": "no-store", "access-control-allow-origin": "*" };
+async function jourJson(context) {
+  const publique = jourPublic(context.env);
+  const head = publique
+    ? { "content-type": "application/json; charset=utf-8", "cache-control": "no-store", "access-control-allow-origin": "*" }
+    : { "content-type": "application/json; charset=utf-8", "cache-control": "private, no-store" };
   if (!hasDb()) return new Response("[]", { headers: head });
   try {
     await initDb();
+    const params = [];
+    const scope = publique ? "true" : briefScopeSql(context, params);
     const { rows } = await pgQuery(
-      `select ${JOUR_COLS.join(",")} from briefs where (private_to is null or private_to = '') order by deadline asc limit 5000`, []);
+      `select ${JOUR_COLS.join(",")} from briefs where (private_to is null or private_to = '') and ${scope} order by deadline asc limit 5000`, params);
     return new Response(JSON.stringify(rows), { headers: head });
   } catch (e) {
     console.error("[jour.json]", e && e.message);
@@ -57,7 +72,8 @@ async function dispatch(context) {
 
   if (pathname.startsWith("/rest/v1/")) return handleRest(context);
   if (decodeURIComponent(pathname).toLowerCase() === '/index.csv' && method === 'GET') return handleBriefCsv(context);
-  if (pathname === "/jour.json") return jourJson();
+  if (pathname === "/jour.json") return jourJson(context);
+  if (pathname === "/journal/revue" && method === "POST") return handleRevueJournal(context);
   // Visuels de livrables — derrière le mur (pas dans la liste bypass de la middleware).
   if (pathname === "/ingest" && method === "POST") return handleIngest(context);
   if (pathname === "/visuels" && method === "POST") return handleVisuelUpload(context);

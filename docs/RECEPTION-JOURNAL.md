@@ -29,7 +29,9 @@ stable ; `private_to` conserve la confidentialité au moment du mouvement.
 Le lecteur vérifie aussi le dossier courant. Les événements anciens restent
 conservés avec confidentialité inconnue ; ils ne sont pas rendus publics ou
 à d'autres utilisateurs par déduction. Le flux et l'interface signalent leur
-nombre. Leur qualification historique reste une opération à recevoir.
+nombre. Depuis l'arbitrage 5.7, ils sont traités comme privés jusqu'à relecture :
+lisibles des responsables, qualifiés un par un par `/journal/revue`
+([RECEPTION-UNICITE-FLUX.md](RECEPTION-UNICITE-FLUX.md)).
 Une suppression privée conserve cette barrière pour le journal précédent.
 Le repli vers un ancien PostgREST sans ce contrat ne publie plus d'événements
 non qualifiés : il retourne une indisponibilité explicite.
@@ -48,6 +50,7 @@ refuse toute cible distante et détruit uniquement sa propre base de recette.
 Cette correction ne reçoit ni un raccord La Barre → Radar idempotent, ni
 l'arbitrage de clôture avec fichier client, ni les permissions métier complètes
 par rôle. Un événement « closed » décrit un état saisi ; il ne prouve pas la
-livraison d'un fichier ou l'accord d'un client. Les codes de brief non uniques,
-les accès machine de portée générale et la concurrence des imports restent
-à recevoir dans le contrat d'irrigation.
+livraison d'un fichier ou l'accord d'un client. Les codes de brief sont uniques
+depuis le geste 4.4 et les flux privés par défaut depuis l'arbitrage 5.7
+([RECEPTION-UNICITE-FLUX.md](RECEPTION-UNICITE-FLUX.md)) ; les accès machine de
+portée générale restent à recevoir dans le contrat d'irrigation.

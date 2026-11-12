@@ -70,7 +70,9 @@ async function startChild(extraEnv) {
     env: { ...process.env, DATABASE_URL: target.href, PORT: String(p), HOST: '127.0.0.1', SQLITE_PATH: path.join(directory, 'users.sqlite'),
       VISUELS_DIR: path.join(directory, 'visuels'), DASH_PASSWORD: 'recette-locale', DASH_COOKIE_SECRET: 'signature-de-recette',
       TZ: 'Africa/Douala', RADAR_API_KEY: 'machine-de-recette', FEED_TOKEN: '', RADAR_SEED_CSV: '', RADAR_AUTHZ_JSON: AUTHZ,
-      RADAR_INSTANCE: 'radar-recette', BARRE_URL: '', BARRE_RADAR_TOKEN: '', BARRE_INSTANCE: '', BARRE_INTERVAL_MIN: '', ...extraEnv },
+      RADAR_INSTANCE: 'radar-recette', BARRE_URL: '', BARRE_RADAR_TOKEN: '', BARRE_INSTANCE: '', BARRE_INTERVAL_MIN: '',
+      // Flux et vue du jour publiés pour vérifier qu'aucune décision n'y passe.
+      FEED_PUBLIC: '1', JOUR_PUBLIC: '1', ...extraEnv },
     stdio: ['ignore', 'pipe', 'pipe'] });
   child.stdout.on('data', b => { childLogs += b; }); child.stderr.on('data', b => { childLogs += b; });
   for (let i = 0; i < 100; i++) {
@@ -268,7 +270,9 @@ test('le serveur lit La Barre à intervalle, reprend son ETag et ne publie rien 
   assert.match(childLogs, /\[barre\]/);
   assert.equal((await db.query('select count(*)::int as n from task_events')).rows[0].n, events);
   for (const route of ['/activity.json', '/feed.xml', '/jour.json']) {
-    const texte = await (await req(route, null)).text();
+    const reponse = await req(route, null);
+    assert.equal(reponse.status, 200, route);
+    const texte = await reponse.text();
     assert.ok(!texte.includes('DECISION_PRIVEE'), route);
   }
   assert.ok(!JSON.stringify(await (await req('/rest/v1/task_events')).json()).includes('DECISION_PRIVEE'));

@@ -6,11 +6,12 @@
 <meta name="robots" content="noindex,nofollow">
 <title>Radar — Todo du jour</title>
 <!--
-  Page PUBLIQUE (affichage sans connexion) : todo du jour du département créatif.
+  Todo du jour du département créatif. Publique seulement si l'installation le choisit
+  (JOUR_PUBLIC, functions/_publication.js) ; sinon derrière le mur, et /jour.json suit
+  alors le périmètre de la personne connectée.
   100% autonome — n'importe quel asset derrière le mur Basic Auth (supa.js, chrome.js,
   colors_and_type.css, fonts) serait bloqué pour un visiteur non connecté. On inline donc
-  tout : styles, polices système, et la lecture Supabase via la clé publishable (publique).
-  Le mur laisse passer /jour.html (voir functions/_middleware.js).
+  tout : styles, polices système, et la lecture same-origin de /jour.json.
 -->
 <style>
   :root{
@@ -57,13 +58,13 @@
   <div class="top">
     <div class="mark">R</div>
     <h1>Todo du jour — Département créa</h1>
-    <div class="d"><b id="today">…</b><span>Radar · tableau public</span></div>
+    <div class="d"><b id="today">…</b><span>Radar · tableau du jour</span></div>
   </div>
 
   <div id="content"><div class="empty">Chargement…</div></div>
 
   <div class="foot">
-    <span>Tableau public — mis à jour en direct depuis le radar.</span>
+    <span>Tableau du jour — mis à jour en direct depuis le radar.</span>
     <button class="reload" id="reload">↻ Rafraîchir</button>
   </div>
 </div>
