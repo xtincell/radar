@@ -19,6 +19,10 @@ const pool = process.env.DATABASE_URL
   ? new Pool({ connectionString: process.env.DATABASE_URL, max: 6, idleTimeoutMillis: 30000 })
   : null;
 export const hasDb = () => !!pool;
+// Fermeture propre (recette, arrêt) : aucune connexion laissée ouverte.
+export function closeDb() { return pool ? pool.end() : Promise.resolve(); }
+// Nom de cette instance Radar, inscrit dans chaque correspondance La Barre.
+export function radarInstance() { return String(process.env.RADAR_INSTANCE || process.env.RADAR_NAME || "Radar").trim(); }
 
 // ---- métadonnées des tables (liste blanche) --------------------------------
 const TEXT = "text", TS = "timestamptz", BOOL = "boolean", JSONB = "jsonb", INT = "int8", ARR = "text[]";
@@ -47,6 +51,21 @@ const TABLES = {
   brief_assets: { pk: "id", noRestWrite: true, patchCols: ['caption'], cols: {
     id: "id", brief_id: "id", ndeg: TEXT, client: TEXT, projet: TEXT, filename: TEXT, mime: TEXT,
     bytes: INT, caption: TEXT, created_by: TEXT, created_at: TS } },
+  // Décisions La Barre (server/barre.js, server/barre.sql) : privées par défaut,
+  // lues par owner/supervisor dans leur périmètre de confidentialité. La vue
+  // barre_decisions est en lecture seule ; seule la correspondance s'écrit ici.
+  barre_decisions: { pk: "id", readOnly: true, supervisorOnly: true,
+    readOnlyMessage: "lecture seule : les décisions viennent de La Barre", cols: {
+    id: "id", barre_instance: TEXT, decision_id: TEXT, version: INT, etat: TEXT, courante: BOOL, empreinte: TEXT,
+    projet: TEXT, quand: TS, quand_declare: TEXT, type: TEXT, verdict: TEXT, titre: TEXT, motif: TEXT, qui: TEXT,
+    acteur: JSONB, remplace: TEXT, remplacee_par: TEXT, contenu: JSONB, at: TS, brief_id: "id", rattachement: TEXT } },
+  barre_projets: { pk: "id", supervisorOnly: true, noPatch: true, serverCols: ["radar_instance", "created_by", "created_at"], cols: {
+    id: "id", barre_instance: TEXT, projet: TEXT, radar_instance: TEXT, brief_id: "id", created_by: TEXT, created_at: TS } },
+  barre_lectures: { pk: "barre_instance", readOnly: true, supervisorOnly: true,
+    readOnlyMessage: "lecture seule : état tenu par le lecteur La Barre", cols: {
+    barre_instance: TEXT, etag: TEXT, depot: TEXT, maison: TEXT, lu_le: TS, statut: TEXT, message: TEXT,
+    recues: INT, nouvelles: INT, versions: INT, inchangees: INT, retirees: INT, refusees: INT, ecartees: INT,
+    derniere_reussite: TS } },
 };
 const isCol = (t, c) => Object.prototype.hasOwnProperty.call(TABLES[t].cols, c);
 const colType = (t, c) => TABLES[t].cols[c];
@@ -153,6 +172,7 @@ export function initDb() {
       await client.query("begin");
       await client.query(SCHEMA_SQL);
       await client.query(readFileSync(new URL('./journal.sql', import.meta.url), 'utf8'));
+      await client.query(readFileSync(new URL('./barre.sql', import.meta.url), 'utf8'));
       const { rows } = await client.query("select count(*)::int as n from briefs");
       // RADAR_SEED_CSV = chemin d'un CSV optionnel (colonnes INDEX.csv) pour peupler une
       // base vide au premier boot. Absent → instance vierge, aucune dépendance à un dossier local.
@@ -261,6 +281,23 @@ export async function transaction(work) {
   catch (e) { await client.query('rollback').catch(() => {}); throw e; }
   finally { client.release(); }
 }
+// ---- correspondance projet La Barre ↔ dossier Radar -------------------------
+// Tenue par un superviseur, vers un dossier existant qu'il peut voir. Jamais
+// déduite d'un code : l'instance La Barre, le projet et le dossier sont nommés.
+async function prepareBarreProjet(client, rec, context) {
+  for (const k of TABLES.barre_projets.serverCols)
+    if (Object.hasOwn(rec, k)) throw Object.assign(new Error(k + ' est posé par le serveur'), { status: 400 });
+  const texte = v => typeof v === 'string' && v.trim() !== '';
+  if (!texte(rec.barre_instance) || !texte(rec.projet))
+    throw Object.assign(new Error('barre_instance et projet sont requis'), { status: 400 });
+  const id = Number(rec.brief_id);
+  if (!Number.isSafeInteger(id) || id < 1) throw Object.assign(new Error('brief_id requis'), { status: 400 });
+  const { rows } = await client.query('select * from briefs where id=$1 for share', [id]);
+  if (!rows.length) throw Object.assign(new Error('dossier introuvable'), { status: 404 });
+  assertBriefAccess(rows[0], context);
+  rec.brief_id = id; rec.radar_instance = radarInstance(); rec.created_by = (context.data && context.data.email) || null;
+}
+
 // ---- handler principal : /rest/v1/<table> ----------------------------------
 export async function handleRest(context) {
   if (!pool) return json({ message: "base non configurée" }, 503);
@@ -271,7 +308,12 @@ export async function handleRest(context) {
   if (!TABLES[table]) return json({ message: "table inconnue: " + table }, 404);
   const email = (context.data && context.data.email) || "";
   const method = request.method.toUpperCase();
-  if (TABLES[table].readOnly && method !== 'GET') return json({ message: 'journal en lecture seule' }, 405);
+  if (TABLES[table].supervisorOnly) {
+    const who = taskAuthority(context);
+    if (!who.fullAccess && who.role !== 'owner' && who.role !== 'supervisor') return json({ message: 'réservé aux superviseurs' }, 403);
+  }
+  if (TABLES[table].readOnly && method !== 'GET') return json({ message: TABLES[table].readOnlyMessage || 'journal en lecture seule' }, 405);
+  if (TABLES[table].noPatch && method === 'PATCH') return json({ message: 'une correspondance se retire puis se recrée' }, 405);
   // brief_assets : créer/supprimer passe par /visuels (sinon fichiers disque orphelins).
   if (TABLES[table].noRestWrite && (method === "POST" || method === "DELETE"))
     return json({ message: "utiliser POST/DELETE /visuels pour cette table" }, 405);
@@ -305,6 +347,12 @@ export async function handleRest(context) {
     where.push(`(select count(*) from briefs b where ${join}) = 1`);
     where.push(`exists (select 1 from briefs b where ${join} and ${briefScopeSql(context,params,'b.')})`);
   }
+  // Une décision rattachée suit la confidentialité de son dossier ; une
+  // correspondance n'est lue que si son dossier l'est.
+  if (method === 'GET' && table === 'barre_decisions' && !context.data?.fullAccess)
+    where.push(`(barre_decisions.brief_id is null or exists (select 1 from briefs b where b.id = barre_decisions.brief_id and ${briefScopeSql(context,params,'b.')}))`);
+  if (method === 'GET' && table === 'barre_projets' && !context.data?.fullAccess)
+    where.push(`exists (select 1 from briefs b where b.id = barre_projets.brief_id and ${briefScopeSql(context,params,'b.')})`);
   if (table === 'task_events' && !context.data?.fullAccess) {
     const who = taskAuthority(context), me = who.person || '';
     params.push(me);
@@ -364,6 +412,7 @@ export async function handleRest(context) {
         const out = [];
         for (const rec of list) {
           if (table === 'briefs') assertBriefAccess(rec,context);
+          if (table === 'barre_projets') await prepareBarreProjet(client, rec, context);
           if (table === 'comments') {
             if (Object.hasOwn(rec,'brief_id')) throw Object.assign(new Error('rattachement réservé au serveur'),{status:400});
             rec.brief_id=(await targetBrief(client,rec.ndeg,context)).id;
@@ -394,6 +443,10 @@ export async function handleRest(context) {
         for (const row of candidates.rows) {
           if (table === 'briefs') assertBriefAccess(row,context);
           if (table === 'comments' || table === 'brief_assets') await targetLinkedBrief(client,row,context);
+          if (table === 'barre_projets') {
+            const {rows}=await client.query('select * from briefs where id=$1 for share',[row.brief_id]);
+            if (rows.length) assertBriefAccess(rows[0],context);
+          }
         }
         const ids = candidates.rows.map(row=>row[TABLES[table].pk]);
         const writeWhere = `${TABLES[table].pk} = any($1)`;
@@ -431,6 +484,7 @@ export async function handleRest(context) {
     return json({ message: "méthode non supportée" }, 405);
   } catch (e) {
     if (e.status) return json({message:e.message},e.status);
+    if (e.code === '23505') return json({ message: 'déjà enregistré' }, 409);
     console.error("[pgrest]", method, table, e && e.message);
     return json({ message: "erreur SQL", detail: String((e && e.message) || e) }, 500);
   }

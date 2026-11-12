@@ -14,6 +14,7 @@ import { openKv } from "./kv-sqlite.js";
 import { initDb, handleRest, handleBriefCsv, query as pgQuery, hasDb } from "./pgrest.js";
 import { handleVisuelUpload, serveVisuel, handleVisuelDelete, purgeOrphans } from "./visuels.js";
 import { handleIngest } from "./ingest.js";
+import { barreConfig, demarrerLecteurBarre } from "./barre.js";
 import * as middleware from "../functions/_middleware.js";
 import * as token from "../functions/token.js";
 import * as profil from "../functions/profil.js";
@@ -87,9 +88,12 @@ const server = http.createServer(async (nodeReq, nodeRes) => {
 });
 
 // Prépare la base (schéma idempotent + seed depuis INDEX.csv si vide) au démarrage.
+// Seule tâche périodique : la lecture des décisions La Barre (server/barre.js),
+// désactivée tant que BARRE_URL et BARRE_RADAR_TOKEN ne sont pas configurés.
 initDb().then((ok) => {
   console.log(ok ? "[radar] Postgres prêt (données de l'app)" : "[radar] pas de DATABASE_URL — repli statique/CSV");
   if (ok) purgeOrphans().catch((e) => console.warn("[visuels] purge orphelins:", e && e.message));
+  if (ok) demarrerLecteurBarre(barreConfig(process.env));
 })
   .catch((e) => console.error("[radar] initDb:", e && e.message));
 const RADAR_NAME = process.env.RADAR_NAME || "Radar";

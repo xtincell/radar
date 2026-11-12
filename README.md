@@ -14,6 +14,7 @@ Pensé pour être déployé **standalone** (une instance = une équipe = une bas
 - Authentification HTTP Basic + session cookie signée (HMAC-SHA256), avec self-service de mot de passe par utilisateur (`/profil`, stocké sous empreinte PBKDF2-SHA256 salée en SQLite locale — voir [Mots de passe personnels](#mots-de-passe-personnels)).
 - Trois niveaux d'autorité configurables (`owner` / `supervisor` / `member`) — voir [Configurer les accès](#configurer-les-accès).
 - Périmètre de rôle et isolation `private_to` appliqués côté serveur aux tâches, commentaires, journal, CSV et médias.
+- Lecture des décisions La Barre (`server/barre.js`) : à intervalle, par jeton machine, reçues sans doublon et versionnées, privées par défaut — voir [Décisions La Barre](#décisions-la-barre).
 
 ## Démarrage rapide
 
@@ -39,7 +40,7 @@ docker run -p 3000:3000 \
   radar
 ```
 
-Le serveur applique lui-même son schéma Postgres au démarrage, de façon idempotente : celui qu'embarque `server/pgrest.js`, puis le journal `server/journal.sql`. Le dossier `migrations/` n'est **pas** appliqué : il porte des miroirs documentaires pour les bases gérées à la main. Une différence existe : `migrations/20260701_add_suivi.sql` rend `suivi` obligatoire (valeur par défaut `{}`), alors que le schéma embarqué le laisse facultatif. Le volume `/data` conserve les empreintes des mots de passe personnels (SQLite) **et les visuels de livrables** (`/data/visuels`) entre redéploiements — à inclure dans les sauvegardes côté hébergeur (Coolify : backup du volume `radar_data` ; la base Postgres se sauvegarde séparément, les binaires des visuels ne vivent que sur ce volume).
+Le serveur applique lui-même son schéma Postgres au démarrage, de façon idempotente : celui qu'embarque `server/pgrest.js`, puis le journal `server/journal.sql`, puis les tables des décisions La Barre `server/barre.sql`. Le dossier `migrations/` n'est **pas** appliqué : il porte des miroirs documentaires pour les bases gérées à la main. Une différence existe : `migrations/20260701_add_suivi.sql` rend `suivi` obligatoire (valeur par défaut `{}`), alors que le schéma embarqué le laisse facultatif. Le volume `/data` conserve les empreintes des mots de passe personnels (SQLite) **et les visuels de livrables** (`/data/visuels`) entre redéploiements — à inclure dans les sauvegardes côté hébergeur (Coolify : backup du volume `radar_data` ; la base Postgres se sauvegarde séparément, les binaires des visuels ne vivent que sur ce volume).
 
 ## Configuration
 
@@ -55,6 +56,10 @@ Voir [`.env.example`](.env.example) pour la liste complète des variables. Les e
 | `RADAR_SEED_CSV` | CSV optionnel pour peupler une base vide au premier boot. |
 | `VISUELS_DIR` | Répertoire des visuels de livrables. Défaut `/data/visuels` (repli `./data/visuels`). |
 | `OLLAMA_URL` / `OLLAMA_MODEL` | LLM local pour l'ingest des retours clients (`/ingest`). Défauts `http://127.0.0.1:11434` / `llama3.2`. |
+| `BARRE_URL` / `BARRE_RADAR_TOKEN` | Adresse de La Barre et jeton machine de sa route `/radar/decisions`. Les deux requis, jeton d'au moins 32 caractères ; sinon le lecteur reste désactivé. |
+| `BARRE_INSTANCE` | Nom stable de l'installation La Barre dans les reçus. Défaut : l'hôte de `BARRE_URL` — à fixer, sans quoi un changement d'adresse ouvre une nouvelle série de reçus. |
+| `BARRE_INTERVAL_MIN` | Minutes entre deux lectures. Défaut `15`, plancher 1 s ; `0` désactive. |
+| `RADAR_INSTANCE` | Nom de cette instance inscrit dans chaque correspondance projet ↔ dossier. Défaut : `RADAR_NAME`, sinon `Radar`. |
 
 ### Configurer les accès
 
@@ -119,6 +124,27 @@ RADAR_EQUIPE_KEY=…
 
 Galahad agrège ainsi plusieurs Radars indépendants sans qu'aucun ne connaisse l'existence des autres : chaque instance reste autonome et n'expose que ses propres données.
 
+## Décisions La Barre
+
+SHK-0005, sens 1, arbitrage 5.5 du 11 novembre 2026 : Radar va chercher les décisions de La Barre ; La Barre n'écrit rien dans Radar. Le lecteur `server/barre.js` est la seule tâche périodique du serveur. Il démarre après la préparation de la base et reste désactivé sans `BARRE_URL` et `BARRE_RADAR_TOKEN` (voir [Configuration](#configuration)).
+
+**Ce qu'il lit.** `GET <BARRE_URL>/radar/decisions`, avec `Authorization: Bearer <BARRE_RADAR_TOKEN>` et l'`ETag` de la lecture précédente, gardé en base : une base inchangée répond `304`, y compris après un redémarrage. La route La Barre ne sert que les décisions — ni personnes, ni facturation, ni le reste du dépôt —, chacune avec son identifiant stable, son projet La Barre, sa date `quand`, son auteur déclaré (`qui`, `acteur`) et une `empreinte_contenu` (SHA-256 du JSON canonique : clés triées à toutes les profondeurs, sans espace). Radar recalcule cette empreinte et refuse une décision qui ne la porte pas. Une redirection est refusée (le jeton ne part pas ailleurs) ; une réponse au-delà de 32 Mo ou de 30 s échoue.
+
+**Ce qu'il écrit**, dans une seule transaction par lecture, verrouillée par instance (deux lectures simultanées se suivent) :
+
+- `barre_recus` — un reçu par (instance La Barre, `decision.id`, version). La même empreinte ne produit rien ; une empreinte changée produit la version suivante et l'ancienne reste ; une décision absente d'une nouvelle lecture de la **même** base de référence produit une version `retiree`, qui garde ses champs descriptifs. Rien n'est effacé ni réécrit. Une décision refusée, ou nommée dans `ecartees` par La Barre (identifiant manquant ou pris deux fois), n'est pas retirée. Une autre base de référence ne retire rien : le compte rendu le signale.
+- `barre_lectures` — par instance : l'`ETag`, la base de référence, l'heure et le statut de la dernière lecture (`recu`, `inchange`, `echec`), son message et ses comptes. Une lecture en échec n'écrit aucun reçu.
+
+`quand` est la date de la décision, telle que La Barre la déclare (colonne `quand`, et `quand_declare` intacte si ce n'est pas une date ISO 8601). `at` est l'heure d'écriture dans Radar : un retard de lecture ne la confond pas avec `quand`.
+
+**Rattachement.** Radar identifie un dossier par `briefs.id` ; une décision nomme un projet La Barre. La correspondance vit dans `barre_projets` : (instance La Barre, projet) → (instance Radar, `briefs.id`), une par projet. Elle se tient par REST, réservée aux rôles `owner` et `supervisor` (et à la clé machine) : `POST /rest/v1/barre_projets` avec `barre_instance`, `projet` et `brief_id` d'un dossier existant et visible ; le serveur pose `radar_instance` et `created_by` et refuse qu'on les fournisse. Une correspondance ne se modifie pas : elle se supprime (`DELETE …?id=eq.<id>`) puis se recrée. Aucune correspondance n'est déduite d'un code `ndeg`.
+
+**Lecture.** La vue `barre_decisions` (REST, lecture seule) donne toutes les versions, la courante marquée (`courante`), la décision qui en remplace une autre (`remplace`, `remplacee_par`) et le rattachement calculé à la lecture : `rattachee`, `non_rattachee` (aucune correspondance), `sans_projet` (décision de campagne ou de marque), `dossier_introuvable`. Une correspondance ajoutée plus tard rattache aussi les décisions déjà reçues.
+
+**Confidentialité.** Les décisions sont privées par défaut. Elles ne sont écrites ni dans `briefs` ni dans `task_events` : elles n'apparaissent pas dans `/activity.json`, `/feed.xml`, `/jour.json` ni `/INDEX.csv`. `barre_decisions`, `barre_projets` et `barre_lectures` sont réservées à `owner` et `supervisor` ; un membre reçoit `403`. Une décision rattachée suit la confidentialité de son dossier (`private_to`) ; une décision non rattachée est visible des superviseurs. La publication des décisions relève de l'arbitrage 5.7, encore ouvert.
+
+**Ce que cette lecture ne reçoit pas.** Aucune mesure avant/après n'est calculée (arbitrage 5.6). L'attestation de La Fusée et le contenu créatif d'une piste ne sont pas transmis. Les changements de correspondance ne sont pas journalisés. Le chemin réseau entre Radar et La Barre en production (La Fusée devant La Barre, ou réseau privé) reste à décrire et à recevoir. Recette et limites : [docs/RECEPTION-BARRE.md](docs/RECEPTION-BARRE.md).
+
 ## Architecture
 
 ```
@@ -131,6 +157,8 @@ functions/_password.js    empreintes des mots de passe personnels (PBKDF2-SHA256
 server/pgrest.js          mini-PostgREST maison + schéma + seed optionnel
 server/visuels.js         visuels de livrables : upload / service / suppression (/visuels)
 server/ingest.js          retours clients → tâches via Ollama (/ingest)
+server/barre.js           lecteur périodique des décisions La Barre (reçus, versions, retraits)
+server/barre.sql          tables barre_recus, barre_projets, barre_lectures et vue barre_decisions
 server/index.js           point d'entrée Node (remplace un runtime edge/Pages)
 server/kv-sqlite.js       stockage des empreintes de mots de passe perso (remplace un KV managé)
 server/hash-passwords.js  conversion en masse des anciens mots de passe en clair
