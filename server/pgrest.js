@@ -245,6 +245,41 @@ function paramForWrite(type, v) {
 }
 
 // ---- scope private_to (confidentialité serveur, tous rôles) ----------------
+// Périmètre du journal : ce que la personne connectée lit de task_events, par
+// REST comme dans le relevé avant/après (server/mesure.js). `alias` nomme la
+// table du journal dans la requête appelante ; jamais « b » ni « d », pris
+// par les sous-requêtes ci-dessous.
+export function taskEventScopeSql(context, params, alias = 'task_events') {
+  if (context.data?.fullAccess) return 'true';
+  const e = alias;
+  const who = taskAuthority(context), me = who.person || '';
+  params.push(me);
+  const moi = '$' + params.length;
+  // Confidentialité inconnue (NULL) = privée jusqu'à relecture : lisible des
+  // responsables (owner, supervisor) pour la qualifier, jamais d'un membre.
+  const responsable = who.role === 'owner' || who.role === 'supervisor';
+  const clauses = [
+    `(${responsable ? `${e}.private_to is null or ` : ''}${e}.private_to = '' or ${e}.private_to = ${moi})`,
+    `not exists (select 1 from briefs b where b.id = ${e}.brief_id and coalesce(b.private_to,'') <> '' and b.private_to <> ${moi})`,
+    `not exists (select 1 from task_events d where d.brief_id=${e}.brief_id and d.kind='deleted' and coalesce(d.private_to,'') <> '' and d.private_to <> ${moi})`,
+  ];
+  if (!responsable) {
+    const snapshotFields = a => Object.fromEntries(['private_to','responsable','deadline','statut','closed_at'].map(k=>[k,`(${a}.scope_snapshot->>'${k}')`]));
+    clauses.push(`${e}.scope_snapshot is not null and ${briefScopeSql(context,params,snapshotFields(e))}`);
+    clauses.push(`(exists (select 1 from briefs b where b.id=${e}.brief_id and ${briefScopeSql(context,params,'b.')})
+        or (not exists (select 1 from briefs b where b.id=${e}.brief_id)
+          and exists (select 1 from task_events d where d.brief_id=${e}.brief_id and d.kind='deleted'
+            and ${briefScopeSql(context,params,snapshotFields('d'))})))`);
+  }
+  return '(' + clauses.join(' and ') + ')';
+}
+// Une décision La Barre rattachée suit la confidentialité de son dossier ; une
+// décision non rattachée est visible des superviseurs (la table leur est réservée).
+export function decisionScopeSql(context, params, alias = 'barre_decisions') {
+  if (context.data?.fullAccess) return 'true';
+  return `(${alias}.brief_id is null or exists (select 1 from briefs b where b.id = ${alias}.brief_id and ${briefScopeSql(context,params,'b.')}))`;
+}
+
 export async function targetBrief(client, ndeg, context) {
   const { rows } = await client.query('select * from briefs where ndeg=$1 order by id for share', [ndeg]);
   if (!rows.length) throw Object.assign(new Error('brief inconnu'),{status:404});
@@ -367,28 +402,11 @@ export async function handleRest(context) {
   }
   // Une décision rattachée suit la confidentialité de son dossier ; une
   // correspondance n'est lue que si son dossier l'est.
-  if (method === 'GET' && table === 'barre_decisions' && !context.data?.fullAccess)
-    where.push(`(barre_decisions.brief_id is null or exists (select 1 from briefs b where b.id = barre_decisions.brief_id and ${briefScopeSql(context,params,'b.')}))`);
+  if (method === 'GET' && table === 'barre_decisions')
+    where.push(decisionScopeSql(context, params));
   if (method === 'GET' && table === 'barre_projets' && !context.data?.fullAccess)
     where.push(`exists (select 1 from briefs b where b.id = barre_projets.brief_id and ${briefScopeSql(context,params,'b.')})`);
-  if (table === 'task_events' && !context.data?.fullAccess) {
-    const who = taskAuthority(context), me = who.person || '';
-    params.push(me);
-    // Confidentialité inconnue (NULL) = privée jusqu'à relecture : lisible des
-    // responsables (owner, supervisor) pour la qualifier, jamais d'un membre.
-    const responsable = who.role === 'owner' || who.role === 'supervisor';
-    where.push(`(${responsable ? 'private_to is null or ' : ''}private_to = '' or private_to = $${params.length})`);
-    where.push(`not exists (select 1 from briefs b where b.id = task_events.brief_id and coalesce(b.private_to,'') <> '' and b.private_to <> $${params.length})`);
-    where.push(`not exists (select 1 from task_events d where d.brief_id=task_events.brief_id and d.kind='deleted' and coalesce(d.private_to,'') <> '' and d.private_to <> $${params.length})`);
-    if (who.role !== 'owner' && who.role !== 'supervisor') {
-      const snapshotFields = alias => Object.fromEntries(['private_to','responsable','deadline','statut','closed_at'].map(k=>[k,`(${alias}.scope_snapshot->>'${k}')`]));
-      where.push(`scope_snapshot is not null and ${briefScopeSql(context,params,snapshotFields('task_events'))}`);
-      where.push(`(exists (select 1 from briefs b where b.id=task_events.brief_id and ${briefScopeSql(context,params,'b.')})
-        or (not exists (select 1 from briefs b where b.id=task_events.brief_id)
-          and exists (select 1 from task_events d where d.brief_id=task_events.brief_id and d.kind='deleted'
-            and ${briefScopeSql(context,params,snapshotFields('d'))})))`);
-    }
-  }
+  if (table === 'task_events') where.push(taskEventScopeSql(context, params));
 
   try {
     if (method === "GET") {

@@ -210,6 +210,14 @@ function applyIdent(id){
     mm.appendChild(btn);
     if(window.lucide) window.lucide.createIcons();
   }
+  // Relevé avant/après (/mesure/avant-apres) : réservé côté serveur à owner et supervisor.
+  if(mm && IDENT && (IDENT.role==="owner"||IDENT.role==="supervisor") && !mm.querySelector("[data-key='mesure']")){
+    const btn=document.createElement("button");
+    btn.dataset.goto="mesure.html"; btn.dataset.key="mesure";
+    btn.innerHTML=`<span class="ic"><i data-lucide="scale" style="width:15px;height:15px"></i></span>Avant / après`;
+    mm.appendChild(btn);
+    if(window.lucide) window.lucide.createIcons();
+  }
 }
 /* Salutation dynamique « Bonjour, <prénom> » (élément #greet, ex. radar.html).
    Reflète l'utilisateur authentifié ; pour l'owner en mode « voir comme », suit la
