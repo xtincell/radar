@@ -110,11 +110,18 @@ const server = http.createServer(async (nodeReq, nodeRes) => {
 // Prépare la base (schéma idempotent + seed depuis INDEX.csv si vide) au démarrage.
 // Seule tâche périodique : la lecture des décisions La Barre (server/barre.js),
 // désactivée tant que BARRE_URL et BARRE_RADAR_TOKEN ne sont pas configurés.
-initDb().then((ok) => {
-  console.log(ok ? "[radar] Postgres prêt (données de l'app)" : "[radar] pas de DATABASE_URL — repli statique/CSV");
-  if (ok) purgeOrphans().catch((e) => console.warn("[visuels] purge orphelins:", e && e.message));
-  if (ok) demarrerLecteurBarre(barreConfig(process.env));
-})
-  .catch((e) => console.error("[radar] initDb:", e && e.message));
+// La base peut démarrer après l'application (redémarrage de l'hôte) : on réessaie jusqu'à
+// ce qu'elle réponde, puis seulement on lance la purge et le lecteur.
+(async function preparerBase() {
+  if (!hasDb()) { console.log("[radar] pas de DATABASE_URL — repli statique/CSV"); return; }
+  const pause = Number(process.env.RADAR_DB_RETRY_MS) || 5000;
+  for (let essai = 1; !(await initDb().catch(() => false)); essai++) {
+    if (essai === 1) console.error(`[radar] base indisponible au démarrage — nouvel essai toutes les ${pause} ms`);
+    await new Promise((resolve) => setTimeout(resolve, pause));
+  }
+  console.log("[radar] Postgres prêt (données de l'app)");
+  purgeOrphans().catch((e) => console.warn("[visuels] purge orphelins:", e && e.message));
+  demarrerLecteurBarre(barreConfig(process.env));
+})();
 const RADAR_NAME = process.env.RADAR_NAME || "Radar";
 server.listen(PORT, process.env.HOST || '0.0.0.0', () => console.log(`${RADAR_NAME} — écoute sur :${PORT}`));
