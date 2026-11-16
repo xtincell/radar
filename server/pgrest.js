@@ -163,12 +163,20 @@ async function seedFromCsv(client, csvPath) {
 }
 
 // ---- init : schéma + seed si vide ------------------------------------------
+// Seul un succès est mémorisé. La base peut démarrer après l'application (redémarrage de
+// l'hôte) : un échec, connexion comprise, rend false et laisse l'appel suivant réessayer,
+// au plus une fois toutes les deux secondes. Avant, la promesse rejetée restait en mémoire
+// et l'API répondait 500 jusqu'au redémarrage de l'application.
 let _ready = null;
+let _dernierEchec = 0;
 export function initDb() {
   if (!pool) return Promise.resolve(false);
   if (_ready) return _ready;
-  _ready = (async () => {
-    const client = await pool.connect();
+  if (Date.now() - _dernierEchec < 2000) return Promise.resolve(false);
+  const essai = (async () => {
+    let client;
+    try { client = await pool.connect(); }
+    catch (e) { console.error("[pgrest] initDb : base injoignable :", (e && (e.code || e.message)) || e); return false; }
     try {
       await client.query("begin");
       await client.query(SCHEMA_SQL);
@@ -198,7 +206,9 @@ export function initDb() {
       return false;
     } finally { client.release(); }
   })();
-  return _ready;
+  _ready = essai;
+  essai.then((ok) => { if (!ok) { _dernierEchec = Date.now(); if (_ready === essai) _ready = null; } });
+  return essai;
 }
 
 // ---- parsing PostgREST -----------------------------------------------------
